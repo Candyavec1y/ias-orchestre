@@ -300,6 +300,7 @@ class PoidsNiveau2:
     var_lits: float = 20.0
     place: float = 5000.0
     var_places: float = 20.0
+    priorite: float = 50.0
 
 
 POIDS_N1 = ParametresNiveau1()
@@ -533,6 +534,90 @@ def vacations_compatibles(patient: Patient, vacations: dict[int, Vacation]) -> l
     return [vid for vid, v in vacations.items()
             if v.chirurgien_id == patient.chirurgien_id
             and (patient.date_min is None or v.jour >= patient.date_min)]
+
+def penalite_priorite_patient(patient: Patient, vacation_id: int, vacations: dict[int, Vacation]) -> float:
+    """
+    Pénalise le placement tardif d'un patient selon sa priorité.
+
+    0   = vacation la plus précoce accessible au patient
+    1   = vacation la plus tardive pour un patient de priorité 4
+
+    Les valeurs intermédiaires sont normalisées entre 0 et 1.
+    """
+
+    compatibles = vacations_compatibles(patient, vacations)
+
+    if not compatibles or vacation_id not in compatibles:
+        return 0.0
+
+    debuts = [
+        vacations[vid].debut
+        for vid in compatibles
+    ]
+
+    premier = min(debuts)
+    dernier = max(debuts)
+
+    amplitude = (
+        dernier - premier
+    ).total_seconds()
+
+    if amplitude <= 0:
+        retard_normalise = 0.0
+    else:
+        retard_normalise = (
+            vacations[vacation_id].debut
+            - premier
+        ).total_seconds() / amplitude
+
+        retard_normalise = min(
+            1.0,
+            max(0.0, retard_normalise),
+        )
+
+    # Une urgence est considérée comme priorité maximale.
+    priorite_effective = (
+        4
+        if patient.urgence
+        else min(4, max(1, patient.priorite))
+    )
+
+    return (
+        priorite_effective / 4.0
+    ) * retard_normalise
+
+
+def calculer_f_priorite(
+    instance2: InstanceNiveau2,
+    solution: SolutionPatients,
+) -> float:
+    """
+    Retard moyen pondéré par la priorité clinique.
+
+    Les patients non placés ne sont pas comptés ici :
+    ils sont déjà fortement pénalisés par le terme non_place.
+    """
+
+    penalites = []
+
+    for patient_id, vacation_id in solution.affectations.items():
+
+        if vacation_id is None:
+            continue
+
+        penalites.append(
+            penalite_priorite_patient(
+                instance2.patients[patient_id],
+                vacation_id,
+                instance2.vacations,
+            )
+        )
+
+    return (
+        sum(penalites) / len(penalites)
+        if penalites
+        else 0.0
+    )
 
 
 def jours_occupation(patient: Patient, jour_operation: date) -> list[date]:
