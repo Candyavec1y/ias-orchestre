@@ -1,0 +1,15 @@
+[theme]
+base = "light"
+primaryColor = "#1F5F8B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F5F8"
+textColor = "#1B2733"
+
+[client]
+toolbarMode = "viewer"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+enableXsrfProtection = true
