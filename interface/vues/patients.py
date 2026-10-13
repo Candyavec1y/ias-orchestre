@@ -79,20 +79,30 @@ def _detail(f: dict, sim) -> None:
     if f["a_reference"] and b1.button("Afficher la référence dossier", width="stretch"):
         C.tracer("affichage de la référence dossier (déchiffrement)", f["pseudo"])
         st.info(f"Référence dossier : {DB.reference_dossier(f['id'])}")
-    if peut_modifier and f["statut"] in ("programmé", "liste d'attente") and b2.button(
-            "Annuler l'intervention", width="stretch"):
-        DB.ajouter_evenement(C.maintenant(), "annulation", {"pid": S.pid_consultation(f["id"]), "nom": f["pseudo"],
-                                                             "motif": f"annulée par {u['login']}"}, u["login"], f["id"])
-        C.tracer("annulation d'intervention", f["pseudo"])
-        st.rerun()
+    if peut_modifier and f["statut"] in ("programmé", "liste d'attente"):
+        with b2.popover("Annuler l'intervention", width="stretch"):
+            motif = st.text_input("Motif de l'annulation (obligatoire, tracé)", key=f"motif_ann_{f['id']}",
+                                  placeholder="ex. contre-indication anesthésique, souhait du patient")
+            if st.button("Confirmer l'annulation", type="primary", key=f"ann_{f['id']}", disabled=not motif.strip()):
+                C.appliquer(lambda: DB.ajouter_evenement(
+                    C.maintenant(), "annulation", {"pid": S.pid_consultation(f["id"]), "nom": f["pseudo"],
+                                                   "motif": motif.strip()}, u["login"], f["id"]),
+                    categorie="Programme", action="Annulation d'intervention", patient=f["pseudo"],
+                    motif=motif.strip())
+                st.rerun()
     donnees = DB.exporter_patient(f["id"])
     if b3.download_button("Exporter (droit d'accès)", json.dumps(donnees, ensure_ascii=False, indent=2, default=str),
                           file_name=f"{f['pseudo']}.json", mime="application/json", width="stretch"):
         C.tracer("export des données patient (droit d'accès)", f["pseudo"])
     if peut_modifier:
         with b4.popover("Supprimer (droit à l'effacement)", width="stretch"):
-            st.write("Supprime la fiche et ses événements ; le SMA rejoue le programme sans ce patient. Irréversible.")
-            if st.button("Confirmer la suppression", type="primary", key=f"sup_{f['id']}"):
-                DB.supprimer_patient(f["id"])
-                C.tracer("suppression patient (effacement)", f["pseudo"])
+            st.write("Supprime la fiche et ses événements ; le SMA rejoue le programme sans ce patient. Irréversible. "
+                     "L'historique conserve le pseudonyme et le motif (obligation de traçabilité).")
+            motif_s = st.text_input("Motif (obligatoire, tracé)", key=f"motif_sup_{f['id']}",
+                                    placeholder="ex. demande d'effacement du patient")
+            if st.button("Confirmer la suppression", type="primary", key=f"sup_{f['id']}",
+                         disabled=not motif_s.strip()):
+                C.appliquer(lambda: DB.supprimer_patient(f["id"]), categorie="Données patient",
+                            action="Suppression de la fiche (droit à l'effacement)", patient=f["pseudo"],
+                            motif=motif_s.strip())
                 st.rerun()

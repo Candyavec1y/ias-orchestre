@@ -277,9 +277,14 @@ def _inscrire(e: dict, proposition) -> None:
                "fenetre_id": proposition["fenetre_id"] if proposition else None}
     if proposition is None:
         contenu["attente"] = True
-    DB.ajouter_evenement(C.maintenant(), "inscription", contenu, u["login"], fiche["id"])
-    C.tracer("création patient + inscription au programme", fiche["pseudo"])
-    sim = C.simulation()
+    if proposition:
+        choix = (f"Créneau choisi : {proposition['salle']}, {C.jour_long(proposition['jour'])} "
+                 f"{proposition['debut']:%H:%M}, Dr {proposition['chirurgien']}")
+    else:
+        choix = "Inscription en liste d'attente (aucun créneau réservé)"
+    sim = C.appliquer(lambda: DB.ajouter_evenement(C.maintenant(), "inscription", contenu, u["login"], fiche["id"]),
+                      categorie="Programme", action="Inscription au programme", patient=fiche["pseudo"],
+                      detail=choix, motif=f"Consultation de Dr {s['praticien']}, priorité clinique {v['priorite']}")
     C.synchroniser_statuts(sim)
     it = sim.intervention(patient.id)
     _reinitialiser()

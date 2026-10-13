@@ -121,11 +121,29 @@ def _urgence(sim: S.Simulation) -> None:
         numero = 1 + sum(e["type"] == "urgence" for e in DB.lister_evenements())
         p = S.patient_urgent(numero, prat, int(duree), ambulatoire=amb, nuits_post_op=0 if amb else int(post),
                              diagnostic=est.get("cim", ""), type_intervention=diag.strip(), age=int(est.get("age", 40)))
-        DB.ajouter_evenement(maintenant, "urgence", {"patient": S.patient_vers_dict(p), "gravite": gravite}, u["login"])
-        C.tracer("déclaration d'urgence", f"URG-{numero:03d} ({gravite})")
+        code = f"URG-{numero:03d}"
+        sim2 = C.appliquer(
+            lambda: DB.ajouter_evenement(maintenant, "urgence", {"patient": S.patient_vers_dict(p), "gravite": gravite},
+                                         u["login"]),
+            categorie="Urgence", action="Déclaration d'urgence", patient=code,
+            detail=(f"{S.LIBELLES_GRAVITE[gravite]} · vue par Dr {prat} · {int(duree)} min · "
+                    f"{'ambulatoire' if amb else f'hospitalisation {int(post)} nuit(s)'}"),
+            motif=diag.strip() or "non renseigné")
         st.session_state.pop("estim_urg", None)
-        sim2 = C.simulation()
         d = next((x for x in reversed(sim2.decisions()) if x.get("patient") == p.id), None)
+        delai = S.GRAVITES[gravite].delai_max_min
+        if d and d["type"] == "urgence":
+            DB.historiser(C.SYSTEME, "automatique", "Urgence",
+                          "Prise en charge dans le délai" if d["dans_delai"] else "Prise en charge HORS DÉLAI",
+                          patient=code, heure_metier=maintenant,
+                          detail=(f"{sim2.modele.salles[d['salle']].nom_affiche}, {C.jour_long(d['debut'].date())} "
+                                  f"{d['debut']:%H:%M}, Dr {S.code_chirurgien(d['chirurgien'])} · attente "
+                                  f"{d['attente_min']:.0f} min (délai maximal {delai} min)"),
+                          motif=f"Meilleure des {d['nb_propositions']} propositions des salles (coût minimal)")
+        else:
+            DB.historiser(C.SYSTEME, "automatique", "Urgence", "Aucun créneau dans le délai", patient=code,
+                          heure_metier=maintenant, detail=f"délai maximal {delai} min",
+                          motif="Transfert vers un autre établissement à décider par le médecin régulateur")
         if d and d["type"] == "urgence":
             st.session_state["jour_urg"] = st.session_state["jour_urg_sel"] = d["debut"].date()
             st.session_state["flash_urgence"] = ("ok" if d["dans_delai"] else "attention", (
@@ -173,8 +191,10 @@ def _logistique(sim: S.Simulation) -> None:
             st.error("L'heure de retour doit être postérieure à l'heure courante.")
         else:
             typ = "prolongation" if asc in pannes else "panne"
-            DB.ajouter_evenement(maintenant, typ, {"ascenseur": asc, "fin_estimee": fin_dt.isoformat()}, u["login"])
-            C.tracer(f"déclaration {typ} ascenseur", asc)
+            C.appliquer(lambda: DB.ajouter_evenement(maintenant, typ, {"ascenseur": asc, "fin_estimee": fin_dt.isoformat()},
+                                                     u["login"]),
+                        categorie="Logistique", action=f"Déclaration {typ} monte-lit",
+                        detail=f"{S.ASCENSEURS[asc]}, retour estimé {fin:%H:%M}", motif="Incident logistique")
             st.session_state["flash_urgence"] = ("ok", f"{S.ASCENSEURS[asc]} : {typ} enregistrée jusqu'à {fin:%H:%M}.")
             st.rerun()
     with c2.container(border=True):
@@ -184,8 +204,9 @@ def _logistique(sim: S.Simulation) -> None:
         for asc_id, (deb, f) in pannes.items():
             st.write(f"{S.ASCENSEURS.get(asc_id, asc_id)} — en panne depuis {deb:%H:%M} (estimé {f:%H:%M})")
             if st.button(f"Déclarer {asc_id} réparé", key=f"rep_{asc_id}"):
-                DB.ajouter_evenement(maintenant, "fin_panne", {"ascenseur": asc_id}, u["login"])
-                C.tracer("fin de panne ascenseur", asc_id)
+                C.appliquer(lambda: DB.ajouter_evenement(maintenant, "fin_panne", {"ascenseur": asc_id}, u["login"]),
+                            categorie="Logistique", action="Remise en service monte-lit",
+                            detail=S.ASCENSEURS.get(asc_id, asc_id), motif="Fin d'incident logistique")
                 st.session_state["flash_urgence"] = ("ok", f"{asc_id} remis en service : le SMA tente de ré-avancer "
                                                            "les patients décalés.")
                 st.rerun()
@@ -220,9 +241,12 @@ def _fil(sim: S.Simulation, noms) -> None:
             if evts:
                 eid = st.selectbox("Annuler la saisie d'un événement (erreur de saisie)", [e["id"] for e in evts],
                                    format_func=lambda i: f"#{i}")
-                if st.button("Supprimer cet événement"):
-                    DB.supprimer_evenement(eid)
-                    C.tracer("suppression d'un événement", f"#{eid}")
+                motif = st.text_input("Motif (obligatoire, tracé)", key="motif_sup_evt")
+                if st.button("Supprimer cet événement", disabled=not motif.strip()):
+                    e = next(x for x in evts if x["id"] == eid)
+                    C.appliquer(lambda: DB.supprimer_evenement(eid), categorie="Programme",
+                                action="Suppression d'un événement", motif=motif.strip(),
+                                detail=f"#{eid} {e['type']} du {e['heure']:%d/%m %H:%M} saisi par {e['auteur']}")
                     st.rerun()
     if sim.ignores:
         st.caption(f"{len(sim.ignores)} événement(s) hors de l'horizon du programme ou postérieur(s) à l'heure "

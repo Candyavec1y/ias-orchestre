@@ -9,6 +9,10 @@ Stockage local (SQLite) et mesures de protection des données (RGPD / recommanda
   (âge et non date de naissance, pas de CIM/CCAM associés que le modèle n'utilise pas).
 * Traçabilité : chaque consultation, création, modification, export ou suppression est journalisée
   (qui, quand, quoi) dans journal_acces.
+* Historique médico-légal (table historique) : qui a programmé, déplacé, annulé quel patient, quand et
+  pourquoi, y compris les déplacements automatiques décidés par le SMA. Table en AJOUT SEUL (triggers SQLite
+  qui refusent UPDATE/DELETE), lignes horodatées et scellées par une chaîne HMAC-SHA256 dont la clé est
+  stockée hors de la base : toute modification faite en dehors de l'application est détectée.
 * Conservation limitée : purge automatique des données patient N jours après l'intervention.
 * Comptes nominatifs, mots de passe hachés (PBKDF2-SHA256, 310 000 itérations, sel aléatoire).
 * Événementiel : la base garde la liste des événements (inscriptions, urgences, pannes, annulations),
@@ -33,6 +37,8 @@ from . import chemins
 
 FICHIER_BASE = chemins.DOSSIER_DONNEES / "orchestre.db"
 FICHIER_CLE = chemins.DOSSIER_DONNEES / "cle_chiffrement.key"
+FICHIER_CLE_HISTORIQUE = chemins.DOSSIER_DONNEES / "cle_historique.key"
+EMPREINTE_INITIALE = "0" * 64
 ITERATIONS_PBKDF2 = 310_000
 DUREE_CONSERVATION_JOURS_DEFAUT = 30          # après la date d'intervention
 DUREE_JOURNAL_JOURS = 183                     # traces conservées 6 mois (recommandation CNIL)
@@ -61,6 +67,14 @@ CREATE TABLE IF NOT EXISTS evenements (
 CREATE TABLE IF NOT EXISTS journal_acces (
     id INTEGER PRIMARY KEY AUTOINCREMENT, horodatage TEXT, utilisateur TEXT, role TEXT,
     action TEXT, objet TEXT);
+CREATE TABLE IF NOT EXISTS historique (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, horodatage TEXT NOT NULL, heure_metier TEXT, utilisateur TEXT NOT NULL,
+    role TEXT, categorie TEXT, action TEXT NOT NULL, patient TEXT, detail TEXT, motif TEXT,
+    empreinte_prec TEXT NOT NULL, empreinte TEXT NOT NULL);
+CREATE TRIGGER IF NOT EXISTS historique_non_modifiable BEFORE UPDATE ON historique
+    BEGIN SELECT RAISE(ABORT, 'historique non modifiable'); END;
+CREATE TRIGGER IF NOT EXISTS historique_non_supprimable BEFORE DELETE ON historique
+    BEGIN SELECT RAISE(ABORT, 'historique non supprimable'); END;
 """
 
 
@@ -240,6 +254,63 @@ def echecs_recents(login: str, minutes: int = 15) -> int:
 def lire_journal(limite: int = 500) -> list[dict]:
     with connexion() as con:
         return [dict(r) for r in con.execute("SELECT * FROM journal_acces ORDER BY id DESC LIMIT ?", (limite,))]
+
+
+# =============================================================================
+# Historique médico-légal (ajout seul, scellé)
+# =============================================================================
+
+CHAMPS_SCELLES = ("horodatage", "heure_metier", "utilisateur", "role", "categorie", "action", "patient", "detail",
+                  "motif")
+
+
+def _cle_historique() -> bytes:
+    cle = os.environ.get("ORCHESTRE_CLE_HISTORIQUE")
+    if cle:
+        return cle.encode()
+    if not FICHIER_CLE_HISTORIQUE.exists():
+        FICHIER_CLE_HISTORIQUE.write_bytes(secrets.token_hex(32).encode())
+        try:
+            os.chmod(FICHIER_CLE_HISTORIQUE, 0o400)
+        except OSError:
+            pass
+    return FICHIER_CLE_HISTORIQUE.read_bytes()
+
+
+def _sceller(precedente: str, ligne: dict) -> str:
+    contenu = json.dumps([precedente] + [ligne.get(k) or "" for k in CHAMPS_SCELLES], ensure_ascii=False)
+    return hmac.new(_cle_historique(), contenu.encode(), hashlib.sha256).hexdigest()
+
+
+def historiser(utilisateur: str, role: str, categorie: str, action: str, *, patient: str = "", detail: str = "",
+               motif: str = "", heure_metier: Optional[datetime] = None) -> None:
+    """Ajoute une ligne scellée à l'historique (aucune fonction ne permet de la modifier ni de la supprimer)."""
+    ligne = {"horodatage": horodatage(), "utilisateur": utilisateur, "role": role, "categorie": categorie,
+             "action": action, "patient": patient, "detail": detail, "motif": motif,
+             "heure_metier": heure_metier.isoformat(timespec="minutes") if heure_metier else ""}
+    with connexion() as con:
+        r = con.execute("SELECT empreinte FROM historique ORDER BY id DESC LIMIT 1").fetchone()
+        prec = r["empreinte"] if r else EMPREINTE_INITIALE
+        con.execute(f"INSERT INTO historique ({', '.join(CHAMPS_SCELLES)}, empreinte_prec, empreinte) "
+                    f"VALUES ({', '.join('?' * (len(CHAMPS_SCELLES) + 2))})",
+                    (*(ligne[k] for k in CHAMPS_SCELLES), prec, _sceller(prec, ligne)))
+
+
+def lire_historique() -> list[dict]:
+    with connexion() as con:
+        return [dict(r) for r in con.execute("SELECT * FROM historique ORDER BY id DESC")]
+
+
+def verifier_historique() -> tuple[bool, int, Optional[int]]:
+    """Recalcule toute la chaîne : (intègre ?, nombre de lignes, id de la première ligne altérée)."""
+    with connexion() as con:
+        lignes = [dict(r) for r in con.execute("SELECT * FROM historique ORDER BY id")]
+    prec = EMPREINTE_INITIALE
+    for l in lignes:
+        if l["empreinte_prec"] != prec or l["empreinte"] != _sceller(prec, l):
+            return False, len(lignes), l["id"]
+        prec = l["empreinte"]
+    return True, len(lignes), None
 
 
 # =============================================================================

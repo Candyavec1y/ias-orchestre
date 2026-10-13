@@ -165,8 +165,10 @@ def est(*roles: str) -> bool:
 
 
 def tracer(action: str, objet: str = "") -> None:
+    """Journal des accès + historique scellé (catégorie « Accès et administration »)."""
     u = utilisateur() or {"login": "anonyme", "role": "-"}
     DB.tracer(u["login"], u["role"], action, objet)
+    DB.historiser(u["login"], u["role"], "Accès et administration", action, detail=objet, heure_metier=maintenant())
 
 
 def verifier_inactivite() -> None:
@@ -248,6 +250,78 @@ def simulation() -> Optional[S.Simulation]:
         return None
     cle = f"{cfg['lundi']}|{cfg['calcule_le']}"
     return _simulation(cle, DB.empreinte_evenements(), maintenant().isoformat())
+
+
+# =============================================================================
+# Historique : actions sur le programme et déplacements qu'elles provoquent
+# =============================================================================
+
+SYSTEME = "système (régulation automatique)"
+
+
+def _etat_programme(sim: Optional[S.Simulation]) -> dict[int, tuple]:
+    if sim is None:
+        return {}
+    etat = {it.pid: ("programmé", it.salle_id, it.debut, it.chirurgien_id) for it in sim.interventions()}
+    for it, _ in sim.en_attente():
+        etat[it.pid] = ("attente", None, None, it.chirurgien_initial)
+    return etat
+
+
+def _lieu(sim: S.Simulation, e: tuple) -> str:
+    statut, salle, debut, chir = e
+    if statut == "attente":
+        return "liste d'attente"
+    return (f"{sim.modele.salles[salle].nom_affiche}, {jour_long(debut.date())} {debut:%H:%M}, "
+            f"Dr {S.code_chirurgien(chir)}")
+
+
+def _mouvement(a: Optional[tuple], b: Optional[tuple]) -> str:
+    if a is None:
+        return "Mise en liste d'attente" if b[0] == "attente" else "Placement au programme"
+    if b is None:
+        return "Retrait du programme"
+    if a[0] == "attente":
+        return "Sortie de liste d'attente"
+    if b[0] == "attente":
+        return "Déprogrammation (liste d'attente)"
+    if a[2].date() != b[2].date():
+        return "Report à un autre jour"
+    if a[3] != b[3]:
+        return "Reprise par un confrère"
+    if a[2] != b[2]:
+        minutes = int((b[2] - a[2]).total_seconds() // 60)
+        return f"Décalage {minutes:+d} min" if minutes > 0 else f"Avancement {minutes:+d} min"
+    return "Changement de salle"
+
+
+def appliquer(modification, *, categorie: str, action: str, patient: str = "", detail: str = "",
+              motif: str = "") -> Optional[S.Simulation]:
+    """Exécute `modification` (ajout ou retrait d'événements), l'historise avec son auteur et son motif, puis
+    historise chaque patient que la régulation automatique a déplacé en conséquence. Renvoie la simulation à jour."""
+    u = utilisateur() or {"login": "anonyme", "role": "-"}
+    instant = maintenant()
+    avant = simulation()
+    etat_avant, noms = _etat_programme(avant), noms_patients(avant) if avant else {}
+    modification()
+    DB.tracer(u["login"], u["role"], action, patient or detail)
+    DB.historiser(u["login"], u["role"], categorie, action, patient=patient, detail=detail, motif=motif,
+                  heure_metier=instant)
+    apres = simulation()
+    if apres is None:
+        return None
+    noms.update(noms_patients(apres))
+    etat_apres = _etat_programme(apres)
+    cause = f"Conséquence de : {action}{' ' + patient if patient else ''} ({u['login']})"
+    for pid in sorted(set(etat_avant) | set(etat_apres)):
+        a, b = etat_avant.get(pid), etat_apres.get(pid)
+        if a == b:
+            continue
+        trajet = (f"{_lieu(avant, a)} → {_lieu(apres, b)}" if a and b
+                  else _lieu(apres, b) if b else f"était : {_lieu(avant, a)}")
+        DB.historiser(SYSTEME, "automatique", "Décision automatique", _mouvement(a, b),
+                      patient=noms.get(pid, f"P{pid}"), detail=trajet, motif=cause, heure_metier=instant)
+    return apres
 
 
 def garantir_programme() -> Optional[P.Programme]:

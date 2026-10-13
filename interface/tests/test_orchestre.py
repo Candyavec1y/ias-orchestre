@@ -89,3 +89,24 @@ def test_stockage_chiffrement_et_mdp(tmp_path, monkeypatch):
     assert DB.mot_de_passe_robuste("court") and not DB.mot_de_passe_robuste("Mot-de-passe-2026!")
     DB.supprimer_patient(f["id"])
     assert DB.patient(f["id"]) is None
+
+
+def test_historique_ajout_seul_et_scelle(tmp_path, monkeypatch):
+    import sqlite3
+    monkeypatch.setattr(DB, "FICHIER_BASE", tmp_path / "t.db")
+    monkeypatch.setattr(DB, "FICHIER_CLE_HISTORIQUE", tmp_path / "h.key")
+    DB.initialiser()
+    DB.historiser("regulation", "regulation", "Urgence", "Déclaration d'urgence", patient="URG-001",
+                  detail="vitale", motif="polytraumatisé", heure_metier=datetime(2026, 10, 13, 9, 0))
+    DB.historiser("système (SMA)", "automatique", "Décision automatique", "Décalé +30 min", patient="DEMO-0001",
+                  motif="Conséquence de : Déclaration d'urgence URG-001")
+    assert DB.verifier_historique() == (True, 2, None)
+    con = sqlite3.connect(tmp_path / "t.db")
+    for sql in ("UPDATE historique SET motif='x' WHERE id=1", "DELETE FROM historique WHERE id=1"):
+        with pytest.raises(sqlite3.DatabaseError):
+            con.execute(sql)
+    # falsification hors application (triggers supprimés) : la chaîne de sceaux la détecte
+    con.execute("DROP TRIGGER historique_non_modifiable")
+    con.execute("UPDATE historique SET motif='autre motif' WHERE id=1")
+    con.commit()
+    assert DB.verifier_historique() == (False, 2, 1)

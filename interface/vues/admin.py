@@ -86,9 +86,10 @@ def _horloge() -> None:
     with st.popover("Réinitialiser la démonstration"):
         st.write("Supprime tous les événements (inscriptions, urgences, pannes). Les fiches patients sont conservées "
                  "avec le statut « à programmer ».")
-        if st.button("Confirmer", type="primary"):
-            DB.vider_evenements()
-            C.tracer("réinitialisation des événements")
+        motif = st.text_input("Motif (obligatoire, tracé)", key="motif_reinit")
+        if st.button("Confirmer", type="primary", disabled=not motif.strip()):
+            C.appliquer(DB.vider_evenements, categorie="Programme", action="Réinitialisation de tous les événements",
+                        motif=motif.strip())
             st.rerun()
 
 

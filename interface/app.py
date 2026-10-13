@@ -104,7 +104,8 @@ if C.utilisateur().get("doit_changer"):
 # Navigation
 # =============================================================================
 
-from vues import accueil, admin, confidentialite, consultation, dashboard, patients, planning, urgences  # noqa: E402
+from vues import (accueil, admin, confidentialite, consultation, dashboard, historique, patients,  # noqa: E402
+                  planning, urgences)
 
 u = C.utilisateur()
 if not st.session_state.get("purge_faite"):          # conservation limitée (RGPD) : purge à chaque ouverture de session
@@ -144,7 +145,8 @@ pages = {
 }
 if u["role"] == "admin":
     pages = {"Pilotage": [st.Page(dashboard.afficher, title="Tableau de bord", url_path="tableau-de-bord",
-                                  default=True)], **pages}
+                                  default=True),
+                          st.Page(historique.afficher, title="Historique", url_path="historique")], **pages}
     pages["Compte"].insert(0, st.Page(admin.afficher, title="Administration", url_path="admin"))
 
 st.session_state["_pages"] = [p for groupe in pages.values() for p in groupe]
