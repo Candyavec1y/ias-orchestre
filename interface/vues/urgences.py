@@ -21,7 +21,7 @@ from vues import graphiques as G
 
 
 def afficher() -> None:
-    C.entete("🚑 Urgences et aléas", "Le système multi-agent insère les urgences et adapte le programme en "
+    C.entete("Urgences et aléas", "Le système multi-agent insère les urgences et adapte le programme en "
                                      "temps réel, en le modifiant le moins possible.")
     sim = C.simulation()
     if sim is None:
@@ -29,15 +29,19 @@ def afficher() -> None:
         return
     noms = C.noms_patients(sim)
     _bandeau(sim, noms)
-    t1, t2, t3, t4 = st.tabs(["Déclarer une urgence", "Incident logistique", "Fil des décisions", "Messages entre agents"])
+    if not C.est("admin"):              # traces internes du système multi-agent : administrateur uniquement
+        t1, t2 = st.tabs(["Déclarer une urgence", "Incident logistique"])
+    else:
+        t1, t2, t3, t4 = st.tabs(["Déclarer une urgence", "Incident logistique", "Fil des décisions",
+                                  "Messages entre agents"])
+        with t3:
+            _fil(sim, noms)
+        with t4:
+            _messages(sim, noms)
     with t1:
         _urgence(sim)
     with t2:
         _logistique(sim)
-    with t3:
-        _fil(sim, noms)
-    with t4:
-        _messages(sim, noms)
 
 
 def _bandeau(sim: S.Simulation, noms) -> None:
@@ -51,9 +55,9 @@ def _bandeau(sim: S.Simulation, noms) -> None:
     c4.metric("Reportés / repris", f"{b['patients_reportes_autre_jour']} / {b['patients_repris_par_un_confrere']}")
     c5.metric("Liste d'attente", b["patients_en_liste_attente"])
     for a in b["alertes"][-5:]:
-        st.error("⚠ " + C.lisible(a, noms))
+        st.error(C.lisible(a, noms))
     for asc, (deb, fin) in sim.pannes().items():
-        st.warning(f"🛗 {S.ASCENSEURS.get(asc, asc)} en panne depuis {deb:%H:%M}, retour estimé {fin:%H:%M} : "
+        st.warning(f"{S.ASCENSEURS.get(asc, asc)} en panne depuis {deb:%H:%M}, retour estimé {fin:%H:%M} : "
                    "les patients hospitalisés ne peuvent pas monter au bloc ni en redescendre.")
 
 
@@ -73,8 +77,10 @@ def _urgence(sim: S.Simulation) -> None:
         voc = ml.vocabulaires()
         with st.form("estimation_urgence"):
             c1, c2, c3 = st.columns(3)
-            cim = c1.selectbox("CIM-10", voc["cim_diag_pr"], index=None, accept_new_options=True, placeholder="ex. S72.0")
-            ccam = c2.selectbox("CCAM", voc["ccam_1"], index=None, accept_new_options=True, placeholder="ex. NBCA006")
+            cim = c1.selectbox("CIM-10", voc["cim_diag_pr"], index=None, accept_new_options=True,
+                               format_func=lambda c: ml.avec_libelle(c, "cim"), placeholder="ex. fracture du col ou S72.0")
+            ccam = c2.selectbox("CCAM", voc["ccam_1"], index=None, accept_new_options=True,
+                                format_func=lambda c: ml.avec_libelle(c, "ccam"), placeholder="ex. ostéosynthèse ou NBCA006")
             interv = c3.selectbox("Type d'intervention", voc["type_intervention"], index=None, accept_new_options=True,
                                   placeholder="Choisir ou saisir…")
             c1, c2, c3 = st.columns(3)

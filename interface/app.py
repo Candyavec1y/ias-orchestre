@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import streamlit as st  # noqa: E402
 
-st.set_page_config(page_title="OR'CHESTRE — Bloc opératoire", page_icon="🩺", layout="wide",
+st.set_page_config(page_title="OR'CHESTRE — Bloc opératoire", page_icon=str(Path(__file__).resolve().parent / "logo.png"), layout="wide",
                    initial_sidebar_state="expanded")
 
 from orchestre import stockage as DB  # noqa: E402
@@ -34,9 +34,11 @@ st.markdown(C.CSS, unsafe_allow_html=True)
 # =============================================================================
 
 def page_connexion() -> None:
-    _, centre, _ = st.columns([1, 1.3, 1])
+    st.markdown("<div class='arc-deco'></div>", unsafe_allow_html=True)
+    _, centre, _ = st.columns([0.22, 1.25, 1.6])
     with centre:
-        st.markdown("# 🩺 OR'CHESTRE")
+        st.markdown(f"<div class='hero'>{C.marque(nom='IAS')}<div class='titre'>OR'CHESTRE</div>"
+                    "<div class='accroche'>Outil d'aide à la décision</div></div>", unsafe_allow_html=True)
         st.markdown("<div class='petit'>Aide à la décision pour la programmation du bloc opératoire — "
                     "accès réservé aux professionnels habilités.</div>", unsafe_allow_html=True)
         if msg := st.session_state.pop("message_connexion", None):
@@ -102,7 +104,7 @@ if C.utilisateur().get("doit_changer"):
 # Navigation
 # =============================================================================
 
-from vues import accueil, admin, confidentialite, consultation, patients, planning, urgences  # noqa: E402
+from vues import accueil, admin, confidentialite, consultation, dashboard, patients, planning, urgences  # noqa: E402
 
 u = C.utilisateur()
 if not st.session_state.get("purge_faite"):          # conservation limitée (RGPD) : purge à chaque ouverture de session
@@ -112,11 +114,16 @@ if not st.session_state.get("purge_faite"):          # conservation limitée (RG
     st.session_state["purge_faite"] = True
 C.garantir_programme()
 
+if u["role"] == "admin":
+    st.markdown(C.CSS_ADMIN, unsafe_allow_html=True)
+
 with st.sidebar:
-    st.markdown("### 🩺 OR'CHESTRE")
+    st.markdown(C.marque("Outil d'aide à la décision"), unsafe_allow_html=True)
+    if u["role"] == "admin":
+        st.markdown("<span class='bandeau-admin'>ADMINISTRATEUR</span>", unsafe_allow_html=True)
     st.markdown(f"**{u['nom_affiche']}**  \n<span class='petit'>{DB.ROLES[u['role']]}</span>", unsafe_allow_html=True)
     h = C.horloge()
-    st.markdown(f"🕒 **{C.jour_long(C.maintenant().date())} — {C.maintenant():%H:%M}**")
+    st.markdown(f"**{C.jour_long(C.maintenant().date())} — {C.maintenant():%H:%M}**")
     if h.get("mode") == "demo":
         st.markdown(C.badge("horloge de démonstration", "ambre"), unsafe_allow_html=True)
     if st.button("Se déconnecter", width="stretch"):
@@ -126,17 +133,19 @@ with st.sidebar:
 
 pages = {
     "Bloc opératoire": [
-        st.Page(accueil.afficher, title="Accueil", icon="🏠", url_path="accueil", default=True),
-        st.Page(consultation.afficher, title="Consultation", icon="📝", url_path="consultation"),
-        st.Page(planning.afficher, title="Planning", icon="📅", url_path="planning"),
-        st.Page(urgences.afficher, title="Urgences", icon="🚑", url_path="urgences"),
+        st.Page(accueil.afficher, title="Accueil", url_path="accueil", default=u["role"] != "admin"),
+        st.Page(consultation.afficher, title="Consultation", url_path="consultation"),
+        st.Page(planning.afficher, title="Planning", url_path="planning"),
+        st.Page(urgences.afficher, title="Urgences", url_path="urgences"),
         st.Page(patients.afficher, title="Mes patients" if u["role"] == "chirurgien" else "Patients",
-                icon="👥", url_path="patients"),
+                url_path="patients"),
     ],
-    "Compte": [st.Page(confidentialite.afficher, title="Confidentialité", icon="🔒", url_path="confidentialite")],
+    "Compte": [st.Page(confidentialite.afficher, title="Confidentialité", url_path="confidentialite")],
 }
 if u["role"] == "admin":
-    pages["Compte"].insert(0, st.Page(admin.afficher, title="Administration", icon="⚙️", url_path="admin"))
+    pages = {"Pilotage": [st.Page(dashboard.afficher, title="Tableau de bord", url_path="tableau-de-bord",
+                                  default=True)], **pages}
+    pages["Compte"].insert(0, st.Page(admin.afficher, title="Administration", url_path="admin"))
 
 st.session_state["_pages"] = [p for groupe in pages.values() for p in groupe]
 st.navigation(pages).run()

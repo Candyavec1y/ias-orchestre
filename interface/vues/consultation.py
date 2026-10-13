@@ -28,8 +28,7 @@ def _reinitialiser() -> None:
 
 
 def afficher() -> None:
-    C.entete("📝 Consultation", "Données de consultation → prédictions du modèle → validation par le chirurgien "
-                                "→ créneaux proposés par le système multi-agent.")
+    C.entete("Consultation")
     if msg := st.session_state.pop("flash", None):
         st.success(msg + " Retrouvez-le dans l'onglet Patients.")
     e = _etat()
@@ -72,10 +71,13 @@ def _etape_saisie() -> None:
         st.markdown("#### Diagnostic et acte")
         c1, c2 = st.columns(2)
         cim = c1.selectbox("Diagnostic principal (CIM-10)", voc["cim_diag_pr"], index=_index(voc["cim_diag_pr"], anc.get("cim")),
-                           accept_new_options=True, placeholder="ex. M17.1 — tapez pour filtrer",
-                           help="Liste = codes connus du modèle. Un autre code reste possible (fiabilité réduite).")
+                           format_func=lambda c: ml.avec_libelle(c, "cim"), accept_new_options=True,
+                           placeholder="ex. gonarthrose ou M17.1 — tapez pour filtrer",
+                           help="Liste = codes connus du modèle, recherche par mot ou par code. Un autre code reste "
+                                "possible (fiabilité réduite).")
         ccam = c2.selectbox("Acte principal (CCAM)", voc["ccam_1"], index=_index(voc["ccam_1"], anc.get("ccam")),
-                            accept_new_options=True, placeholder="ex. NFKA008 — tapez pour filtrer")
+                            format_func=lambda c: ml.avec_libelle(c, "ccam"), accept_new_options=True,
+                            placeholder="ex. prothèse totale du genou ou NFKA008 — tapez pour filtrer")
         interv = st.selectbox("Type d'intervention", voc["type_intervention"],
                               index=_index(voc["type_intervention"], anc.get("interv")), accept_new_options=True,
                               placeholder="ex. Prothese Totale Genou — tapez pour filtrer")
@@ -177,7 +179,7 @@ def _etape_validation() -> None:
         post = c4.number_input("Nuits après", 0, 30, pred.nuits_post_op)
         prio = c5.selectbox("Priorité clinique", [1, 2, 3, 4], index=pred.priorite - 1, format_func=ml.LIBELLES_PRIORITE.get)
         b1, b2 = st.columns(2)
-        retour = b1.form_submit_button("← Modifier la saisie", width="stretch")
+        retour = b1.form_submit_button("Modifier la saisie", width="stretch")
         chercher = b2.form_submit_button("Rechercher des créneaux", type="primary", width="stretch")
     if retour:
         e["etape"] = 1
@@ -228,9 +230,10 @@ def _etape_creneaux() -> None:
     cols = st.columns(max(1, min(4, len(props))))
     for i, (col, p) in enumerate(zip(cols, props)):
         with col, st.container(border=True):
-            st.markdown(f"**{'⭐ ' if i == 0 else ''}{C.jour_long(p['jour'])}**")
-            st.markdown(f"🕐 **{p['debut']:%H:%M} – {p['fin']:%H:%M}**  \n🏥 {p['salle']} · vacation {p['vacation']}  \n"
-                        f"👨‍⚕️ Dr {p['chirurgien']}" + (" " + C.badge("confrère", "ambre") if p["changement_chirurgien"] else ""),
+            st.markdown(f"**{C.jour_long(p['jour'])}**" + (" " + C.badge("recommandé", "vert") if i == 0 else ""),
+                            unsafe_allow_html=True)
+            st.markdown(f"**{p['debut']:%H:%M} – {p['fin']:%H:%M}**  \n{p['salle']} · vacation {p['vacation']}  \n"
+                        f"Dr {p['chirurgien']}" + (" " + C.badge("confrère", "ambre") if p["changement_chirurgien"] else ""),
                         unsafe_allow_html=True)
             st.markdown(f"<span class='petit'>Lits ce jour : {p['lits_jour']} · ambulatoire : {p['places_jour']}</span>",
                         unsafe_allow_html=True)
@@ -238,7 +241,7 @@ def _etape_creneaux() -> None:
             if p["deplaces"]:
                 impacts.append(f"{len(p['deplaces'])} patient(s) décalé(s) dans la vacation")
             for x in p["evinces"]:
-                impacts.append(f"⚠ {C.lisible(x['patient'], noms)} (priorité {x['priorite']}) serait reprogrammé")
+                impacts.append(f"{C.lisible(x['patient'], noms)} (priorité {x['priorite']}) serait reprogrammé")
             if p["hebergement"] != "capacité OK":
                 impacts.append(f"Hébergement : {p['hebergement']}")
             st.markdown("<br>".join(f"<span class='petit'>{t}</span>" for t in impacts) or
@@ -250,7 +253,7 @@ def _etape_creneaux() -> None:
 
     st.write("")
     c1, c2, c3 = st.columns(3)
-    if c1.button("← Modifier les valeurs", width="stretch"):
+    if c1.button("Modifier les valeurs", width="stretch"):
         e["etape"] = 2
         st.rerun()
     if c2.button("Inscrire en liste d'attente", width="stretch",
@@ -281,9 +284,9 @@ def _inscrire(e: dict, proposition) -> None:
     it = sim.intervention(patient.id)
     _reinitialiser()
     if it is not None:
-        st.session_state["flash"] = (f"✔ {fiche['pseudo']} programmé(e) le {C.jour_long(it.debut.date())} à "
+        st.session_state["flash"] = (f"{fiche['pseudo']} programmé(e) le {C.jour_long(it.debut.date())} à "
                                      f"{it.debut:%H:%M} ({sim.modele.salles[it.salle_id].nom_affiche}, "
                                      f"Dr {S.code_chirurgien(it.chirurgien_id)}).")
     else:
-        st.session_state["flash"] = f"✔ {fiche['pseudo']} inscrit(e) en liste d'attente."
+        st.session_state["flash"] = f"{fiche['pseudo']} inscrit(e) en liste d'attente."
     st.rerun()

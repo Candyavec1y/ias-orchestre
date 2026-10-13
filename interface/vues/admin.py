@@ -18,7 +18,7 @@ def afficher() -> None:
     if not C.est("admin"):
         st.error("Accès réservé à l'administrateur.")
         return
-    C.entete("⚙️ Administration")
+    C.entete("Administration")
     t1, t2, t3, t4, t5 = st.tabs(["Comptes", "Horloge", "Conservation des données", "Journal des accès", "Modèle ML"])
     with t1:
         _comptes()

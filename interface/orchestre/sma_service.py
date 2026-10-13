@@ -291,7 +291,7 @@ def _inscrire(m: SMA.BlocOperatoire, c: dict) -> None:
     if c.get("attente"):
         apres = max(m.maintenant, datetime.combine(jour_min, time(0)))
         reg.liste_attente.append((SMA.Intervention(p, 0, apres, 0), jour_min))
-        m.annoncer(f"  ✔ {p.nom} inscrit(e) en liste d'attente (relance chaque matin et à chaque créneau libéré)")
+        m.annoncer(f"  {p.nom} inscrit(e) en liste d'attente (relance chaque matin et à chaque créneau libéré)")
         reg.decisions.append({"type": "consultation_attente", "heure": m.maintenant, "patient": p.id})
         return
     it, props, valides = _appel_offres(m, p, jour_min, c.get("chirurgiens") or [p.chirurgien_id], conv)
@@ -303,16 +303,16 @@ def _inscrire(m: SMA.BlocOperatoire, c: dict) -> None:
     elif valides:
         choix = min(valides, key=lambda v: v[1].cout + v[2])
         if voulu[0] is not None:
-            m.annoncer("  ⚠ Le créneau choisi n'est plus disponible : meilleure alternative retenue")
+            m.annoncer("  Le créneau choisi n'est plus disponible : meilleure alternative retenue")
     if choix is None:
         reg.liste_attente.append((it, jour_min))
-        m.annoncer(f"  ⚠ {p.nom} : aucune place sur les heures du planning -> liste d'attente")
+        m.annoncer(f"  {p.nom} : aucune place sur les heures du planning -> liste d'attente")
         reg.decisions.append({"type": "consultation_attente", "heure": m.maintenant, "patient": p.id})
         return
     agent, plan, extra, note = choix
     retirees = reg._appliquer(agent, plan, props, conv)
     debut = plan.placements[p.id]
-    m.annoncer(f"  ✔ {p.nom} programmé(e) le {SMA.jour_txt(debut.date())} à {SMA.hm(debut)} en "
+    m.annoncer(f"  {p.nom} programmé(e) le {SMA.jour_txt(debut.date())} à {SMA.hm(debut)} en "
                f"{m.annuaire[agent].nom_affiche} ({len(props)} propositions reçues, coût {plan.cout + extra:,.0f})")
     m.annoncer(f"    {plan.resume}")
     if note:
@@ -332,23 +332,23 @@ def _annuler(m: SMA.BlocOperatoire, c: dict) -> None:
     avant = len(reg.liste_attente)
     reg.liste_attente = [(i, j) for i, j in reg.liste_attente if i.pid != pid]
     if len(reg.liste_attente) < avant:
-        m.annoncer("  ✔ retiré(e) de la liste d'attente")
+        m.annoncer("  retiré(e) de la liste d'attente")
         return
     for s in m.salles.values():
         it = s.interventions.get(pid)
         if it is None:
             continue
         if it.debut <= m.maintenant:
-            m.annoncer("  ✗ intervention déjà commencée : annulation impossible")
+            m.annoncer("  intervention déjà commencée : annulation impossible")
             return
         plan = SMA.Plan(s.salle_id, it.fenetre_id, it.debut.date(), {}, retraits=[pid])
         reg.envoyer(f"salle_{s.salle_id}", "ACCEPT_PROPOSAL", "accept_proposal", {"plan": plan}, conv,
                     f"libérer {it.patient.nom or pid}")
-        m.annoncer(f"  ✔ créneau libéré : {s.nom_affiche} {SMA.jour_txt(it.debut.date())} {SMA.hm(it.debut)}")
+        m.annoncer(f"  créneau libéré : {s.nom_affiche} {SMA.jour_txt(it.debut.date())} {SMA.hm(it.debut)}")
         reg.decisions.append({"type": "annulation", "heure": m.maintenant, "patient": pid, "salle": s.salle_id})
         reg._relancer_attente(conv, m.maintenant + m.parametres.preparation_rattrapage_min * SMA.MIN)
         return
-    m.annoncer("  ✗ intervention introuvable")
+    m.annoncer("  intervention introuvable")
 
 
 # =============================================================================

@@ -16,7 +16,7 @@ from vues import commun as C
 def afficher() -> None:
     u = C.utilisateur()
     chir = u["role"] == "chirurgien"
-    C.entete("👥 " + ("Mes patients" if chir else "Patients"),
+    C.entete(("Mes patients" if chir else "Patients"),
              "Patients inscrits depuis l'onglet Consultation (pseudonymisés). Les patients DEMO-xxxx du programme "
              "initial sont fictifs et n'apparaissent pas ici.")
     sim = C.simulation()
@@ -56,7 +56,8 @@ def _detail(f: dict, sim) -> None:
     with c1.container(border=True):
         st.markdown("**Données de consultation (entrées du modèle)**")
         st.markdown(f"Âge {e.get('age_annees', '?'):.0f} ans · {ml.LIBELLES_SEXE.get(str(e.get('sexe')), '?')}  \n"
-                    f"CIM-10 **{e.get('cim_diag_pr')}** · CCAM **{e.get('ccam_1')}**  \n"
+                    f"CIM-10 **{ml.avec_libelle(e.get('cim_diag_pr'), 'cim')}**  \n"
+                    f"CCAM **{ml.avec_libelle(e.get('ccam_1'), 'ccam')}**  \n"
                     f"{e.get('type_intervention')}  \nAnesthésie : {e.get('anesth_type')} / {e.get('anesth_loco_reg')}")
     with c2.container(border=True):
         st.markdown("**Prédiction du modèle → valeur retenue**")

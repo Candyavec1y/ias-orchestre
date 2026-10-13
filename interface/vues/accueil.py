@@ -33,28 +33,28 @@ def afficher() -> None:
     c5.metric("Ambulatoire", f"{occ['places']}/{occ['cap_places']}")
 
     for a in b["alertes"][-3:]:
-        st.error("⚠ " + C.lisible(a, noms))
+        st.error(C.lisible(a, noms))
     if sim.pannes():
-        st.warning("🛗 Monte-lit en panne : voir l'onglet Urgences → Incident logistique.")
+        st.warning("Monte-lit en panne : voir l'onglet Urgences → Incident logistique.")
 
     st.write("")
     l1, l2, l3, l4 = st.columns(4)
     with l1.container(border=True):
-        st.markdown("**📝 Nouvelle consultation**  \n<span class='petit'>Prédictions du modèle et créneaux proposés</span>",
+        st.markdown("**Nouvelle consultation**  \n<span class='petit'>Prédictions du modèle et créneaux proposés</span>",
                     unsafe_allow_html=True)
-        st.page_link(_page("consultation"), label="Ouvrir", icon="➡️")
+        st.page_link(_page("consultation"), label="Ouvrir")
     with l2.container(border=True):
-        st.markdown("**📅 Planning**  \n<span class='petit'>Vacations, programme du jour, métaheuristiques</span>",
+        st.markdown("**Planning**  \n<span class='petit'>Vacations et programme opératoire du jour</span>",
                     unsafe_allow_html=True)
-        st.page_link(_page("planning"), label="Ouvrir", icon="➡️")
+        st.page_link(_page("planning"), label="Ouvrir")
     with l3.container(border=True):
-        st.markdown("**🚑 Urgences**  \n<span class='petit'>Insérer une urgence, déclarer un incident</span>",
+        st.markdown("**Urgences**  \n<span class='petit'>Insérer une urgence, déclarer un incident</span>",
                     unsafe_allow_html=True)
-        st.page_link(_page("urgences"), label="Ouvrir", icon="➡️")
+        st.page_link(_page("urgences"), label="Ouvrir")
     with l4.container(border=True):
-        st.markdown("**👥 Patients**  \n<span class='petit'>Statut, annulation, droits des patients</span>",
+        st.markdown("**Patients**  \n<span class='petit'>Statut, annulation, droits des patients</span>",
                     unsafe_allow_html=True)
-        st.page_link(_page("patients"), label="Ouvrir", icon="➡️")
+        st.page_link(_page("patients"), label="Ouvrir")
 
     if u.get("praticien"):
         cid = S.id_chirurgien(u["praticien"])

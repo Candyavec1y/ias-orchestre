@@ -57,7 +57,7 @@ AVANT_PRODUCTION = """
 
 
 def afficher() -> None:
-    C.entete("🔒 Confidentialité et protection des données")
+    C.entete("Confidentialité et protection des données")
     duree = DB.lire_parametre("duree_conservation_jours", DB.DUREE_CONSERVATION_JOURS_DEFAUT)
     t1, t2, t3 = st.tabs(["Notice d'information patient", "Mesures appliquées", "Avant une mise en production"])
     with t1:

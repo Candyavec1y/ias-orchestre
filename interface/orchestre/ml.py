@@ -16,6 +16,7 @@ import warnings
 from dataclasses import dataclass, field
 from datetime import date
 from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 from . import chemins
@@ -76,6 +77,18 @@ def verifier_codes(cim: str, ccam: str) -> list[str]:
     if ccam and not RE_CCAM.match(normaliser_ccam(ccam)):
         erreurs.append(f"CCAM « {ccam} » : format attendu, ex. NFKA008 (4 lettres + 3 chiffres)")
     return erreurs
+
+
+@lru_cache(maxsize=1)
+def libelles() -> dict:
+    """Libellés officiels des codes connus du modèle : CIM-10 FR (ATIH, 2025) et CCAM V84 (Assurance Maladie)."""
+    return json.loads(Path(__file__).with_name("libelles_codes.json").read_text(encoding="utf-8"))
+
+
+def avec_libelle(code: str, nomenclature: str) -> str:
+    """« M17.1 — Autres gonarthroses primaires » ; `nomenclature` vaut "cim" ou "ccam"."""
+    lib = libelles()[nomenclature].get(code)
+    return f"{code} — {lib}" if lib else code
 
 
 # ---------------------------------------------------------------- prédiction
