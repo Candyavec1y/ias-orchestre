@@ -16,9 +16,7 @@ from vues import commun as C
 def afficher() -> None:
     u = C.utilisateur()
     chir = u["role"] == "chirurgien"
-    C.entete(("Mes patients" if chir else "Patients"),
-             "Patients inscrits depuis l'onglet Consultation (pseudonymisés). Les patients DEMO-xxxx du programme "
-             "initial sont fictifs et n'apparaissent pas ici.")
+    C.entete("Mes patients" if chir else "Patients")
     if msg := st.session_state.pop("flash_patient", None):
         st.success(msg)
     sim = C.simulation()

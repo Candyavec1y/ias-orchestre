@@ -162,6 +162,7 @@ def _programme() -> None:
     # un chirurgien ne voit que son propre programme ; la régulation et l'administrateur voient tout le bloc
     # (dont l'occupation des lits et des places)
     restreint = u["role"] == "chirurgien"
+    cadre = u["role"] == "regulation"
     occ = sim.occupation(jour)
     c2.markdown("<br>" + ("" if restreint else
                           C.badge(f"Lits {occ['lits']}/{occ['cap_lits']} (+{occ['reserve']} réserve)",
@@ -201,7 +202,7 @@ def _programme() -> None:
         st.info("Aucune de vos interventions ce jour." if restreint
                 else "Aucune intervention ce jour (week-end ou jour sans vacation).")
 
-    if not restreint:
+    if not restreint and not cadre:
         with st.expander("Occupation des lits et des places ambulatoires sur l'horizon"):
             st.plotly_chart(G.occupation_hebergement(sim), width="stretch", config={"displayModeBar": False})
     attente = [(i, j) for i, j in sim.en_attente() if not restreint or i.chirurgien_initial == moi]
@@ -211,8 +212,9 @@ def _programme() -> None:
                                         "Durée (min)": i.patient.duree_bloc, "Priorité": i.patient.priorite,
                                         "Depuis le": j.strftime("%d/%m")} for i, j in attente]),
                          hide_index=True, width="stretch")
-    st.caption("Programme initial fictif (patients DEMO-xxxx générés par le générateur commun de l'étude) "
-               "+ patients inscrits en consultation (PAT-…) + urgences (URG-…).")
+    if not cadre:
+        st.caption("Programme initial fictif (patients DEMO-xxxx générés par le générateur commun de l'étude) "
+                   "+ patients inscrits en consultation (PAT-…) + urgences (URG-…).")
 
 
 # =============================================================================
