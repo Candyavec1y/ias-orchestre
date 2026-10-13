@@ -19,12 +19,14 @@ from vues import graphiques as G
 
 
 def afficher() -> None:
-    C.entete("Planning", "Planning fixe des vacations et programme opératoire du jour.")
-    t1, t2 = st.tabs(["Vacations des chirurgiens", "Programme opératoire"])
+    C.entete("Planning")
+    t1, t2, t3 = st.tabs(["Vacations des chirurgiens", "Programme opératoire", "Bloc"])
     with t1:
         _vacations()
     with t2:
         _programme()
+    with t3:
+        _bloc()
 
 
 # =============================================================================
@@ -56,15 +58,28 @@ def grille_html(cases: list[P.CaseVacation], lundi: date, moi: str = "",
     return h + "</table>"
 
 
+def _decaler_semaine(n: int) -> None:
+    st.session_state["sem_vac"] = P.lundi_de(st.session_state["sem_vac"]) + timedelta(weeks=n)
+
+
+def _libelle_semaine(lundi: date) -> str:
+    ven = lundi + timedelta(days=4)
+    debut = f"{lundi.day}" if lundi.month == ven.month else f"{lundi.day} {C.MOIS[lundi.month - 1]}"
+    return f"Semaine du {debut} au {ven.day} {C.MOIS[ven.month - 1]} {ven.year}"
+
+
 def _vacations() -> None:
     u = C.utilisateur()
-    c1, c2 = st.columns([1, 2])
-    jour = c1.date_input("Semaine du", value=C.maintenant().date(), format="DD/MM/YYYY", key="sem_vac")
-    lundi = P.lundi_de(jour)
-    type_sem, cases = P.planning_semaine_v28(lundi)
-    c2.markdown("<br>" + C.badge(C.libelle_semaine(type_sem), "bleu")
-                + C.badge(f"{lundi:%d/%m} → {lundi + timedelta(days=4):%d/%m/%Y}")
-                + C.badge("source : planning_vacations_v28"), unsafe_allow_html=True)
+    st.session_state.setdefault("sem_vac", C.maintenant().date())
+    with st.container(border=True):
+        c1, c2, c3, c4 = st.columns([0.8, 1.3, 0.8, 2.6], vertical_alignment="bottom")
+        c1.button("← Précédente", on_click=_decaler_semaine, args=(-1,), width="stretch")
+        jour = c2.container(key="selecteur_semaine").date_input("Semaine", format="DD/MM/YYYY", key="sem_vac")
+        c3.button("Suivante →", on_click=_decaler_semaine, args=(1,), width="stretch")
+        lundi = P.lundi_de(jour)
+        type_sem, cases = P.planning_semaine_v28(lundi)
+        c4.markdown(f"<div class='petit'>{_libelle_semaine(lundi)} · {C.libelle_semaine(type_sem)}</div>",
+                    unsafe_allow_html=True)
     st.markdown(grille_html(cases, lundi, u.get("praticien", ""), _operations_cliquables(cases)),
                 unsafe_allow_html=True)
     st.caption("Cycle de 4 semaines (impaire A, paire, impaire B, paire) déduit de la date. Les vacations qui "
@@ -140,7 +155,8 @@ def _programme() -> None:
     aujourd = C.maintenant().date()
     defaut = next((j for j in jours if j >= aujourd), jours[0])
     c1, c2 = st.columns([1, 2])
-    jour = c1.selectbox("Jour", jours, index=jours.index(defaut), format_func=C.jour_long, key="jour_prog")
+    jour = c1.container(key="selecteur_jour_prog").selectbox("Jour", jours, index=jours.index(defaut),
+                                                             format_func=C.jour_long, key="jour_prog")
     noms = C.noms_patients(sim)
     moi = S.id_chirurgien(u["praticien"]) if u.get("praticien") else None
     # un chirurgien ne voit que son propre programme ; la régulation et l'administrateur voient tout le bloc
@@ -197,3 +213,24 @@ def _programme() -> None:
                          hide_index=True, width="stretch")
     st.caption("Programme initial fictif (patients DEMO-xxxx générés par le générateur commun de l'étude) "
                "+ patients inscrits en consultation (PAT-…) + urgences (URG-…).")
+
+
+# =============================================================================
+# 3. Bloc : occupation des salles, sans aucune information patient
+# =============================================================================
+
+def _bloc() -> None:
+    sim = C.simulation()
+    if sim is None:
+        st.info("Aucun programme calculé.")
+        return
+    jours = sim.jours()
+    aujourd = C.maintenant().date()
+    if st.session_state.get("jour_bloc") not in jours:
+        st.session_state["jour_bloc"] = aujourd if aujourd in jours else next((j for j in jours if j >= aujourd),
+                                                                               jours[0])
+    st.columns([1, 2])[0].container(key="selecteur_jour_bloc").selectbox("Jour", jours, format_func=C.jour_long,
+                                                                         key="jour_bloc")
+    st.plotly_chart(G.bloc_occupe(sim, st.session_state["jour_bloc"]), width="stretch",
+                    config={"displayModeBar": False})
+    st.caption("Cases grisées : salle occupée. Cadres : vacations et plages d'urgences ouvertes ce jour-là.")

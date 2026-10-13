@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Onglet ADMINISTRATION : comptes, horloge de démonstration, conservation (RGPD), traces, modèle."""
+"""Onglet ADMINISTRATION : comptes et horloge de démonstration."""
 from __future__ import annotations
 
 import secrets
@@ -8,7 +8,6 @@ from datetime import datetime, time, timedelta
 import pandas as pd
 import streamlit as st
 
-from orchestre import ml
 from orchestre import programme as P
 from orchestre import stockage as DB
 from vues import commun as C
@@ -19,17 +18,11 @@ def afficher() -> None:
         st.error("Accès réservé à l'administrateur.")
         return
     C.entete("Administration")
-    t1, t2, t3, t4, t5 = st.tabs(["Comptes", "Horloge", "Conservation des données", "Journal des accès", "Modèle ML"])
+    t1, t2 = st.tabs(["Comptes", "Horloge"])
     with t1:
         _comptes()
     with t2:
         _horloge()
-    with t3:
-        _conservation()
-    with t4:
-        _journal()
-    with t5:
-        _modele()
 
 
 def _comptes() -> None:
@@ -86,58 +79,12 @@ def _horloge() -> None:
     with st.popover("Réinitialiser la démonstration"):
         st.write("Supprime tous les événements (inscriptions, urgences, pannes). Les fiches patients sont conservées "
                  "avec le statut « à programmer ».")
-        motif = st.text_input("Motif (obligatoire, tracé)", key="motif_reinit")
-        if st.button("Confirmer", type="primary", disabled=not motif.strip()):
+        with st.form("form_reinit", border=False):
+            motif = st.text_input("Motif (obligatoire, tracé)")
+            ok_r = st.form_submit_button("Confirmer", type="primary")
+        if ok_r and not motif.strip():
+            st.error("Indiquez le motif de la réinitialisation.")
+        elif ok_r:
             C.appliquer(DB.vider_evenements, categorie="Programme", action="Réinitialisation de tous les événements",
                         motif=motif.strip())
             st.rerun()
-
-
-def _conservation() -> None:
-    duree = DB.lire_parametre("duree_conservation_jours", DB.DUREE_CONSERVATION_JOURS_DEFAUT)
-    st.markdown("Les données de cette application sont des données **de travail** pour la programmation : le dossier "
-                "médical de référence reste le DPI de l'établissement. Elles sont supprimées automatiquement après "
-                "l'intervention ; les traces d'accès sont conservées 6 mois.")
-    n = st.number_input("Durée de conservation après l'intervention (jours)", 1, 365, int(duree))
-    c1, c2 = st.columns(2)
-    if c1.button("Enregistrer"):
-        DB.ecrire_parametre("duree_conservation_jours", int(n))
-        C.tracer("durée de conservation", str(n))
-        st.success("Enregistré.")
-    if c2.button("Purger maintenant", type="primary"):
-        sup = DB.purger(int(n))
-        C.tracer("purge RGPD", f"{len(sup)} patient(s)")
-        st.success(f"{len(sup)} fiche(s) supprimée(s)." + (" " + ", ".join(sup) if sup else ""))
-
-
-def _journal() -> None:
-    j = DB.lire_journal(1000)
-    st.caption("Qui a fait quoi et quand (créations, consultations de fiches, déchiffrements, exports, suppressions, "
-               "connexions). Conservation : 6 mois.")
-    st.dataframe(pd.DataFrame(j), hide_index=True, width="stretch", height=480)
-
-
-def _modele() -> None:
-    met = ml.metriques()
-    if not met:
-        st.warning("Jeu de données historique absent : métriques indisponibles.")
-        return
-    st.markdown(f"Validation **80 % / 20 %** (stratifiée sur la capacité, graine 42) : {met['n_train']} séjours "
-                f"d'entraînement, {met['n_test']} de test. Les modèles utilisés en consultation sont ceux du dépôt "
-                f"(`outputs/models_rapide`, réentraînés sur 100 % des données).")
-    st.dataframe(pd.DataFrame([
-        {"Cible": "Ambulatoire / hospitalisation", "Métrique": "exactitude", "Valeur": f"{met['capacite']['accuracy']:.1%}"},
-        {"Cible": "Ambulatoire / hospitalisation", "Métrique": "F1 (hospitalisation)", "Valeur": f"{met['capacite']['f1_lit']:.3f}"},
-        {"Cible": "Durée au bloc", "Métrique": "erreur moyenne", "Valeur": f"{met['duree_bloc_heures']['mae'] * 60:.0f} min"},
-        {"Cible": "Durée au bloc", "Métrique": "R²", "Valeur": f"{met['duree_bloc_heures']['r2']:.3f}"},
-        {"Cible": "Nuits après l'opération", "Métrique": "erreur moyenne", "Valeur": f"{met['nuits_apres']['mae']:.2f} nuit"},
-        {"Cible": "Nuits après l'opération", "Métrique": "erreur ≤ 1 nuit", "Valeur": f"{met['apres_erreur_le_1j_pct']:.1f} %"},
-        {"Cible": "Score d'urgence (1-10)", "Métrique": "exact", "Valeur": f"{met['urgence']['exact_pct']:.1f} %"},
-    ]), hide_index=True, width="stretch")
-    st.caption("Le score d'urgence de l'historique est lui-même calculé par une règle sur les codes CIM/CCAM "
-               "(utilisation_modèle.py) : le modèle apprend cette règle, pas un jugement clinique.")
-    if st.button("Recalculer les métriques"):
-        with st.spinner("Validation 80/20…"):
-            ml.metriques(recalculer=True)
-        C.tracer("recalcul des métriques ML")
-        st.rerun()

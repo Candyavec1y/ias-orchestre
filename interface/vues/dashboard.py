@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import date, datetime
 from html import escape
 
-import pandas as pd
 import streamlit as st
 
 from orchestre import sma_service as S
@@ -129,15 +128,6 @@ def afficher() -> None:
               delta_color="off", delta_arrow="off")
     c4.metric("Reportés", b["patients_reportes_autre_jour"], help="Patients reportés à un autre jour.")
     c5.metric("Repris (confrère)", b["patients_repris_par_un_confrere"])
-
-    with st.expander("Données détaillées"):
-        lits, places = m.hebergement.occupation()
-        st.dataframe(pd.DataFrame([{
-            "Jour": C.jour_long(j), "Occupation bloc (%)": round(taux.get(j, 0), 1),
-            "Lits occupés": lits.get(j, 0), "Capacité lits": occ["cap_lits"],
-            "Places occupées": places.get(j, 0), "Capacité places": occ["cap_places"]} for j in sim.jours()]),
-            hide_index=True, width="stretch")
-
 
 def _tableau_salles(sim: S.Simulation, bloc: dict, du_jour: list, ouvertes: set[int], noms: dict,
                     now: datetime) -> str:

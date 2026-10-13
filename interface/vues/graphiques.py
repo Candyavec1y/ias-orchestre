@@ -167,3 +167,32 @@ def taux_bloc(taux: dict[date, float], aujourd_hui: date) -> go.Figure:
                       yaxis=dict(range=[0, 110], ticksuffix=" %", gridcolor=GRILLE),
                       xaxis=dict(type="category", tickvals=[_jour_court(j) for j in jours if j.weekday() == 0]))
     return fig
+
+
+def bloc_occupe(sim: S.Simulation, jour: date, hauteur_ligne: int = 54) -> go.Figure:
+    """Occupation des salles sans aucune donnée patient ni chirurgien : cadres = plages ouvertes, gris = salle occupée."""
+    salles = list(sim.modele.salles.values())
+    ordre = [s.nom_affiche for s in salles]
+    fig = go.Figure()
+    for f in sim.fenetres_du_jour(jour):
+        fig.add_trace(go.Bar(
+            y=[sim.modele.salles[f.salle_id].nom_affiche], x=[_ms(f.fin - f.debut)], base=[f.debut], orientation="h",
+            width=0.7, marker=dict(color="white", line=dict(color="#C9D3FB", width=1)),
+            hovertemplate=f"Ouverte {f.debut:%H:%M}–{f.fin:%H:%M}<extra></extra>", showlegend=False))
+    for s in salles:
+        for it in s.du_jour(jour):
+            fig.add_trace(go.Bar(
+                y=[s.nom_affiche], x=[_ms(it.duree)], base=[it.debut], orientation="h", width=0.5,
+                marker=dict(color="#8A93B8", line=dict(color="white", width=2), cornerradius=4),
+                hovertemplate=f"Occupée {it.debut:%H:%M}–{it.fin:%H:%M}<extra></extra>", showlegend=False))
+    if sim.maintenant.date() == jour:
+        fig.add_vline(x=sim.maintenant, line=dict(color=NUIT, width=3))
+        fig.add_annotation(x=sim.maintenant, y=1, yref="paper", yanchor="bottom", text=f"<b>{sim.maintenant:%H:%M}</b>",
+                           showarrow=False, bgcolor=NUIT, borderpad=4, font=dict(color="white", size=12))
+    fig.update_layout(
+        barmode="overlay", height=90 + hauteur_ligne * len(salles), margin=dict(l=10, r=10, t=34, b=30),
+        xaxis=dict(type="date", range=[datetime.combine(jour, time(7, 30)), datetime.combine(jour, time(18, 0))],
+                   tickformat="%Hh", dtick=3600 * 1000, gridcolor=GRILLE),
+        yaxis=dict(categoryorder="array", categoryarray=list(reversed(ordre))),
+        plot_bgcolor="#F7F8FC", paper_bgcolor="rgba(0,0,0,0)", font=POLICE, hoverlabel=dict(bgcolor="white"))
+    return fig

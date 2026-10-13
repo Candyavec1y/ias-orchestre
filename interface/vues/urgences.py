@@ -17,12 +17,10 @@ from orchestre import programme as P
 from orchestre import sma_service as S
 from orchestre import stockage as DB
 from vues import commun as C
-from vues import graphiques as G
 
 
 def afficher() -> None:
-    C.entete("Urgences et aléas", "Le système multi-agent insère les urgences et adapte le programme en "
-                                     "temps réel, en le modifiant le moins possible.")
+    C.entete("Urgences et aléas")
     sim = C.simulation()
     if sim is None:
         st.error("Aucun programme opératoire disponible.")
@@ -47,14 +45,7 @@ def afficher() -> None:
 def _bandeau(sim: S.Simulation, noms) -> None:
     if msg := st.session_state.pop("flash_urgence", None):
         {"ok": st.success, "attention": st.warning}.get(msg[0], st.error)(msg[1])
-    b = sim.modele.bilan()
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Urgences insérées", b["urgences_inserees"], f"{b['urgences_dans_delai']} dans le délai", delta_color="off", delta_arrow="off")
-    c2.metric("Attente moyenne", f"{b['attente_moyenne_urgence_min']:.0f} min")
-    c3.metric("Patients décalés", b["patients_decales"], f"{b['minutes_de_decalage_cumulees']} min cumulées", delta_color="off", delta_arrow="off")
-    c4.metric("Reportés / repris", f"{b['patients_reportes_autre_jour']} / {b['patients_repris_par_un_confrere']}")
-    c5.metric("Liste d'attente", b["patients_en_liste_attente"])
-    for a in b["alertes"][-5:]:
+    for a in sim.alertes()[-5:]:
         st.error(C.lisible(a, noms))
     for asc, (deb, fin) in sim.pannes().items():
         st.warning(f"{S.ASCENSEURS.get(asc, asc)} en panne depuis {deb:%H:%M}, retour estimé {fin:%H:%M} : "
@@ -145,7 +136,6 @@ def _urgence(sim: S.Simulation) -> None:
                           heure_metier=maintenant, detail=f"délai maximal {delai} min",
                           motif="Transfert vers un autre établissement à décider par le médecin régulateur")
         if d and d["type"] == "urgence":
-            st.session_state["jour_urg"] = st.session_state["jour_urg_sel"] = d["debut"].date()
             st.session_state["flash_urgence"] = ("ok" if d["dans_delai"] else "attention", (
                 f"URG-{numero:03d} : programmé(e) avec Dr {S.code_chirurgien(d['chirurgien'])} en "
                 f"{sim2.modele.salles[d['salle']].nom_affiche} à {d['debut']:%H:%M} le {C.jour_long(d['debut'].date())} "
@@ -154,18 +144,7 @@ def _urgence(sim: S.Simulation) -> None:
         else:
             st.session_state["flash_urgence"] = ("ko", f"URG-{numero:03d} : aucun créneau du planning ne convient -> "
                                                        "transfert vers un autre établissement (voir alertes).")
-            st.session_state["jour_urg"] = maintenant.date()
         st.rerun()
-
-    st.markdown("#### Programme de la journée")
-    jours = sim.jours()
-    j0 = st.session_state.get("jour_urg", maintenant.date())
-    j0 = j0 if j0 in jours else next((j for j in jours if j >= maintenant.date()), jours[0])
-    if st.session_state.get("jour_urg_sel") not in jours:
-        st.session_state["jour_urg_sel"] = j0
-    jour = st.selectbox("Jour", jours, format_func=C.jour_long, key="jour_urg_sel")
-    st.plotly_chart(G.gantt_jour(sim, jour, C.noms_patients(sim)), width="stretch",
-                    config={"displayModeBar": False})
 
 
 # =============================================================================
@@ -241,8 +220,12 @@ def _fil(sim: S.Simulation, noms) -> None:
             if evts:
                 eid = st.selectbox("Annuler la saisie d'un événement (erreur de saisie)", [e["id"] for e in evts],
                                    format_func=lambda i: f"#{i}")
-                motif = st.text_input("Motif (obligatoire, tracé)", key="motif_sup_evt")
-                if st.button("Supprimer cet événement", disabled=not motif.strip()):
+                with st.form("form_sup_evt", border=False):
+                    motif = st.text_input("Motif (obligatoire, tracé)")
+                    ok_e = st.form_submit_button("Supprimer cet événement")
+                if ok_e and not motif.strip():
+                    st.error("Indiquez le motif de la suppression.")
+                elif ok_e:
                     e = next(x for x in evts if x["id"] == eid)
                     C.appliquer(lambda: DB.supprimer_evenement(eid), categorie="Programme",
                                 action="Suppression d'un événement", motif=motif.strip(),

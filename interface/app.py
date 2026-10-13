@@ -148,6 +148,7 @@ if u["role"] == "admin":
                                   default=True),
                           st.Page(historique.afficher, title="Historique", url_path="historique")], **pages}
     pages["Compte"].insert(0, st.Page(admin.afficher, title="Administration", url_path="admin"))
+    pages["Bloc opératoire"] = [p for p in pages["Bloc opératoire"] if p.url_path != "accueil"]
 
 st.session_state["_pages"] = [p for groupe in pages.values() for p in groupe]
 st.navigation(pages).run()

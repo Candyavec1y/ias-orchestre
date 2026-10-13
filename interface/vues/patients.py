@@ -19,6 +19,8 @@ def afficher() -> None:
     C.entete(("Mes patients" if chir else "Patients"),
              "Patients inscrits depuis l'onglet Consultation (pseudonymisés). Les patients DEMO-xxxx du programme "
              "initial sont fictifs et n'apparaissent pas ici.")
+    if msg := st.session_state.pop("flash_patient", None):
+        st.success(msg)
     sim = C.simulation()
     if sim:
         C.synchroniser_statuts(sim)
@@ -79,16 +81,29 @@ def _detail(f: dict, sim) -> None:
     if f["a_reference"] and b1.button("Afficher la référence dossier", width="stretch"):
         C.tracer("affichage de la référence dossier (déchiffrement)", f["pseudo"])
         st.info(f"Référence dossier : {DB.reference_dossier(f['id'])}")
-    if peut_modifier and f["statut"] in ("programmé", "liste d'attente"):
+    it = sim.intervention(S.pid_consultation(f["id"])) if sim else None
+    commencee = it is not None and it.debut <= sim.maintenant
+    if peut_modifier and f["statut"] in ("programmé", "liste d'attente") and commencee:
+        b2.button("Annuler l'intervention", width="stretch", disabled=True,
+                  help="L'intervention a déjà commencé : elle ne peut plus être annulée.")
+    elif peut_modifier and f["statut"] in ("programmé", "liste d'attente"):
         with b2.popover("Annuler l'intervention", width="stretch"):
-            motif = st.text_input("Motif de l'annulation (obligatoire, tracé)", key=f"motif_ann_{f['id']}",
-                                  placeholder="ex. contre-indication anesthésique, souhait du patient")
-            if st.button("Confirmer l'annulation", type="primary", key=f"ann_{f['id']}", disabled=not motif.strip()):
+            st.write("Retire le patient du programme opératoire et libère son créneau : la régulation le propose "
+                     "aussitôt aux patients de la liste d'attente. La fiche est conservée avec le statut « annulé ».")
+            # formulaire : le motif est transmis en même temps que le clic (sinon le 1er clic est perdu)
+            with st.form(f"form_ann_{f['id']}", border=False):
+                motif = st.text_input("Motif de l'annulation (obligatoire, tracé)",
+                                      placeholder="ex. contre-indication anesthésique, souhait du patient")
+                ok = st.form_submit_button("Confirmer l'annulation", type="primary", width="stretch")
+            if ok and not motif.strip():
+                st.error("Indiquez le motif de l'annulation.")
+            elif ok:
                 C.appliquer(lambda: DB.ajouter_evenement(
                     C.maintenant(), "annulation", {"pid": S.pid_consultation(f["id"]), "nom": f["pseudo"],
                                                    "motif": motif.strip()}, u["login"], f["id"]),
                     categorie="Programme", action="Annulation d'intervention", patient=f["pseudo"],
                     motif=motif.strip())
+                st.session_state["flash_patient"] = f"Intervention de {f['pseudo']} annulée : créneau libéré."
                 st.rerun()
     donnees = DB.exporter_patient(f["id"])
     if b3.download_button("Exporter (droit d'accès)", json.dumps(donnees, ensure_ascii=False, indent=2, default=str),
@@ -98,10 +113,12 @@ def _detail(f: dict, sim) -> None:
         with b4.popover("Supprimer (droit à l'effacement)", width="stretch"):
             st.write("Supprime la fiche et ses événements ; le SMA rejoue le programme sans ce patient. Irréversible. "
                      "L'historique conserve le pseudonyme et le motif (obligation de traçabilité).")
-            motif_s = st.text_input("Motif (obligatoire, tracé)", key=f"motif_sup_{f['id']}",
-                                    placeholder="ex. demande d'effacement du patient")
-            if st.button("Confirmer la suppression", type="primary", key=f"sup_{f['id']}",
-                         disabled=not motif_s.strip()):
+            with st.form(f"form_sup_{f['id']}", border=False):
+                motif_s = st.text_input("Motif (obligatoire, tracé)", placeholder="ex. demande d'effacement du patient")
+                ok_s = st.form_submit_button("Confirmer la suppression", type="primary", width="stretch")
+            if ok_s and not motif_s.strip():
+                st.error("Indiquez le motif de la suppression.")
+            elif ok_s:
                 C.appliquer(lambda: DB.supprimer_patient(f["id"]), categorie="Données patient",
                             action="Suppression de la fiche (droit à l'effacement)", patient=f["pseudo"],
                             motif=motif_s.strip())

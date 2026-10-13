@@ -120,6 +120,14 @@ details.vac.cliquable[open] { background:#fff; box-shadow:0 0 0 2px var(--electr
 .petit { color:var(--discret); font-size:0.85rem; }
 .grille.tdb td { vertical-align: middle; padding: 8px 10px; }
 .grille.tdb small { display:block; color:var(--discret); font-size:0.78rem; }
+/* sélecteurs de période (semaine, jour) : mis en avant */
+div[class*="st-key-selecteur"] label p { font-family: var(--titres); font-stretch: 112%; font-weight: 800;
+        font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--electrique); }
+div[class*="st-key-selecteur"] [data-testid="stDateInputField"],
+div[class*="st-key-selecteur"] .react-aria-ComboBox > div[role="group"] {
+        background: #fff; border: 2px solid var(--electrique); border-radius: 8px; box-shadow: 4px 4px 0 rgba(98,232,180,0.55); }
+div[class*="st-key-selecteur"] input, div[class*="st-key-selecteur"] [data-testid="stDateInputField"] span {
+        font-weight: 700; font-size: 1.02rem; color: var(--texte); }
 .jauge { height:8px; border-radius:4px; background:#E3E8FB; overflow:hidden; min-width:120px; }
 .jauge span { display:block; height:100%; border-radius:4px; background:var(--electrique); }
 </style>
@@ -347,7 +355,7 @@ def synchroniser_statuts(sim: S.Simulation) -> None:
             continue
         pid = S.pid_consultation(f["id"])
         it = sim.intervention(pid)
-        if f["id"] in annules:
+        if f["id"] in annules and it is None:       # annulation refusée si l'intervention avait déjà commencé
             statut, jour = "annulé", f.get("date_intervention")
         elif it is not None:
             statut = "opéré" if it.fin <= sim.maintenant else "programmé"
