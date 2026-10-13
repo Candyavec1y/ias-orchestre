@@ -22,3 +22,9 @@ borderColor = "#5B7BF9"
 
 [client]
 toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+enableXsrfProtection = true

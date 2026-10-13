@@ -2,12 +2,9 @@
 """
 OR'CHESTRE — aide à la décision pour la programmation du bloc opératoire.
 
-Lancer depuis la racine du dépôt :
-    pip install -r interface/requirements.txt
-    streamlit run interface/app.py
-
-Onglets : Accueil · Consultation (ML) · Planning (métaheuristiques) · Urgences (SMA) ·
-Mes patients · Administration · Confidentialité.
+Lancer depuis la racine du dépôt (installation complète : README.md) :
+    python -m pip install -r interface/requirements.txt
+    python -m streamlit run interface/app.py
 """
 from __future__ import annotations
 

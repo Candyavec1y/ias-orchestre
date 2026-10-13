@@ -1,30 +1,29 @@
-# OR'CHESTRE — interface d'aide à la décision du bloc opératoire
+# OR'CHESTRE — interface web
 
-Interface web (Python / Streamlit) qui relie les briques du dépôt :
+Installation et lancement : voir le [README à la racine du dépôt](../README.md).
 
-| Onglet | Brique du dépôt | Rôle |
-|---|---|---|
-| **Consultation** | `machine_learning/` (modèles HistGradientBoosting, validation 80/20) | saisir les données de consultation, obtenir capacité, durée de bloc, nuits pré/post-op, score d'urgence ; le chirurgien valide puis choisit un créneau proposé par le SMA |
-| **Planning** | `planning_vacations/planning_vacations_v28.py`, `metaheuristiques/hybridage2.py`, `recuit_simulé.py` | planning fixe des vacations (parité des semaines), programme opératoire du jour (Gantt), calcul et comparaison des métaheuristiques / hybridations, niveau 1 |
-| **Urgences** | `sma/sma_urgences.py` (Mesa) | déclarer urgences et pannes, suivre décisions, alertes et messages entre agents |
-| **Patients** | — | statut des patients inscrits, annulation, export, effacement (RGPD) |
-| **Administration** | — | comptes, horloge de démonstration, conservation, journal des accès, qualité du modèle |
-| **Confidentialité** | — | notice d'information patient, mesures RGPD / CNIL |
+## Pages et briques du dépôt utilisées
 
-## Démarrage
+| Page | Comptes | Brique du dépôt | Rôle |
+|---|---|---|---|
+| **Tableau de bord** | admin | — | lits et places occupés, occupation du bloc, état des salles, tendances, qualité de service |
+| **Historique** | admin | — | journal horodaté, en ajout seul et scellé, de toutes les actions et des déplacements de patients |
+| **Accueil** | chirurgien, cadre de bloc | `metaheuristiques/`, `SMA/` | chirurgien : son planning et ses patients du jour ; cadre de bloc : programme de toutes les salles |
+| **Consultation** | tous | `machine_learning/` (HistGradientBoosting) | saisie de la consultation, prédictions (capacité, durée, nuits, urgence), validation, choix du créneau |
+| **Planning** | tous | `planning_vacations/planning_vacations_v28.py`, `metaheuristiques/hybridage2.py` | vacations de la semaine, programme opératoire du jour (Gantt), occupation anonyme des salles |
+| **Urgences** | tous | `SMA/sma_urgences.py` (Mesa) | déclarer une urgence ou une panne du monte-lit ; fil des décisions et messages entre agents (admin) |
+| **Patients** | tous (chirurgien : ses patients) | — | statut, annulation, export et effacement (RGPD) |
+| **Administration** | admin | — | comptes, horloge de démonstration |
+| **Confidentialité** | tous | — | notice d'information patient, mesures RGPD / CNIL |
 
-```bash
-pip install -r interface/requirements.txt
-streamlit run interface/app.py
-```
+## Organisation du code
 
-Au premier lancement l'application :
-1. crée `interface/donnees/` (base SQLite, clé de chiffrement, **comptes de démonstration** dans
-   `comptes_demo.txt` — mot de passe à changer à la première connexion) ;
-2. calcule le programme opératoire initial de la semaine en cours (hybridation mémétique, ~10 s).
-
-Pour une démonstration : connectez-vous en `admin`, onglet Administration → Horloge, fixez par exemple
-mardi 9 h 00, puis déclarez une urgence et une panne du monte-lit depuis l'onglet Urgences.
+* `app.py` : connexion, barre latérale et navigation selon le rôle.
+* `vues/` : une page par fichier ; `commun.py` (charte graphique, session, historique), `graphiques.py` (Plotly).
+* `orchestre/` : `ml.py` (prédictions), `programme.py` (métaheuristiques), `sma_service.py` (système
+  multi-agent), `stockage.py` (SQLite, chiffrement, historique scellé), `chemins.py` (accès au dépôt),
+  `libelles_codes.json` (libellés officiels CIM-10 / CCAM).
+* `donnees/` : créé au premier lancement (base, clés, comptes de démonstration) ; **jamais versionné**.
 
 ## Tests
 

@@ -42,8 +42,9 @@ Le dépôt contenait **deux copies divergentes** de `structures_communes.py` :
 Comme tout le système doit partager les mêmes classes (`Patient`, `Vacation`, `InstanceNiveau2`…),
 j'ai créé `commun/structures_communes.py`, **union exacte des deux** (aucune fonction modifiée), et
 l'interface le charge **avant** les autres. Ainsi un `Patient` créé en consultation est exactement
-celui qu'attendent les métaheuristiques et les agents. Je n'ai pas supprimé les deux copies (pour ne
-pas casser vos notebooks) : je recommande de les remplacer par la version fusionnée.
+celui qu'attendent les métaheuristiques et les agents. Les deux copies ont ensuite été supprimées :
+`hybridage2.py`, `recuit_simulé.py`, `sorties.py`, `planning_vacations_v28.py` et `sma_urgences.py` ajoutent
+`commun/` à leur `sys.path` et fonctionnent aussi lancés seuls (sorties identiques avant / après).
 
 ## 3. Chaîne de décision
 

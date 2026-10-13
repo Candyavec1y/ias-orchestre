@@ -21,8 +21,15 @@ from __future__ import annotations
 
 import math
 import random
+import sys
+from pathlib import Path
 
-from structures_communes import (
+# structures_communes.py partagé par tout le dépôt : dossier commun/
+_COMMUN = str(Path(__file__).resolve().parents[1] / "commun")
+if _COMMUN not in sys.path:
+    sys.path.insert(0, _COMMUN)
+
+from structures_communes import (  # noqa: E402
     InstanceNiveau2,
     InstanceProbleme,
     ParametresRecuit,

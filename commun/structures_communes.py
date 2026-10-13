@@ -4,8 +4,9 @@
 # Le dépôt contenait deux copies divergentes de ce fichier :
 #   planning_vacations/ (parité des semaines : type_semaine, planning_pour_semaine, Vacation.semaines)
 #   metaheuristiques/   (priorité : penalite_priorite_patient, calculer_f_priorite, PoidsNiveau2.priorite)
-# Ce fichier est leur UNION, sans aucune modification de code. L'interface le place en tête du
-# sys.path pour que ML, métaheuristiques, hybridation et SMA partagent les MÊMES classes.
+# Ce fichier est leur UNION, sans aucune modification de code ; les deux copies ont été supprimées.
+# Tous les scripts (interface, métaheuristiques, planning v28, SMA) l'importent depuis commun/ et
+# partagent donc les MÊMES classes.
 # ==============================================================================================
 """
 structures_communes.py  (v2)

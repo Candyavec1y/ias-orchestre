@@ -33,13 +33,19 @@ Utilisation type
 from __future__ import annotations
 
 import json
+import sys
 import time as _chrono
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from datetime import date, datetime, time
 from pathlib import Path
 from typing import Any, Callable, Optional, Union
 
-from structures_communes import (
+# structures_communes.py partagé par tout le dépôt : dossier commun/
+_COMMUN = str(Path(__file__).resolve().parents[1] / "commun")
+if _COMMUN not in sys.path:
+    sys.path.insert(0, _COMMUN)
+
+from structures_communes import (  # noqa: E402
     JOURS_FR, EvaluationNiveau2, EvaluationPlanning, InstanceNiveau2, InstanceProbleme, NomAlgo,
     SolutionPatients, SolutionPlanning, Vacation, calculer_occupation_par_jour, construire_vacations,
     evaluer_niveau2, evaluer_planning, vacations_compatibles, verifier_solution_niveau1,

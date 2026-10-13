@@ -60,6 +60,8 @@ try:                                     # script : dossier du fichier ; noteboo
 except NameError:
     _DOSSIER = Path.cwd()
 sys.path.insert(0, str(_DOSSIER))
+if str(_DOSSIER.parent / "commun") not in sys.path:   # structures_communes.py partagé : dossier commun/
+    sys.path.insert(0, str(_DOSSIER.parent / "commun"))
 from structures_communes import (  # noqa: E402
     GRAINE_ETUDE, JOURS_FR, EtatNiveau2, InstanceNiveau2, InstanceProbleme, Individu, ParametresAGS,
     ProblemeGenetique, SolutionPatients, SolutionPlanning, calculer_occupation_par_jour,

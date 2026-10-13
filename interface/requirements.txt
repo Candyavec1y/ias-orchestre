@@ -1,9 +1,12 @@
-streamlit>=1.50       # paramètre width="stretch" des boutons et graphiques
+streamlit>=1.65          # sélecteurs, thème et options d'affichage utilisés par l'interface
 pandas>=2.0
 numpy>=1.24
 scikit-learn>=1.6        # testé avec 1.9.1 (versions avec lesquelles les .joblib du dépôt se chargent)
 joblib>=1.3
 mesa>=3.0
+networkx>=3.0           # importé par mesa 3.x mais non déclaré comme dépendance
 plotly>=5.20
 matplotlib>=3.7
 cryptography>=42
+tzdata                   # fuseau Europe/Paris (indispensable sous Windows)
+pytest>=8                # tests : python -m pytest interface/tests -q

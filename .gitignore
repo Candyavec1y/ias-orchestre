@@ -1,0 +1,6 @@
+# Fichiers système et caches : ne pas versionner
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

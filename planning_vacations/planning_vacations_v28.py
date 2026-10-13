@@ -36,12 +36,20 @@ Conventions
 """
 from __future__ import annotations
 
+import sys
 from collections import Counter, defaultdict
 from datetime import date, time, timedelta
+from pathlib import Path
 from typing import Optional
 
-from structures_communes import (LUNDI_REFERENCE_CYCLE, TYPES_SEMAINE, Chirurgien, Creneau, InstanceNiveau2,
-                                 Salle, Vacation, generer_patients_etude, planning_pour_semaine, type_semaine)
+# structures_communes.py partagé par tout le dépôt : dossier commun/
+_COMMUN = str(Path(__file__).resolve().parents[1] / "commun")
+if _COMMUN not in sys.path:
+    sys.path.insert(0, _COMMUN)
+
+from structures_communes import (LUNDI_REFERENCE_CYCLE, TYPES_SEMAINE, Chirurgien, Creneau,  # noqa: E402
+                                 InstanceNiveau2, Salle, Vacation, generer_patients_etude, planning_pour_semaine,
+                                 type_semaine)
 
 # =============================================================================
 # PARAMÈTRES

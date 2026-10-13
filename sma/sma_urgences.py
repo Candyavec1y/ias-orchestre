@@ -57,8 +57,10 @@ from typing import Any, Optional, Union
 
 import mesa
 
-# --- accès aux fichiers du dépôt (planning_vacations/ contient planning_vacations_v28.py et structures_communes.py)
+# --- accès aux fichiers du dépôt : commun/ (structures_communes.py partagé), planning_vacations/ (planning v28)
 _RACINE = Path(__file__).resolve().parents[1]
+if str(_RACINE / "commun") not in sys.path:
+    sys.path.insert(0, str(_RACINE / "commun"))
 for _dossier in (_RACINE / "planning_vacations", _RACINE / "metaheuristiques"):
     if _dossier.is_dir() and str(_dossier) not in sys.path:
         sys.path.append(str(_dossier))
