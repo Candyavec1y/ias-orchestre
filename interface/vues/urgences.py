@@ -27,15 +27,21 @@ def afficher() -> None:
         return
     noms = C.noms_patients(sim)
     _bandeau(sim, noms)
-    if not C.est("admin"):              # traces internes du système multi-agent : administrateur uniquement
-        t1, t2 = st.tabs(["Déclarer une urgence", "Incident logistique"])
-    else:
-        t1, t2, t3, t4 = st.tabs(["Déclarer une urgence", "Incident logistique", "Fil des décisions",
-                                  "Messages entre agents"])
+    if C.est("admin"):                  # traces internes du système multi-agent : administrateur uniquement
+        t1, t_suivi, t2, t3, t4 = st.tabs(["Déclarer une urgence", "Suivi des urgences", "Incident logistique",
+                                           "Fil des décisions", "Messages entre agents"])
         with t3:
             _fil(sim, noms)
         with t4:
             _messages(sim, noms)
+    elif C.est("regulation"):
+        t1, t_suivi, t2 = st.tabs(["Déclarer une urgence", "Suivi des urgences", "Incident logistique"])
+    else:
+        t1, t2 = st.tabs(["Déclarer une urgence", "Incident logistique"])
+        t_suivi = None
+    if t_suivi is not None:
+        with t_suivi:
+            _suivi()
     with t1:
         _urgence(sim)
     with t2:
@@ -45,7 +51,8 @@ def afficher() -> None:
 def _bandeau(sim: S.Simulation, noms) -> None:
     if msg := st.session_state.pop("flash_urgence", None):
         {"ok": st.success, "attention": st.warning}.get(msg[0], st.error)(msg[1])
-    for a in sim.alertes()[-5:]:
+    alertes = [a for a in sim.alertes() if "transfert vers un autre établissement" not in a]
+    for a in alertes[-5:]:
         st.error(C.lisible(a, noms))
     for asc, (deb, fin) in sim.pannes().items():
         st.warning(f"{S.ASCENSEURS.get(asc, asc)} en panne depuis {deb:%H:%M}, retour estimé {fin:%H:%M} : "
@@ -142,9 +149,41 @@ def _urgence(sim: S.Simulation) -> None:
                 f"(attente {d['attente_min']:.0f} min, {'dans' if d['dans_delai'] else 'HORS'} délai, "
                 f"{d['nb_propositions']} propositions comparées)."))
         else:
-            st.session_state["flash_urgence"] = ("ko", f"URG-{numero:03d} : aucun créneau du planning ne convient -> "
-                                                       "transfert vers un autre établissement (voir alertes).")
+            st.session_state["flash_urgence"] = ("attention", f"URG-{numero:03d} : aucun créneau du planning ne convient.")
         st.rerun()
+
+
+# =============================================================================
+# Suivi des urgences : prise en charge et patients décalés par chacune
+# =============================================================================
+
+def _suivi() -> None:
+    urgences = C.consequences_urgences()
+    if not urgences:
+        st.info("Aucune urgence déclarée sur l'horizon du programme.")
+        return
+    for u in urgences:
+        pec, deplaces = u["prise_en_charge"], u["deplaces"]
+        if not u["survenue"]:
+            etat = C.badge("à venir (horloge)", "")
+        elif pec is None:
+            etat = C.badge("aucun créneau dans le délai", "rouge")
+        else:
+            etat = C.badge("dans le délai" if pec["dans_delai"] else "HORS DÉLAI", "vert" if pec["dans_delai"] else "rouge")
+        with st.container(border=True):
+            st.markdown(f"**{u['code']}** · {S.LIBELLES_GRAVITE.get(u['gravite'], u['gravite'])} · déclarée le "
+                        f"{C.jour_long(u['heure'].date()).lower()} à {u['heure']:%H:%M} par {u['auteur']} &nbsp;{etat}",
+                        unsafe_allow_html=True)
+            if pec:
+                st.markdown(f"<div class='petit'>Prise en charge : {pec['lieu']} · attente {pec['attente_min']:.0f} min"
+                            + (f" (délai maximal {pec['delai_max']} min)" if pec["delai_max"] else "") + "</div>",
+                            unsafe_allow_html=True)
+            if deplaces:
+                st.dataframe(pd.DataFrame(deplaces), hide_index=True, width="stretch")
+            elif u["survenue"]:
+                st.caption("Aucun patient décalé.")
+    st.caption("Patients déplacés par chaque urgence au moment de son insertion. Un même patient peut avoir été "
+               "décalé par plusieurs urgences successives.")
 
 
 # =============================================================================
@@ -209,7 +248,7 @@ def _fil(sim: S.Simulation, noms) -> None:
         st.markdown("**Décisions**")
         st.dataframe(pd.DataFrame([{"Heure": d["heure"].strftime("%H:%M"), "Type": d["type"],
                                     "Patient": noms.get(d.get("patient"), "") if d.get("patient") else "",
-                                    "Salle": d.get("salle", ""), "Coût": round(d["cout"]) if "cout" in d else None,
+                                    "Salle": d.get("salle"), "Coût": round(d["cout"]) if "cout" in d else None,
                                     "Détail": C.lisible(d.get("plan", ""), noms)} for d in dec]),
                      hide_index=True, width="stretch")
     if C.est("regulation", "admin"):

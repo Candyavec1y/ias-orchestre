@@ -332,6 +332,48 @@ def appliquer(modification, *, categorie: str, action: str, patient: str = "", d
     return apres
 
 
+@st.cache_resource(max_entries=4, show_spinner=False)
+def _consequences_urgences(cle_programme: str, empreinte: str, instant: str) -> list[dict]:
+    prog, evts, now = programme(), DB.lister_evenements(), datetime.fromisoformat(instant)
+    res = []
+    for i, e in enumerate(evts):
+        if e["type"] != "urgence":
+            continue
+        pid, code = e["contenu"]["patient"]["id"], e["contenu"]["patient"].get("nom") or "URG"
+        fiche = {"code": code, "gravite": e["contenu"].get("gravite", ""), "heure": e["heure"], "auteur": e["auteur"],
+                 "survenue": e["heure"] <= now, "prise_en_charge": None, "deplaces": []}
+        res.append(fiche)
+        if not fiche["survenue"]:
+            continue
+        avant, apres = S.simuler(prog, evts[:i], now), S.simuler(prog, evts[:i + 1], now)
+        d = next((x for x in reversed(apres.decisions()) if x.get("patient") == pid and x["type"] == "urgence"), None)
+        if d:
+            fiche["prise_en_charge"] = {
+                "lieu": f"{apres.modele.salles[d['salle']].nom_affiche}, {jour_long(d['debut'].date())} "
+                        f"{d['debut']:%H:%M}, Dr {S.code_chirurgien(d['chirurgien'])}",
+                "attente_min": d["attente_min"], "dans_delai": d["dans_delai"],
+                "delai_max": S.GRAVITES[fiche["gravite"]].delai_max_min if fiche["gravite"] in S.GRAVITES else None}
+        noms = {**noms_patients(avant), **noms_patients(apres)}
+        etat_avant, etat_apres = _etat_programme(avant), _etat_programme(apres)
+        for p in sorted(set(etat_avant) | set(etat_apres)):
+            a, b = etat_avant.get(p), etat_apres.get(p)
+            if p == pid or a == b:
+                continue
+            fiche["deplaces"].append({"Patient": noms.get(p, f"P{p}"), "Conséquence": _mouvement(a, b),
+                                      "Avant": _lieu(avant, a) if a else "—", "Après": _lieu(apres, b) if b else "—"})
+    return res
+
+
+def consequences_urgences() -> list[dict]:
+    """Pour chaque urgence : sa prise en charge et les patients qu'elle a déplacés (programme rejoué sans puis avec
+    l'urgence, à l'heure courante). Les urgences les plus récentes en premier."""
+    cfg = config_programme()
+    if not cfg:
+        return []
+    cle = f"{cfg['lundi']}|{cfg['calcule_le']}"
+    return list(reversed(_consequences_urgences(cle, DB.empreinte_evenements(), maintenant().isoformat())))
+
+
 def garantir_programme() -> Optional[P.Programme]:
     """Au premier lancement : calcule le programme initial de la semaine en cours (hybride mémétique)."""
     if config_programme():

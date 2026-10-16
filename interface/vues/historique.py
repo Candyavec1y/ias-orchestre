@@ -44,8 +44,12 @@ def afficher() -> None:
     vue = df
     if isinstance(periode, tuple) and len(periode) == 2:
         vue = vue[(vue["quand"].dt.date >= periode[0]) & (vue["quand"].dt.date <= periode[1])]
+    sur_la_periode = vue
     if cats:
         vue = vue[vue["categorie"].isin(cats)]
+
+    if not cats or "Urgence" in cats:
+        _urgences(sur_la_periode)
 
     table = pd.DataFrame({
         "Horodatage": vue["quand"].dt.strftime("%d/%m/%Y %H:%M:%S"), "Utilisateur": vue["utilisateur"],
@@ -68,3 +72,31 @@ def afficher() -> None:
     if st.download_button("Exporter la sélection (CSV, sceaux complets)", complet.to_csv(index=False, sep=";"),
                           file_name=f"historique_{datetime.now():%Y%m%d_%H%M}.csv", mime="text/csv"):
         C.tracer("export de l'historique", f"{len(complet)} entrée(s)")
+
+
+def _urgences(vue: pd.DataFrame) -> None:
+    """Chaque urgence avec sa prise en charge et les patients qu'elle a décalés (lignes scellées de l'historique)."""
+    declarations = vue[vue["action"] == "Déclaration d'urgence"].sort_values("id", ascending=False)
+    if declarations.empty:
+        return
+    st.markdown("#### Urgences et patients décalés")
+    for _, d in declarations.iterrows():
+        code = d["patient"]
+        cause = f"Conséquence de : Déclaration d'urgence {code} ("
+        deplaces = vue[(vue["categorie"] == "Décision automatique") & (vue["patient"] != code)
+                       & vue["motif"].fillna("").str.startswith(cause)].sort_values("id")
+        prise = vue[(vue["categorie"] == "Urgence") & (vue["patient"] == code)
+                    & (vue["action"] != "Déclaration d'urgence")].sort_values("id")
+        titre = (f"{code} — déclarée le {d['quand']:%d/%m/%Y à %H:%M:%S} par {d['utilisateur']} — "
+                 f"{len(deplaces)} patient(s) décalé(s)")
+        with st.expander(titre):
+            st.markdown(f"<div class='petit'>{d['detail']} · Motif : {d['motif']}</div>", unsafe_allow_html=True)
+            for _, p in prise.iterrows():
+                st.markdown(f"**{p['action']}** — {p['detail']}")
+            if deplaces.empty:
+                st.caption("Aucun patient décalé.")
+            else:
+                st.dataframe(pd.DataFrame({"Patient": deplaces["patient"], "Conséquence": deplaces["action"],
+                                           "Avant → après": deplaces["detail"],
+                                           "Enregistré le": deplaces["quand"].dt.strftime("%d/%m/%Y %H:%M:%S")}),
+                             hide_index=True, width="stretch")

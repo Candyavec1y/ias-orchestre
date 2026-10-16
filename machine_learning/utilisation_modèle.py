@@ -131,6 +131,8 @@ def charger_et_preparer(raw_path=RAW_PATH):
             return np.nan
 
     df['duree_bloc_heures'] = df.apply(calculer_duree_bloc, axis=1)
+    # heures de salle à 0:00:00 = non renseignées (durée nulle) -> séjour écarté de l'entraînement
+    df.loc[df['duree_bloc_heures'] <= 0, 'duree_bloc_heures'] = np.nan
     df['duree_apres_operation'] = (df[date_sortie_col] - df[date_intervention_col]).dt.days
     df.loc[df['duree_apres_operation'] < 0, 'duree_apres_operation'] = np.nan
 

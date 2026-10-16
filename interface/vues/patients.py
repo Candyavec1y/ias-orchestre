@@ -23,8 +23,9 @@ def afficher() -> None:
     if sim:
         C.synchroniser_statuts(sim)
     fiches = DB.lister_patients(u["praticien"] if chir else None)
-    C.tracer("consultation de la liste des patients", f"{len(fiches)} fiche(s)")
-    if not fiches:
+    urgences = _lignes_urgences(sim, u["praticien"] if chir else None)
+    C.tracer("consultation de la liste des patients", f"{len(fiches)} fiche(s), {len(urgences)} urgence(s)")
+    if not fiches and not urgences:
         st.info("Aucun patient pour le moment. Utilisez l'onglet **Consultation** pour en inscrire un.")
         return
 
@@ -39,13 +40,45 @@ def afficher() -> None:
                        "Programmé le": f"{C.jour_long(it.debut.date())} {it.debut:%H:%M}" if it else "—",
                        "Salle": sim.modele.salles[it.salle_id].nom_affiche if it else "—",
                        "Créé le": f["cree_le"][:16].replace("T", " ")})
-    st.dataframe(pd.DataFrame(lignes), hide_index=True, width="stretch")
+    st.dataframe(pd.DataFrame(lignes + urgences), hide_index=True, width="stretch")
+    if not fiches:
+        return
 
     st.markdown("#### Détail d'un patient")
     choix = st.selectbox("Patient", fiches, format_func=lambda f: f"{f['pseudo']} — {f['entrees'].get('type_intervention', '')}")
     if not choix:
         return
     _detail(choix, sim)
+
+
+def _lignes_urgences(sim, praticien) -> list[dict]:
+    """Patients déclarés en urgence (événements du SMA, sans fiche de consultation). Pour un chirurgien : ceux
+    qu'il a vus ou qu'il opère."""
+    lignes = []
+    for e in DB.lister_evenements():
+        if e["type"] != "urgence":
+            continue
+        p = e["contenu"]["patient"]
+        it = sim.intervention(p["id"]) if sim else None
+        vu_par = S.code_chirurgien(p["chirurgien_id"])
+        operateur = S.code_chirurgien(it.chirurgien_id) if it else vu_par
+        if praticien and praticien not in (vu_par, operateur):
+            continue
+        if sim is None or e["heure"] > sim.maintenant:
+            statut = "urgence à venir"
+        elif it is None:
+            statut = "urgence non programmée"
+        else:
+            statut = "opéré" if it.fin <= sim.maintenant else "programmé"
+        lignes.append({"Pseudonyme": p.get("nom") or f"P{p['id']}", "Chirurgien": operateur if operateur.startswith("Chir.") else f"Dr {operateur}",
+                       "Intervention": p.get("type_intervention") or "Urgence",
+                       "Durée (min)": p.get("duree_bloc"),
+                       "Prise en charge": "Ambulatoire" if p.get("ambulatoire") else "Hospit.",
+                       "Priorité": p.get("priorite"), "Statut": statut,
+                       "Programmé le": f"{C.jour_long(it.debut.date())} {it.debut:%H:%M}" if it else "—",
+                       "Salle": sim.modele.salles[it.salle_id].nom_affiche if it else "—",
+                       "Créé le": f"{e['heure']:%Y-%m-%d %H:%M}"})
+    return lignes
 
 
 def _detail(f: dict, sim) -> None:
