@@ -167,8 +167,9 @@ class Programme:
 
 
 def calculer_programme(lundi: date, mode: str = "memetique", temps_s: float = 15.0,
-                       nb_semaines: int = NB_SEMAINES_HORIZON, graine: int = SC.GRAINE_ETUDE) -> Programme:
-    i1, i2 = construire_instances(lundi, nb_semaines)
+                       nb_semaines: int = NB_SEMAINES_HORIZON, graine: int = SC.GRAINE_ETUDE,
+                       hebergement=HEBERGEMENT_V28) -> Programme:
+    i1, i2 = construire_instances(lundi, nb_semaines, hebergement=hebergement)
     glouton = SC.construire_meilleure_affectation_initiale(i2)
     s_glouton = SC.evaluer_niveau2(i2, glouton).score_total
     resultat = None

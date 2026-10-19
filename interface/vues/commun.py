@@ -220,9 +220,21 @@ def config_programme() -> Optional[dict]:
     return DB.lire_parametre("programme")
 
 
+def hebergement() -> SC.ParametresHebergement:
+    """Capacités d'hébergement réglées par l'administrateur (sinon les valeurs par défaut du planning v28)."""
+    d = DB.lire_parametre("hebergement")
+    return SC.ParametresHebergement(**d) if d else P.HEBERGEMENT_V28
+
+
+def _cle_programme(cfg: dict) -> str:
+    h = hebergement()
+    return f"{cfg['lundi']}|{cfg['calcule_le']}|{h.lits_disponibles_par_jour}/{h.reserve_lits}/{h.places_ambulatoires_par_jour}"
+
+
 @st.cache_resource(max_entries=2, show_spinner=False)
-def _programme(lundi: str, nb_semaines: int, solution_items: tuple) -> P.Programme:
-    i1, i2 = P.construire_instances(date.fromisoformat(lundi), nb_semaines)
+def _programme(lundi: str, nb_semaines: int, solution_items: tuple, capacites: tuple) -> P.Programme:
+    i1, i2 = P.construire_instances(date.fromisoformat(lundi), nb_semaines,
+                                    hebergement=SC.ParametresHebergement(*capacites))
     sol = SC.SolutionPatients({int(k): v for k, v in solution_items})
     return P.Programme(date.fromisoformat(lundi), nb_semaines, "", 0, 0, i1, i2, sol)
 
@@ -231,7 +243,9 @@ def programme() -> Optional[P.Programme]:
     cfg = config_programme()
     if not cfg:
         return None
-    prog = _programme(cfg["lundi"], cfg["nb_semaines"], tuple(sorted((int(k), v) for k, v in cfg["solution"].items())))
+    h = hebergement()
+    prog = _programme(cfg["lundi"], cfg["nb_semaines"], tuple(sorted((int(k), v) for k, v in cfg["solution"].items())),
+                      (h.lits_disponibles_par_jour, h.places_ambulatoires_par_jour, h.reserve_lits))
     prog.mode, prog.temps_s = cfg["mode"], cfg["temps_s"]
     return prog
 
@@ -256,7 +270,7 @@ def simulation() -> Optional[S.Simulation]:
     cfg = config_programme()
     if not cfg:
         return None
-    cle = f"{cfg['lundi']}|{cfg['calcule_le']}"
+    cle = _cle_programme(cfg)
     return _simulation(cle, DB.empreinte_evenements(), maintenant().isoformat())
 
 
@@ -370,7 +384,7 @@ def consequences_urgences() -> list[dict]:
     cfg = config_programme()
     if not cfg:
         return []
-    cle = f"{cfg['lundi']}|{cfg['calcule_le']}"
+    cle = _cle_programme(cfg)
     return list(reversed(_consequences_urgences(cle, DB.empreinte_evenements(), maintenant().isoformat())))
 
 
@@ -380,7 +394,7 @@ def garantir_programme() -> Optional[P.Programme]:
         return programme()
     with st.spinner("Premier lancement : calcul du programme opératoire initial par l'hybridation "
                     "AGS + RS + Tabou (environ 10 s)…"):
-        prog = P.calculer_programme(maintenant().date(), "memetique", 10.0)
+        prog = P.calculer_programme(maintenant().date(), "memetique", 10.0, hebergement=hebergement())
         enregistrer_programme(prog, "système")
     return programme()
 

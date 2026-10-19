@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Onglet ADMINISTRATION : comptes et horloge de démonstration."""
+"""Onglet ADMINISTRATION : comptes, capacités d'hébergement et horloge de démonstration."""
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 import pandas as pd
 import streamlit as st
@@ -12,17 +12,79 @@ from orchestre import programme as P
 from orchestre import stockage as DB
 from vues import commun as C
 
+import structures_communes as SC
+
 
 def afficher() -> None:
     if not C.est("admin"):
         st.error("Accès réservé à l'administrateur.")
         return
     C.entete("Administration")
-    t1, t2 = st.tabs(["Comptes", "Horloge"])
+    t1, t_cap, t2 = st.tabs(["Comptes", "Lits et places", "Horloge"])
     with t1:
         _comptes()
+    with t_cap:
+        _capacites()
     with t2:
         _horloge()
+
+
+def _capacites() -> None:
+    h = C.hebergement()
+    if msg := st.session_state.pop("flash_capacites", None):
+        st.success(msg)
+    st.markdown("Capacités d'hébergement **par jour**, utilisées par le programme opératoire et par le système "
+                "multi-agent (acceptation d'une urgence, d'une inscription ou d'un replacement). Les lits de "
+                "**réserve** ne sont jamais attribués à la programmation : ils restent libres pour les urgences.")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Lits d'hospitalisation", h.lits_disponibles_par_jour)
+    c2.metric("dont réserve urgences", h.reserve_lits, f"{h.cap_lits} lits programmables", delta_color="off",
+              delta_arrow="off")
+    c3.metric("Places ambulatoires", h.places_ambulatoires_par_jour)
+    with st.form("form_capacites"):
+        c1, c2, c3 = st.columns(3)
+        lits = c1.number_input("Lits d'hospitalisation", 1, 500, h.lits_disponibles_par_jour)
+        reserve = c2.number_input("Réserve d'urgence (lits)", 0, 500, h.reserve_lits)
+        places = c3.number_input("Places ambulatoires", 0, 500, h.places_ambulatoires_par_jour)
+        recalculer = st.checkbox("Recalculer aussi le programme opératoire avec ces capacités (environ 10 s)",
+                                 help="Sans recalcul, le programme déjà construit est conservé : les nouvelles "
+                                      "capacités s'appliquent aux décisions du système multi-agent (urgences, "
+                                      "inscriptions, replacements). Avec recalcul, l'hybridation AGS + RS + Tabou "
+                                      "réaffecte les patients de démonstration en respectant les nouvelles capacités.")
+        motif = st.text_input("Motif (obligatoire, tracé)", placeholder="ex. capacités réelles du service")
+        ok = st.form_submit_button("Enregistrer", type="primary")
+    if not ok:
+        return
+    if not motif.strip():
+        st.error("Indiquez le motif de la modification.")
+        return
+    if reserve >= lits:
+        st.error("La réserve d'urgence doit être inférieure au nombre de lits.")
+        return
+    nouveau = SC.ParametresHebergement(int(lits), int(places), int(reserve))
+    if nouveau == h and not recalculer:
+        st.info("Aucune modification.")
+        return
+    detail = ((f"lits {h.lits_disponibles_par_jour} → {nouveau.lits_disponibles_par_jour}, réserve {h.reserve_lits} → "
+               f"{nouveau.reserve_lits}, places {h.places_ambulatoires_par_jour} → {nouveau.places_ambulatoires_par_jour}"
+               if nouveau != h else "capacités inchangées")
+              + (" · programme recalculé" if recalculer else ""))
+
+    def modifier():
+        DB.ecrire_parametre("hebergement", {"lits_disponibles_par_jour": nouveau.lits_disponibles_par_jour,
+                                            "places_ambulatoires_par_jour": nouveau.places_ambulatoires_par_jour,
+                                            "reserve_lits": nouveau.reserve_lits})
+        if recalculer:
+            cfg = C.config_programme()
+            prog = P.calculer_programme(date.fromisoformat(cfg["lundi"]) if cfg else C.maintenant().date(),
+                                        "memetique", 10.0, hebergement=nouveau)
+            C.enregistrer_programme(prog, C.utilisateur()["login"])
+
+    with st.spinner("Recalcul du programme opératoire…" if recalculer else "Enregistrement…"):
+        C.appliquer(modifier, categorie="Programme", action="Modification des capacités d'hébergement",
+                    detail=detail, motif=motif.strip())
+    st.session_state["flash_capacites"] = f"Capacités enregistrées : {detail}."
+    st.rerun()
 
 
 def _comptes() -> None:
