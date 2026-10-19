@@ -65,6 +65,15 @@ def annulation(heure: datetime, pid: int) -> dict:
     return _evenement(heure, "annulation", {"pid": pid, "nom": f"P{pid}", "motif": "test"})
 
 
+def prolongation(heure: datetime, pid: int, minutes: int) -> dict:
+    return _evenement(heure, "prolongation_intervention", {"pid": pid, "minutes": minutes})
+
+
+def indisponibilite_lits(heure: datetime, nb_lits: int, du: date, au: date) -> dict:
+    return _evenement(heure, "indisponibilite_lits", {"nb_lits": nb_lits, "du": du.isoformat(), "au": au.isoformat(),
+                                                      "motif": "test"})
+
+
 def reoptimisation(heure: datetime, contenu: dict) -> dict:
     return _evenement(heure, "reoptimisation", contenu)
 

@@ -33,8 +33,9 @@ from typing import Callable, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from sma_urgences import (  # noqa: E402
-    ID_PAR_NOM, ArriveeUrgence, BlocOperatoire, FinPanne, PanneAscenseur, ProlongationPanne,
-    construire_instances_v28, jour_txt, patient_urgent, solution_n2_par_defaut,
+    ID_PAR_NOM, SPECIALITE_SERVICE, AbsenceChirurgien, ArriveeUrgence, BlocOperatoire, FinPanne, IndisponibiliteLits,
+    PanneAscenseur, ProlongationIntervention, ProlongationPanne, construire_instances_v28, jour_txt, patient_urgent,
+    solution_n2_par_defaut,
 )
 from parametres import GRAINE_SCENARIOS_SMA  # noqa: E402  (commun/ ajouté au chemin par sma_urgences)
 
@@ -46,8 +47,13 @@ def h(jour: int, heure: int, minute: int = 0) -> datetime:
     return datetime(2026, 10, jour, heure, minute)
 
 
-# Spécialité des praticiens (HYPOTHÈSE reprise du jeu de test, voir SPECIALITES_V28 dans sma_urgences.py)
-ORTHO, MAIN, VASC, RACHIS = ("CT", "Orthopédie"), ("LZ", "Main"), ("HA", "Vasculaire"), ("JE", "Rachis")
+# (praticien qui voit le patient, spécialité de l'urgence). Tous les praticiens du planning sont du service
+# d'orthopédie-traumatologie (main et rachis en sont des sous-spécialités). Une ischémie VASCULAIRE n'est pas couverte
+# par le service ni par l'équipe de garde : c'est le cas où un transfert est proposé (niveau 5).
+ORTHO = ("CT", SPECIALITE_SERVICE)
+MAIN = ("LZ", SPECIALITE_SERVICE)
+RACHIS = ("JE", SPECIALITE_SERVICE)
+VASC = ("HA", "Vasculaire")
 
 
 def urgence(pid: int, quand: datetime, praticien: tuple[str, str], duree: int, gravite: str, *,
@@ -75,11 +81,11 @@ class Scenario:
 
 SCENARIOS: dict[str, Scenario] = {
     "insertion_simple": Scenario(
-        "Insertion dans une plage URGENCE",
+        "Insertion d'une urgence simple",
         "Mercredi 11 h : entorse grave de cheville (orthopédie, urgente, 45 min, ambulatoire).",
         lambda: [urgence(9001, h(14, 11), ORTHO, 45, "urgente", ambulatoire=True, nom="Entorse grave")],
         [date(2026, 10, 14)], h(14, 20),
-        "opérée à 13 h 30 par le chirurgien d'urgence dans la plage URGENCE, sans toucher au programme."),
+        "opérée à 11 h 30 par MT (salle 5) : tous les chirurgiens du service sont compétents ; personne n'est décalé."),
 
     "fracture_panne": Scenario(
         "Fracture puis panne du monte-lit",
@@ -87,30 +93,30 @@ SCENARIOS: dict[str, Scenario] = {
         lambda: [urgence(9001, h(13, 9, 40), ORTHO, 60, "urgente", nom="Fracture avant-bras"),
                  PanneAscenseur(h(13, 10, 15), "ML1", h(13, 13))],
         [date(2026, 10, 13)], h(13, 20),
-        "insérée à 12 h chez CT ; la panne l'empêche de monter -> ré-insérée à 13 h 30 chez MO (même délai)."),
+        "opérée à 10 h 10 chez JT ; la panne fait reporter P12 et P85, replacés l'après-midi chez MO et MT."),
 
     "gravite_vitale": Scenario(
         "Gravité vitale",
         "Mardi 9 h 40 : la même fracture, déclarée VITALE (incision avant 10 h 40).",
         lambda: [urgence(9001, h(13, 9, 40), ORTHO, 60, "vitale")],
         [date(2026, 10, 13)], h(13, 20),
-        "opérée dès 10 h ; P12 décalé de 60 min (le coût d'attente vital l'emporte)."),
+        "opérée dès 9 h 55 chez JT (15 min d'attente), sans décaler personne."),
 
     "gravite_differable": Scenario(
         "Gravité différable",
         "Mardi 9 h 40 : la même fracture, déclarée DIFFÉRABLE (24 h).",
         lambda: [urgence(9001, h(13, 9, 40), ORTHO, 60, "differable")],
         [date(2026, 10, 13)], h(13, 20),
-        "prend le temps libre de fin de matinée (12 h) sans décaler personne."),
+        "opérée à 10 h 40 chez JT, dans le temps libre de la matinée, sans décaler personne."),
 
     "urgences_simultanees": Scenario(
         "Trois urgences en 20 minutes",
-        "Mercredi 11 h, 11 h 10, 11 h 20 : deux orthopédie (une hospitalisée) et une main.",
+        "Mercredi 11 h, 11 h 10, 11 h 20 : deux urgences d'orthopédie (une hospitalisée) et une de chirurgie de la main.",
         lambda: [urgence(9001, h(14, 11), ORTHO, 45, "urgente", ambulatoire=True),
                  urgence(9002, h(14, 11, 10), ("MO", "Orthopédie"), 60, "urgente"),
                  urgence(9003, h(14, 11, 20), MAIN, 60, "urgente", ambulatoire=True)],
         [date(2026, 10, 14)], h(14, 20),
-        "le chirurgien d'urgence ne peut pas être dans 2 salles : la 3e urgence va en salle 5 avec LZ rappelé d'astreinte."),
+        "les trois dans le délai : 11 h 30 (MT, salle 5), 13 h 30 (MO, salle 4) et 13 h 30 (DN, salle 5)."),
 
     "journee_chargee": Scenario(
         "Journée chargée",
@@ -121,37 +127,62 @@ SCENARIOS: dict[str, Scenario] = {
                  ProlongationPanne(h(15, 11, 45), "ML1", h(15, 14, 30)),
                  urgence(9103, h(15, 14), ORTHO, 75, "urgente", nuits=2, nom="Luxation d'épaule")],
         [date(2026, 10, 15)], h(16, 20),
-        "vitale à 8 h 35 ; P80 déprogrammé -> liste d'attente ; luxation reportée au vendredi avec alerte."),
+        "les trois urgences dans le délai ; la panne prolongée fait reporter et replacer plusieurs patients (P31, P72 brièvement en liste d'attente)."),
 
     "panne_matinale": Scenario(
         "Longue panne dès l'ouverture",
         "Lundi 7 h 30 : panne du monte-lit jusqu'à 11 h.",
         lambda: [PanneAscenseur(h(12, 7, 30), "ML1", h(12, 11))],
         [date(2026, 10, 12)], h(12, 20),
-        "ambulatoires avancés, hospitalisés repoussés après 11 h 20, déprogrammations et replacement en chaîne."),
+        "ambulatoires avancés, hospitalisés reportés (P61, P63, P102, P54) puis replacés en chaîne."),
 
     "chirurgien_absent": Scenario(
-        "Chirurgien compétent absent",
+        "Urgence hors du service",
         "Vendredi : main 10 h (urgente), ischémie vasculaire 11 h (VITALE), hernie discale 15 h (différable).",
         lambda: [urgence(9301, h(16, 10), MAIN, 60, "urgente", ambulatoire=True, nom="Section de tendon"),
                  urgence(9302, h(16, 11), VASC, 90, "vitale", nuits=2, nom="Ischémie aiguë"),
                  urgence(9303, h(16, 15), RACHIS, 75, "differable", nuits=3, nom="Hernie discale")],
         [date(2026, 10, 16), date(2026, 10, 20)], h(23, 20),
-        "main -> plage URGENCE ; vitale -> TRANSFERT ; hernie -> mardi 20/10 (JE en astreinte) avec alerte."),
+        "main et hernie discale opérées par le service ; ischémie vasculaire (spécialité non couverte) : transfert proposé au médecin régulateur, plan interne en attente."),
 
     "rattrapage": Scenario(
         "Panne réparée plus tôt que prévu",
         "Mardi 8 h 30 : panne annoncée jusqu'à 15 h ; réparée à 10 h 30.",
         lambda: [PanneAscenseur(h(13, 8, 30), "ML1", h(13, 15)), FinPanne(h(13, 10, 30), "ML1")],
         [date(2026, 10, 13)], h(13, 20),
-        "P12 repris par MO l'après-midi pendant la panne, puis ramené à 11 h chez CT à la réparation."),
+        "P12, P15 et P85 reportés pendant la panne puis replacés ; à la réparation, P12 et P15 ramenés à 11 h."),
 
     "panne_sans_effet": Scenario(
         "Panne sans patient hospitalisé à monter",
         "Mercredi 8 h 30 : panne du monte-lit jusqu'à 15 h, réparée à 10 h 30.",
         lambda: [PanneAscenseur(h(14, 8, 30), "ML1", h(14, 15)), FinPanne(h(14, 10, 30), "ML1")],
         [date(2026, 10, 14)], h(14, 20),
-        "programme inchangé (que des ambulatoires à monter) ; seuls des opérés attendent en salle de réveil."),
+        "seul P32 est reporté (P31 brièvement en liste d'attente, replacé par l'optimisation globale) ; des opérés "
+        "attendent en salle de réveil."),
+
+    "absence_chirurgien": Scenario(
+        "Absence d'un chirurgien",
+        "Lundi 8 h : le Dr CT déclare un congrès du mardi 13 au vendredi 16/10.",
+        lambda: [AbsenceChirurgien(h(12, 8), ID_PAR_NOM["CT"], date(2026, 10, 13), date(2026, 10, 16), "Congrès")],
+        [date(2026, 10, 13), date(2026, 10, 20)], h(16, 20),
+        "ses vacations sont fermées ; ses patients sont replacés dans ses vacations après son retour (aucun n'a "
+        "accepté de confrère), au plus tôt 2 jours après la déclaration, avec alertes pour les prioritaires repoussés ;"
+        " ceux qui ne tiennent plus dans les 2 semaines du scénario passent en liste d'attente."),
+
+    "prolongation_intervention": Scenario(
+        "Intervention prolongée",
+        "Mardi 9 h 30 : l'intervention de P18 (salle 4, 8 h - 10 h) durera 45 min de plus.",
+        lambda: [ProlongationIntervention(h(13, 9, 30), 18, 45)],
+        [date(2026, 10, 13)], h(13, 20),
+        "P15 et P12 sont décalés ; P12 ne tient plus avant 13 h : il est déprogrammé puis replacé."),
+
+    "lits_indisponibles": Scenario(
+        "Lits indisponibles",
+        "Lundi 8 h : 15 lits fermés du mardi 13 au jeudi 15/10 (travaux).",
+        lambda: [IndisponibiliteLits(h(12, 8), 15, date(2026, 10, 13), date(2026, 10, 15), "Travaux")],
+        [date(2026, 10, 13), date(2026, 10, 14)], h(16, 20),
+        "8 hospitalisés déplacés, priorité la plus faible d'abord : 12 lits occupés pour 12 programmables du 13 au "
+        "15/10 ; un patient sans place dans les 2 semaines du scénario reste en liste d'attente."),
 }
 
 
@@ -170,7 +201,7 @@ POIDS_DUREES = [.12, .22, .20, .14, .13, .12, .07]                              
 PROBA_AMBU = 0.67
 NUITS, POIDS_NUITS = [1, 2, 3, 4, 5], [.55, .17, .11, .09, .08]
 GRAVITES_TIRAGE = [("vitale", .10), ("urgente", .20), ("differable", .70)]       # hypothèse
-SPECIALITES_TIRAGE = [(ORTHO, .45), (("MO", "Orthopédie"), .15), (MAIN, .25), (RACHIS, .10), (VASC, .05)]  # hypothèse
+SPECIALITES_TIRAGE = [(ORTHO, .45), (("MO", SPECIALITE_SERVICE), .15), (MAIN, .25), (RACHIS, .10), (VASC, .05)]  # hypothèse
 
 
 def _poisson(rng: random.Random, lam: float) -> int:
@@ -217,12 +248,12 @@ SCENARIOS.update({
         "Semaine en charge normale",
         "Urgences aléatoires : 1 par jour en moyenne, aucune panne (graine : --graine).",
         lambda: urgences_semaine_aleatoire(1.0, graine=GRAINE[0]), SEMAINE, h(23, 20),
-        "la plupart des urgences passent sans toucher au programme ; une vitale arrivée quand aucun chirurgien compétent n'est libre est transférée."),
+        "les 4 urgences opérées dans le délai sans reporter personne ; aucun transfert."),
     "semaine_surcharge": Scenario(
         "Semaine en surcharge",
         "Urgences aléatoires : 3 par jour en moyenne + 2 pannes du monte-lit (graine : --graine).",
         lambda: urgences_semaine_aleatoire(3.0, graine=GRAINE[0], pannes=2), SEMAINE, h(23, 20),
-        "plus de décalages, déprogrammations, liste d'attente, et des alertes (délais dépassés, transferts)."),
+        "14 urgences dans le délai au prix de nombreux décalages et reports ; pas de transfert avec la graine par défaut."),
 })
 
 
@@ -276,8 +307,8 @@ def tester_tous(solution=None, instances=None) -> list[dict]:
     for nom in SCENARIOS:
         m = lancer(nom, solution=solution, instances=instances, verbeux=0)
         b = m.bilan()
-        lignes.append({"scénario": nom, "urgences": b["urgences_inserees"] + b["urgences_refusees"],
-                       "dans délai": b["urgences_dans_delai"], "transférées": b["urgences_refusees"],
+        lignes.append({"scénario": nom, "urgences": b["urgences_recues"],
+                       "dans délai": b["urgences_dans_delai"], "transférées": b["urgences_transferees"],
                        "attente moy (min)": b["attente_moyenne_urgence_min"], "décalés": b["patients_decales"],
                        "reportés": b["patients_reportes_autre_jour"], "confrère": b["patients_repris_par_un_confrere"],
                        "attente": b["patients_en_liste_attente"], "alertes": len(b["alertes"]),

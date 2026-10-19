@@ -44,8 +44,11 @@ Architecture HYBRIDE (optimisation_sma.py, metaheuristiques_sma.py -> metaheuris
 
 Règles
 ------
-  * AUCUN transfert vers un autre établissement, AUCUN refus : toute urgence reçue est programmée,
-    soit dans le programme (vacations + plages URGENCE), soit dans le planning de garde.
+  * AUCUN refus : toute urgence reçue est programmée, soit dans le programme (vacations + plages URGENCE), soit
+    dans le planning de garde — sauf si sa spécialité n'est pas couverte par l'équipe de garde
+    (ParametresSMA.specialites_garde) et qu'aucun chirurgien compétent ne peut l'opérer avant la limite acceptable :
+    un TRANSFERT est alors PROPOSÉ au médecin régulateur (niveau 5) ; le SMA ne transfère jamais de lui-même et garde
+    son meilleur plan interne en attente.
   * Les heures du programme restent une contrainte dure (pas d'heures supplémentaires).
   * Planning de garde (HYPOTHÈSE réglable dans ParametresSMA) : une salle, une équipe, à partir de 18 h les jours
     de programme et toute la journée les autres jours ; pour une urgence VITALE l'équipe de garde est rappelée
@@ -235,7 +238,8 @@ GRAVITES = {
 
 NIVEAUX_ESCALADE = {0: "insertion avec décalages", 1: "+ reports d'autres patients",
                     2: "+ reports sans plafond / éviction d'une urgence moins grave",
-                    3: "attente au-delà du délai (tolérance)", 4: "au plus tôt : planning de garde ou programme"}
+                    3: "attente au-delà du délai (tolérance)", 4: "au plus tôt : planning de garde ou programme",
+                    5: "transfert proposé (aucun chirurgien compétent à temps)"}
 
 
 @dataclass(frozen=True)
@@ -272,8 +276,13 @@ class ParametresSMA:
     gel_optimisation_min: int = 60                # patients qui commencent dans l'heure : gelés (déjà convoqués)
     c_stabilite: float = 20.0                     # coût par patient déplacé par l'optimisation globale
     capturer_problemes: bool = False              # garde les problèmes posés (script de comparaison)
+    specialites_garde: tuple[str, ...] = (SPECIALITE_SERVICE,)   # spécialités couvertes par l'équipe de garde et le
+                                                     # chirurgien d'urgence ; autre spécialité : transfert possible
     garde_immediate: tuple[str, ...] = ("vitale",)   # gravités pour lesquelles l'équipe de garde est rappelée
                                                      # immédiatement, même pendant les heures du programme
+    # --- absence d'un chirurgien ---
+    prevenance_absence_jours: int = 2   # un patient replacé l'est au plus tôt 2 jours après la déclaration
+    seuil_alerte_report_jours: int = 3  # patient prioritaire (>= 3) repoussé de plus de 3 jours : alerte au cadre
 
 
 @dataclass(frozen=True)
@@ -406,7 +415,41 @@ class FinPanne:
     ascenseur: str
 
 
-Evenement = Union[ArriveeUrgence, PanneAscenseur, ProlongationPanne, FinPanne]
+@dataclass
+class AbsenceChirurgien:
+    """Absence (vacances, congrès, maladie...) du `du` au `au` inclus, déclarée à `heure`."""
+    heure: datetime
+    chirurgien_id: int
+    du: date
+    au: date
+    motif: str = ""
+
+    @property
+    def periode(self) -> tuple[datetime, datetime]:
+        """[premier jour 0 h, lendemain du dernier jour 0 h[."""
+        return datetime.combine(self.du, time(0)), datetime.combine(self.au + timedelta(days=1), time(0))
+
+
+@dataclass
+class ProlongationIntervention:
+    """L'intervention du patient `patient_id` durera `minutes_supplementaires` de plus que prévu."""
+    heure: datetime
+    patient_id: int
+    minutes_supplementaires: int
+
+
+@dataclass
+class IndisponibiliteLits:
+    """`nb_lits` lits indisponibles du `du` au `au` inclus (travaux, fermeture, infection...)."""
+    heure: datetime
+    nb_lits: int
+    du: date
+    au: date
+    motif: str = ""
+
+
+Evenement = Union[ArriveeUrgence, PanneAscenseur, ProlongationPanne, FinPanne, AbsenceChirurgien,
+                  ProlongationIntervention, IndisponibiliteLits]
 
 
 def patient_urgent(id: int, chirurgien_id: int, duree_bloc: int, *, specialite: str = "", ambulatoire: bool = False,
@@ -559,7 +602,8 @@ class AgentTriage(AgentSMA):
         g = GRAVITES[nom]
         spe = p.specialite or self.specialites.get(p.chirurgien_id, "")
         competents = sorted({p.chirurgien_id} | {c for c, s in self.specialites.items() if s and s == spe})
-        if self.garde is not None and self.garde not in competents and nom != "differable":
+        if (self.garde is not None and self.garde not in competents and nom != "differable"
+                and spe in self.p.specialites_garde):
             competents.append(self.garde)
         lim = evt.heure + g.delai_max_min * MIN
         self.annoncer(f"  Triage : gravité {g.nom} -> incision avant {hm(lim) if lim.date() == evt.heure.date() else jour_txt(lim.date()) + ' ' + hm(lim)} ; "
@@ -652,6 +696,19 @@ class AgentHebergement(AgentSMA):
         super().__init__(model, "hebergement")
         self.h = hebergement
         self.sejours: dict[int, tuple[Patient, date]] = {}
+        self.indisponibilites: list[tuple[date, date, int]] = []     # (du, au, nb de lits)
+
+    def lits_indisponibles(self, d: date) -> int:
+        return sum(n for du, au, n in self.indisponibilites if du <= d <= au)
+
+    def lits_total(self, d: date) -> int:
+        """Lits en service ce jour-là (réserve comprise)."""
+        return max(0, self.h.lits_disponibles_par_jour - self.lits_indisponibles(d))
+
+    def cap_lits_jour(self, d: date) -> int:
+        """Lits PROGRAMMABLES ce jour-là : une indisponibilité touche d'abord les lits programmables, la réserve des
+        urgences reste entière tant qu'il reste des lits (elle ne diminue que si moins de lits que la réserve)."""
+        return max(0, self.lits_total(d) - self.h.reserve_lits)
 
     def occupation(self, sejours=None):
         lits, places = {}, {}
@@ -674,12 +731,13 @@ class AgentHebergement(AgentSMA):
         cout, motifs = 0.0, []
         for d in sorted(l1):
             avant, ap = l0.get(d, 0), l1[d]
-            if ap <= avant or ap <= self.h.cap_lits:
+            cap = self.cap_lits_jour(d)
+            if ap <= avant or ap <= cap:
                 continue
-            en_plus = ap - max(avant, self.h.cap_lits)
+            en_plus = ap - max(avant, cap)
             if not urgents:
                 return msg.reponse("REFUSE", {"motif": f"plus de lit le {d:%d/%m}"}, f"plus de lit le {d:%d/%m}")
-            r = min(en_plus, max(0, self.h.lits_disponibles_par_jour - max(avant, self.h.cap_lits)))
+            r = min(en_plus, max(0, self.lits_total(d) - max(avant, cap)))
             cout += r * self.p.c_lit_reserve + (en_plus - r) * self.p.c_lit_depassement
             motifs.append(f"{d:%d/%m}: " + ", ".join(x for x in (f"{r} lit(s) de réserve" if r else "",
                                                                f"{en_plus - r} lit(s) hors capacité" if en_plus > r else "") if x))
@@ -1026,6 +1084,28 @@ class AgentSalle(AgentSMA):
                            f"{len(top)} proposition(s)" + (f", {len(non_resolus)} créneau(x) sans solution"
                                                             if non_resolus else ""))
 
+    # ---------------- CFP : prolongation d'une intervention
+    def sur_cfp_prolongation(self, msg: Message):
+        """Recalcule l'ordre de passage d'un créneau à partir de la nouvelle fin de l'intervention prolongée (mêmes
+        coûts de décalage) ; les patients qui ne tiennent plus dans les heures du créneau sont déprogrammés.
+        `fenetre_id` : le créneau de l'intervention, ou un créneau suivant de la même salle qu'elle déborde."""
+        c = msg.contenu
+        it0 = self.interventions[c["pid"]]
+        fen, fenetres = self.creneaux[c["fenetre_id"]], c["fenetres"]
+        suivants = [i for i in self.du_creneau(fen.id) if i.pid != it0.pid and i.debut >= self.maintenant
+                    and (fen.id != it0.fenetre_id or i.debut >= it0.debut)]
+        if not suivants:
+            return msg.reponse("INFORM", {"plans": []}, "aucun patient à décaler dans ce créneau")
+        t0 = max(it0.fin, self.maintenant, fen.debut)
+        minimums = {i.pid: i.debut for i in suivants}               # personne n'est avancé
+        occ = self._occupations(c.get("agendas"), fen)
+        construire = lambda its: self._sequencer(its, minimums, t0, fenetres, False, occ)
+        plans = self._avec_deprogrammations(fen, suivants, construire, fenetres, {"ajouts": [], "max_deprog": None})
+        top = self._top(plans)
+        if not top:
+            return msg.reponse("INFORM", {"plans": []}, "aucun plan")
+        return msg.reponse("PROPOSE", {"plans": top}, f"{len(top)} proposition(s), meilleure : {top[0].resume}")
+
     # ---------------- CFP : rattrapage après la panne
     def sur_cfp_compacter(self, msg: Message):
         c = msg.contenu
@@ -1268,6 +1348,7 @@ class AgentRegulation(AgentSMA):
         self.decisions: list[dict] = []
         self.alertes: list[str] = []
         self.urgences_info: dict[int, tuple] = {}     # pid -> (patient, arrivée, gravité, chirurgiens compétents)
+        self.urgences_transferees: set[int] = set()   # transfert proposé SANS plan interne (non programmées)
         self.chirurgiens_autorises: dict[int, list[int]] = {}   # pid -> chirurgiens acceptés à la consultation
         self._dernier_matin: Optional[date] = None
 
@@ -1367,7 +1448,8 @@ class AgentRegulation(AgentSMA):
 
     def _inserer_urgence(self, p: Patient, arrivee: datetime, g: Gravite, chirurgiens: list[int], conv,
                          t_min: Optional[datetime] = None, reinsertion: bool = False):
-        """Échelle d'escalade : renvoie TOUJOURS un plan (programme ou planning de garde), jamais de refus."""
+        """Échelle d'escalade : un plan dans le programme ou au planning de garde, jamais de refus ; si la spécialité
+        n'est pas couverte par la garde et qu'aucun chirurgien compétent n'opère à temps : transfert PROPOSÉ."""
         fenetres = self._fenetres(conv)
         t_min = t_min or arrivee + g.preparation_min * MIN
         limite, acceptable = g.limite(arrivee), g.limite_acceptable(arrivee)
@@ -1392,6 +1474,12 @@ class AgentRegulation(AgentSMA):
             choix = self._choisir([(a, pl) for a, pl in props if pl.debut_urgence <= acceptable], conv,
                                   lambda pl: (pl.cout,))
             niveau = 3 if choix is not None else None
+        # niveau 5 : spécialité non couverte par la garde et personne de compétent avant la limite acceptable
+        spe = p.specialite or self.specialites.get(p.chirurgien_id, "")
+        if choix is None and spe not in self.p.specialites_garde:
+            return self._proposer_transfert(p, arrivee, g, chirurgiens, t_min, futurs, fenetres, ctx0, leviers[2], spe,
+                                            acceptable, conv, reinsertion)
+
         # niveau 4 : planning de garde, sauf si le programme permet d'opérer plus tôt que la garde
         plan_garde = None
         if choix is None:
@@ -1427,6 +1515,37 @@ class AgentRegulation(AgentSMA):
                                   garde=False, detail=plan.detail)
         self._replacer(retirees, conv)
         return True, {"plan": plan}, plan.resume
+
+    def _proposer_transfert(self, p: Patient, arrivee: datetime, g: Gravite, chirurgiens, t_min, futurs, fenetres,
+                            ctx0, leviers, spe: str, acceptable: datetime, conv, reinsertion):
+        """Niveau 5 : décision humaine requise, transfert PROPOSÉ au médecin régulateur. Le meilleur plan interne
+        (chirurgien compétent, au plus tôt, même hors délai) est appliqué EN ATTENTE de sa décision ; sans plan
+        interne, l'urgence reste non programmée."""
+        props = self._appel_offres_urgence(p, g, chirurgiens, t_min, set(futurs), fenetres, dict(ctx0, **leviers),
+                                           conv, 5) if futurs else []
+        choix = self._choisir(props, conv, lambda pl: (pl.debut_urgence, pl.cout))
+        texte = (f"URGENCE {g.nom} P{p.id} ({spe or 'spécialité inconnue'}) : aucun chirurgien compétent avant "
+                 f"{jour_txt(acceptable.date())} {hm(acceptable)} — décision humaine requise : transfert proposé")
+        if choix is None:
+            for a in sorted({a for a, _ in props}):
+                self.envoyer(a, "REJECT_PROPOSAL", "reject_proposal", {}, conv, "")
+            self.urgences_transferees.add(p.id)
+            self._alerter(texte + " (aucun plan interne)")
+            self.decisions.append({"type": "urgence_transferee", "heure": self.maintenant, "patient": p.id,
+                                   "gravite": g.nom, "plan": ""})
+            return True, {"transfert": True}, texte
+        agent, plan, extra, note = choix
+        retirees = self._appliquer(agent, plan, props, conv)
+        nouvelle, attente = plan.ajouts[0], minutes(plan.debut_urgence - arrivee)
+        self._alerter(f"{texte} ; plan interne en attente : {plan.resume}")
+        self._noter_lits(p, note)
+        self._enregistrer_urgence(p, g, 5, plan.salle_id, nouvelle.chirurgien_id, plan.debut_urgence, attente,
+                                  not plan.hors_delai, plan.cout + extra, plan.resume, len(props), reinsertion,
+                                  garde=False, detail=plan.detail)
+        self.decisions.append({"type": "urgence_transferee", "heure": self.maintenant, "patient": p.id,
+                               "gravite": g.nom, "plan": plan.resume})
+        self._replacer(retirees, conv)
+        return True, {"plan": plan, "transfert": True}, texte
 
     def _confier_garde(self, p: Patient, arrivee: datetime, g: Gravite, plan: Plan, props, conv, reinsertion):
         """Niveau 4 : le programme n'a plus de place -> l'urgence est confiée au planning de garde."""
@@ -1568,6 +1687,161 @@ class AgentRegulation(AgentSMA):
         self.decisions.append({"type": "reoptimisation", "heure": self.maintenant, "motif": motif,
                                "methode": trace.methode, "gain": trace.cout_actuel - trace.cout_optimise,
                                "patients_deplaces": len(mvts), "patients_sortis_attente": len(places)})
+
+    # ---------- absence d'un chirurgien
+    def sur_absence(self, msg: Message):
+        """Vacations du chirurgien fermées sur la période ; ses patients non commencés replacés aussitôt (au plus tôt
+        `prevenance_absence_jours` après la déclaration) : chez un confrère SEULEMENT s'il l'a accepté en
+        consultation, sinon dans les vacations de son chirurgien après son retour (priorité puis ordre de passage) ;
+        les urgences gardent leur délai. Alertes : patient qui commence dans l'heure, patient prioritaire repoussé de
+        plus de `seuil_alerte_report_jours`."""
+        evt: AbsenceChirurgien = msg.contenu["evenement"]
+        conv, cid, P = msg.conversation, evt.chirurgien_id, self.p
+        debut, fin = evt.periode
+        code = V28.NOM_PAR_ID.get(cid, str(cid))
+        self.model.absences.setdefault(cid, []).append((debut, fin))
+        self.annoncer(f"  Dr {code} absent du {debut:%d/%m} au {fin - timedelta(days=1):%d/%m} "
+                      f"({evt.motif or 'motif non précisé'}) : ses vacations sur la période sont fermées")
+        apres = self.maintenant + P.preparation_rattrapage_min * MIN
+        au_plus_tot = datetime.combine(self.maintenant.date() + timedelta(days=P.prevenance_absence_jours), time(0))
+        touches = sorted((it for s in self.model.salles.values() for it in s.interventions.values()
+                          if it.chirurgien_id == cid and debut <= it.debut < fin and it.debut > self.maintenant),
+                         key=lambda i: (-i.patient.priorite, i.debut))
+        for it in touches:
+            if it.debut < apres:
+                self._alerter(f"Absence du Dr {code} : P{it.pid} prévu à {hm(it.debut)} ne peut plus être opéré par "
+                              f"lui et est peut-être déjà convoqué -> prévenir le patient")
+        for it in touches:                        # libérer les créneaux (agendas et séjours mis à jour par la salle)
+            self.envoyer(f"salle_{it.salle_id}", "ACCEPT_PROPOSAL", "accept_proposal",
+                         {"plan": Plan(it.salle_id, it.fenetre_id, it.debut.date(), {}, retraits=[it.pid])}, conv,
+                         f"absence : libérer P{it.pid}")
+        self.decisions.append({"type": "absence", "heure": self.maintenant, "chirurgien": cid, "du": debut, "au": fin,
+                               "patients_touches": len(touches)})
+        if not touches:
+            self.annoncer("  ✔ Aucun patient programmé sur la période")
+            return None
+        self.annoncer(f"  {len(touches)} patient(s) à replacer")
+        urgences = [it for it in touches if it.urgence and it.pid in self.urgences_info]
+        if urgences:
+            self._replacer(urgences, conv)           # une urgence garde son délai : nouvel appel d'offres urgence
+        for it in [i for i in touches if i not in urgences]:
+            autorises = self.chirurgiens_autorises.get(it.pid, [it.chirurgien_initial])
+            props, choix = self.appel_offres_replacement(it, au_plus_tot, autorises, it.debut.date(), conv,
+                                                         f"replacer P{it.pid} (absence du Dr {code})")
+            if choix is None:
+                self.liste_attente.append((it, it.debut.date()))
+                self.annoncer(f"    ↳ P{it.pid} : aucune vacation compatible -> liste d'attente")
+                self.decisions.append({"type": "attente", "heure": self.maintenant, "patient": it.pid})
+                continue
+            agent, plan, extra, _ = choix
+            evinces = self._appliquer(agent, plan, props, conv)
+            nouvelle = plan.ajouts[0]
+            self.annoncer(f"    ↳ {plan.resume}")
+            self.decisions.append({"type": "replacement", "heure": self.maintenant, "patient": it.pid,
+                                   "debut": nouvelle.debut, "salle": plan.salle_id, "chirurgien": nouvelle.chirurgien_id,
+                                   "changement_chirurgien": nouvelle.chirurgien_id != nouvelle.chirurgien_initial,
+                                   "cout": plan.cout + extra, "motif": "absence"})
+            report = (nouvelle.debut.date() - it.debut.date()).days
+            if it.patient.priorite >= 3 and report > P.seuil_alerte_report_jours:
+                self._alerter(f"Absence du Dr {code} : P{it.pid} (priorité {it.patient.priorite}) repoussé de "
+                              f"{report} jours, au {jour_txt(nouvelle.debut.date())} -> à valider par le cadre de bloc")
+            if evinces:
+                self._replacer(evinces, conv)
+        return None
+
+    # ---------- prolongation d'une intervention
+    def sur_prolongation_intervention(self, msg: Message):
+        evt: ProlongationIntervention = msg.contenu["evenement"]
+        conv = msg.conversation
+        salle = next((s for s in self.model.salles.values() if evt.patient_id in s.interventions), None)
+        if salle is None:
+            self.annoncer(f"  P{evt.patient_id} : intervention introuvable, prolongation ignorée")
+            return None
+        it = salle.interventions[evt.patient_id]
+        it.patient = replace(it.patient, duree_bloc=it.patient.duree_bloc + evt.minutes_supplementaires)
+        self.envoyer(f"chir_{it.chirurgien_id}", "INFORM", "maj_agenda",
+                     {"intervalles": [(it.pid, it.debut, it.fin, salle.salle_id)], "retraits": []}, conv,
+                     "intervention prolongée")
+        fen = salle.creneaux[it.fenetre_id]
+        self.annoncer(f"  P{it.pid} ({salle.nom_affiche}) prolongée de {evt.minutes_supplementaires} min : fin prévue "
+                      f"{hm(it.fin)}")
+        if it.fin > fen.fin:
+            self.model.depassements_autorises.add(it.pid)       # une intervention commencée ne s'interrompt pas
+            self._alerter(f"P{it.pid} ({salle.nom_affiche}) dépasse la fin de la vacation de "
+                          f"{minutes(it.fin - fen.fin):.0f} min : intervention en cours, heures supplémentaires")
+        # le créneau de l'intervention, puis les créneaux suivants de la même salle qu'elle déborde
+        touches = [f for f in sorted(salle.creneaux.values(), key=lambda f: f.debut)
+                   if f.jour == fen.jour and (f.id == fen.id or fen.debut < f.debut < it.fin)]
+        retirees, resumes = [], []
+        for f in touches:
+            rep = self.envoyer(salle.nom, "CFP", "cfp_prolongation",
+                               {"pid": it.pid, "fenetre_id": f.id, "fenetres": self._fenetres(conv),
+                                "agendas": self._agendas(conv)}, conv, f"réordonner le créneau de {hm(f.debut)}")[0]
+            props = [(salle.nom, pl) for pl in rep.contenu.get("plans", [])]
+            choix = self._choisir(props, conv, lambda pl: (False, pl.cout)) if props else None
+            if choix is None:
+                if props:
+                    self._alerter(f"Prolongation de P{it.pid} : aucun plan validé pour le créneau de {hm(f.debut)} "
+                                  f"({salle.nom_affiche}) -> arbitrage du cadre de bloc")
+                continue
+            agent, plan, extra, _ = choix
+            retirees += self._appliquer(agent, plan, props, conv)
+            resumes.append(plan.resume)
+            self.annoncer(f"  ✔ {plan.resume} (coût {plan.cout + extra:,.0f})")
+        self.decisions.append({"type": "prolongation", "heure": self.maintenant, "patient": it.pid,
+                               "salle": salle.salle_id, "minutes": evt.minutes_supplementaires,
+                               "plan": " ; ".join(resumes)})
+        if not resumes:
+            self.annoncer("  ✔ aucun autre patient à décaler")
+        self._replacer(retirees, conv)
+        self.reoptimiser(conv, "prolongation d'une intervention")
+        return None
+
+    # ---------- indisponibilité de lits
+    def sur_indisponibilite_lits(self, msg: Message):
+        """Capacité programmable réduite sur la période ; pour chaque jour en dépassement, les patients hospitalisés
+        non commencés sont déprogrammés de la priorité la plus faible à la plus élevée, puis de l'intervention la plus
+        tardive à la plus proche, et replacés (les jours encore pleins sont exclus par l'agent Hébergement).
+        Les urgences gardent l'accès à la réserve. Fin de l'indisponibilité : relance de la liste d'attente."""
+        evt: IndisponibiliteLits = msg.contenu["evenement"]
+        conv, heb = msg.conversation, self.model.hebergement
+        heb.indisponibilites.append((evt.du, evt.au, evt.nb_lits))
+        self.annoncer(f"  {evt.nb_lits} lit(s) indisponible(s) du {evt.du:%d/%m} au {evt.au:%d/%m} "
+                      f"({evt.motif or 'motif non précisé'})")
+        par_pid = {it.pid: (s, it) for s in self.model.salles.values() for it in s.interventions.values()}
+        retirees, jour = [], evt.du
+        while jour <= evt.au:
+            lits, _ = heb.occupation()
+            while lits.get(jour, 0) > heb.cap_lits_jour(jour):
+                candidats = [(s, it) for pid, (s, it) in par_pid.items() if not it.urgence and not it.patient.ambulatoire
+                             and it.debut > self.maintenant and pid in heb.sejours
+                             and jour in jours_occupation(it.patient, it.debut.date())]
+                if not candidats:
+                    self._alerter(f"Lits indisponibles : {lits.get(jour, 0)} patient(s) le {jour:%d/%m} pour "
+                                  f"{heb.cap_lits_jour(jour)} lit(s) programmable(s), aucun patient déplaçable")
+                    break
+                s, it = min(candidats, key=lambda x: (x[1].patient.priorite, -x[1].debut.timestamp()))
+                retirees += self.envoyer(s.nom, "ACCEPT_PROPOSAL", "accept_proposal",
+                                         {"plan": Plan(s.salle_id, it.fenetre_id, it.debut.date(), {},
+                                                       retraits=[it.pid])}, conv,
+                                         f"lits indisponibles : libérer P{it.pid}")[0].contenu["retirees"]
+                par_pid.pop(it.pid)
+                lits, _ = heb.occupation()
+            jour += timedelta(days=1)
+        self.decisions.append({"type": "indisponibilite_lits", "heure": self.maintenant, "nb_lits": evt.nb_lits,
+                               "du": evt.du, "au": evt.au, "patients_deplaces": len(retirees)})
+        self.annoncer(f"  {len(retirees)} patient(s) hospitalisé(s) à replacer" if retirees
+                      else "  ✔ aucun patient à déplacer")
+        self._replacer(retirees, conv)
+        fin = datetime.combine(evt.au + timedelta(days=1), time(0))
+        self.model.planifier_action(fin, lambda: self._relancer_attente(self.model.nouvelle_conversation("LIT"),
+                                                                        self.maintenant))
+        self.reoptimiser(conv, "indisponibilité de lits")
+        return None
+
+    def _alerter(self, alerte: str):
+        self.alertes.append(alerte)
+        self.annoncer(f"  ⚠ {alerte}")
 
     # ---------- panne
     def sur_transferts_bloques(self, msg: Message):
@@ -1806,6 +2080,7 @@ class BlocOperatoire(mesa.Model):
         self.optimisation = AgentOptimisation(self)
         self.urgences_recues: set[int] = set()          # invariant : chacune doit être programmée
         self.absences: dict[int, list[tuple[datetime, datetime]]] = {}   # chirurgien -> périodes [début, fin[
+        self.depassements_autorises: set[int] = set()   # interventions prolongées au-delà de leur vacation (en cours)
         self.chirurgiens = {}
         for cid, c in instance1.chirurgiens.items():
             dispo = instance1.disponibilites_chirurgiens.get(cid)
@@ -1943,6 +2218,22 @@ class BlocOperatoire(mesa.Model):
                           f"{p.diagnostic or 'diagnostic n.c.'}, {p.duree_bloc} min, "
                           f"{'ambulatoire' if p.ambulatoire else 'hospitalisé'})")
             self.acheminer(Message("INFORM", "accueil", "triage", "arrivee_urgence", {"evenement": evt}, conv, t, f"P{p.id}"))
+        elif isinstance(evt, ProlongationIntervention):
+            conv = self.nouvelle_conversation("PRO")
+            self.annoncer(f"\n[{jour_txt(t.date())} {hm(t)}] {conv} — PROLONGATION : P{evt.patient_id} "
+                          f"+{evt.minutes_supplementaires} min")
+            self.acheminer(Message("INFORM", "bloc", "regulation", "prolongation_intervention", {"evenement": evt},
+                                   conv, t, f"P{evt.patient_id} +{evt.minutes_supplementaires} min"))
+        elif isinstance(evt, IndisponibiliteLits):
+            conv = self.nouvelle_conversation("LIT")
+            self.annoncer(f"\n[{jour_txt(t.date())} {hm(t)}] {conv} — LITS INDISPONIBLES : {evt.nb_lits}")
+            self.acheminer(Message("INFORM", "hospitalisation", "regulation", "indisponibilite_lits",
+                                   {"evenement": evt}, conv, t, f"{evt.nb_lits} lit(s) du {evt.du:%d/%m} au {evt.au:%d/%m}"))
+        elif isinstance(evt, AbsenceChirurgien):
+            conv = self.nouvelle_conversation("ABS")
+            self.annoncer(f"\n[{jour_txt(t.date())} {hm(t)}] {conv} — ABSENCE : {self.nom_chir(evt.chirurgien_id)}")
+            self.acheminer(Message("INFORM", "secretariat", "regulation", "absence", {"evenement": evt}, conv, t,
+                                   f"absence du {evt.du:%d/%m} au {evt.au:%d/%m}"))
         else:
             conv = self.nouvelle_conversation("ASC")
             titre = {PanneAscenseur: "PANNE ASCENSEUR", ProlongationPanne: "PROLONGATION DE PANNE",
@@ -1987,7 +2278,7 @@ class BlocOperatoire(mesa.Model):
                       f"{'amb. ' if it.patient.ambulatoire else 'hosp.'} ★ URGENCE {d[2].nom if d else ''}")
         lits, places = self.hebergement.occupation()
         h = self.instance2.hebergement
-        print(f"  Hébergement : {lits.get(jour, 0)}/{h.cap_lits} lits (+{h.reserve_lits} réserve), "
+        print(f"  Hébergement : {lits.get(jour, 0)}/{self.hebergement.cap_lits_jour(jour)} lits (+{h.reserve_lits} réserve), "
               f"{places.get(jour, 0)}/{h.cap_places} places ambulatoires")
 
     def bilan(self) -> dict[str, Any]:
@@ -2008,7 +2299,9 @@ class BlocOperatoire(mesa.Model):
             "urgences_non_programmees": len(self.urgences_non_programmees()),     # invariant : doit valoir 0
             # anciens noms, conservés pour l'interface (vues/urgences.py) et demo_sma_urgences.py
             "urgences_inserees": len(urg),
-            "urgences_refusees": 0,                                                  # plus aucun refus / transfert
+            "urgences_refusees": 0,                                                  # aucun refus
+            "urgences_transferees": len({d["patient"] for d in self.regulation.decisions
+                                         if d["type"] == "urgence_transferee"}),       # transfert PROPOSÉ (niveau 5)
             "urgences_dans_delai": sum(d["dans_delai"] for d in urg),
             "urgences_hors_delai": sum(not d["dans_delai"] for d in urg),
             "urgences_escaladees": sum(d["niveau"] > 0 for d in urg),
@@ -2062,14 +2355,14 @@ class BlocOperatoire(mesa.Model):
                 det["attente_urgences"] += d["attente_min"] * GRAVITES[d["gravite"]].poids_attente
         lits, places = self.hebergement.occupation()
         h = self.instance2.hebergement
-        det["lits_places"] = (sum(max(0, o - h.cap_lits) for o in lits.values()) * w.lit
+        det["lits_places"] = (sum(max(0, o - self.hebergement.cap_lits_jour(d)) for d, o in lits.items()) * w.lit
                               + sum(max(0, o - h.cap_places) for o in places.values()) * w.place)
         det["total"] = sum(det.values())
         return det
 
     def urgences_non_programmees(self) -> list[int]:
         programmees = {i.pid for i in self.interventions() if i.urgence} | set(self.garde.interventions)
-        return sorted(self.urgences_recues - programmees)
+        return sorted(self.urgences_recues - programmees - self.regulation.urgences_transferees)
 
     def afficher_bilan(self):
         b = self.bilan()
@@ -2111,7 +2404,7 @@ class BlocOperatoire(mesa.Model):
                     erreurs.append(f"{self.nom_chir(a.chirurgien_id)} : P{a.pid} et P{b.pid} en même temps")
         for i in its:
             f = self.salles[i.salle_id].creneaux[i.fenetre_id]
-            if not (f.debut <= i.debut and i.fin <= f.fin):
+            if not (f.debut <= i.debut and (i.fin <= f.fin or i.pid in self.depassements_autorises)):
                 erreurs.append(f"P{i.pid} hors des heures du planning")
             if not f.urgence and f.chirurgien_id != i.chirurgien_id:
                 erreurs.append(f"P{i.pid} opéré hors de la vacation de son chirurgien")

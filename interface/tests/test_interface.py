@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Interface Streamlit sans navigateur (streamlit.testing.AppTest), sur une base isolée : connexion, chaque page pour
-chaque rôle, onglets selon le rôle, déclaration d'une urgence et d'une absence, alertes temporaires.
+chaque rôle, onglets selon le rôle, déclaration d'une urgence, d'une absence, d'une prolongation d'intervention et de
+lits indisponibles, alertes temporaires.
 """
 from datetime import date, datetime, timedelta
 
@@ -107,3 +108,24 @@ def test_une_alerte_disparait_du_bandeau_apres_10_minutes(site):
     at = page("urgences", "regulation")
     assert not at.error
     assert any(x.label.startswith("Alertes du jour") for x in at.expander)
+
+
+def test_un_chirurgien_declare_la_prolongation_de_sa_propre_intervention(site):
+    assert not any(s.label == "Intervention" for s in page("urgences", "dr.ct").selectbox)   # n'opère pas mercredi
+    at = page("urgences", "dr.cl")
+    choix = next(s for s in at.selectbox if s.label == "Intervention")
+    assert choix.options and all("Dr CL" in o for o in choix.options)
+    next(n for n in at.number_input if n.label == "Minutes en plus").set_value(45)
+    _bouton(at, "Déclarer la prolongation").click().run()
+    assert not at.exception
+    assert [(e["type"], e["contenu"]["minutes"]) for e in DB.lister_evenements()] == [("prolongation_intervention", 45)]
+
+
+def test_la_regulation_declare_des_lits_indisponibles(site):
+    assert not any(b.label.startswith("Déclarer l'indisponibilité") for b in page("urgences", "dr.ct").button)
+    at = page("urgences", "regulation")
+    next(n for n in at.number_input if n.label == "Lits fermés").set_value(3)
+    _bouton(at, "Déclarer l'indisponibilité").click().run()
+    assert not at.exception
+    assert [(e["type"], e["contenu"]["nb_lits"]) for e in DB.lister_evenements()] == [("indisponibilite_lits", 3)]
+    assert any("3 lit(s) indisponible(s)" in c.value for c in page("urgences", "regulation").caption)

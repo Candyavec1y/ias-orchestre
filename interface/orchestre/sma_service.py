@@ -160,7 +160,8 @@ class Simulation:
     def occupation(self, jour: date) -> dict:
         lits, places = self.modele.hebergement.occupation()
         h = self.modele.instance2.hebergement
-        return {"lits": lits.get(jour, 0), "cap_lits": h.cap_lits, "reserve": h.reserve_lits,
+        return {"lits": lits.get(jour, 0), "cap_lits": self.modele.hebergement.cap_lits_jour(jour),
+                "indisponibles": self.modele.hebergement.lits_indisponibles(jour), "reserve": h.reserve_lits,
                 "places": places.get(jour, 0), "cap_places": h.cap_places}
 
     def pannes(self) -> dict:
@@ -252,8 +253,14 @@ def _planifier(m: SMA.BlocOperatoire, e: dict) -> None:
         m.planifier_action(t, functools.partial(_annuler, m, c))
     elif e["type"] == "reoptimisation":
         m.planifier_action(t, functools.partial(_reoptimisation_rejouee, m, c))
-    elif e["type"] == "absence":
-        m.planifier_action(t, functools.partial(_absence, m, c))
+    elif e["type"] == "prolongation_intervention":
+        m.planifier(SMA.ProlongationIntervention(t, int(c["pid"]), int(c["minutes"])))
+    elif e["type"] == "indisponibilite_lits":
+        m.planifier(SMA.IndisponibiliteLits(t, int(c["nb_lits"]), date.fromisoformat(c["du"]),
+                                            date.fromisoformat(c["au"]), c.get("motif", "")))
+    elif e["type"] == "absence":                    # logique dans le SMA (AgentRegulation.sur_absence)
+        m.planifier(SMA.AbsenceChirurgien(t, id_chirurgien(c["praticien"]), date.fromisoformat(c["du"]),
+                                          date.fromisoformat(c["au"]), c.get("motif", "")))
 
 
 def etat_programme(m: SMA.BlocOperatoire) -> dict[int, tuple]:
@@ -375,83 +382,6 @@ def _reoptimisation_rejouee(m: SMA.BlocOperatoire, c: dict) -> None:
                           "methode": c.get("methode"), "patients_deplaces": len(mvts),
                           "patients_sortis_attente": len(sortis),
                           "gain": c.get("score_avant", 0) - c.get("score_apres", 0)})
-
-
-# =============================================================================
-# Absence d'un chirurgien (vacances, congrès, maladie...)
-# =============================================================================
-# Les vacations du chirurgien sont fermées sur la période (les salles ne les proposent plus, son agent refuse tout
-# créneau) ; ses patients non commencés sont replacés aussitôt : chez un confrère SEULEMENT s'il l'a accepté à la
-# consultation, sinon dans les vacations de son chirurgien après son retour (priorité puis ordre de passage).
-
-SEUIL_ALERTE_REPORT_JOURS = 3          # patient prioritaire (3-4) repoussé de plus de 3 jours : alerte au cadre
-PREVENANCE_JOURS = 2                   # un patient replacé l'est au plus tôt 2 jours après la déclaration (le prévenir)
-
-
-def periode_absence(c: dict) -> tuple[datetime, datetime]:
-    """[premier jour 0 h, lendemain du dernier jour 0 h[."""
-    return (datetime.combine(date.fromisoformat(c["du"]), time(0)),
-            datetime.combine(date.fromisoformat(c["au"]) + timedelta(days=1), time(0)))
-
-
-def _absence(m: SMA.BlocOperatoire, c: dict) -> None:
-    reg = m.regulation
-    cid = id_chirurgien(c["praticien"])
-    debut, fin = periode_absence(c)
-    conv = m.nouvelle_conversation("ABS")
-    m.absences.setdefault(cid, []).append((debut, fin))
-    m.annoncer(f"\n[{SMA.jour_txt(m.maintenant.date())} {SMA.hm(m.maintenant)}] {conv} — ABSENCE : Dr {c['praticien']} "
-               f"du {debut:%d/%m} au {fin - timedelta(days=1):%d/%m} ({c.get('motif', 'motif non précisé')}) : "
-               f"ses vacations sur la période sont fermées")
-    apres = m.maintenant + m.parametres.preparation_rattrapage_min * SMA.MIN
-    au_plus_tot = datetime.combine(m.maintenant.date() + timedelta(days=PREVENANCE_JOURS), time(0))
-    touches = sorted((it for s in m.salles.values() for it in s.interventions.values()
-                      if it.chirurgien_id == cid and debut <= it.debut < fin and it.debut > m.maintenant),
-                     key=lambda i: (-i.patient.priorite, i.debut))
-    for it in touches:
-        if it.debut < apres:
-            alerte = (f"Absence du Dr {c['praticien']} : P{it.pid} prévu à {SMA.hm(it.debut)} ne peut plus être "
-                      f"opéré par lui et est peut-être déjà convoqué -> prévenir le patient")
-            reg.alertes.append(alerte)
-            m.annoncer(f"  ⚠ {alerte}")
-    for it in touches:                        # libérer les créneaux (agendas et séjours mis à jour par la salle)
-        reg.envoyer(f"salle_{it.salle_id}", "ACCEPT_PROPOSAL", "accept_proposal",
-                    {"plan": SMA.Plan(it.salle_id, it.fenetre_id, it.debut.date(), {}, retraits=[it.pid])}, conv,
-                    f"absence : libérer P{it.pid}")
-    reg.decisions.append({"type": "absence", "heure": m.maintenant, "chirurgien": cid, "du": debut, "au": fin,
-                          "patients_touches": len(touches)})
-    if not touches:
-        m.annoncer("  ✔ Aucun patient programmé sur la période")
-        return
-    m.annoncer(f"  {len(touches)} patient(s) à replacer")
-    urgences = [it for it in touches if it.urgence and it.pid in reg.urgences_info]
-    if urgences:
-        reg._replacer(urgences, conv)           # une urgence garde son délai : nouvel appel d'offres urgence
-    for it in [i for i in touches if i not in urgences]:
-        autorises = reg.chirurgiens_autorises.get(it.pid, [it.chirurgien_initial])
-        props, choix = reg.appel_offres_replacement(it, au_plus_tot, autorises, it.debut.date(), conv,
-                                                    f"replacer P{it.pid} (absence du Dr {c['praticien']})")
-        if choix is None:
-            reg.liste_attente.append((it, it.debut.date()))
-            m.annoncer(f"    ↳ P{it.pid} : aucune vacation compatible -> liste d'attente")
-            reg.decisions.append({"type": "attente", "heure": m.maintenant, "patient": it.pid})
-            continue
-        agent, plan, extra, _ = choix
-        evinces = reg._appliquer(agent, plan, props, conv)
-        nouvelle = plan.ajouts[0]
-        m.annoncer(f"    ↳ {plan.resume}")
-        reg.decisions.append({"type": "replacement", "heure": m.maintenant, "patient": it.pid, "debut": nouvelle.debut,
-                              "salle": plan.salle_id, "chirurgien": nouvelle.chirurgien_id,
-                              "changement_chirurgien": nouvelle.chirurgien_id != nouvelle.chirurgien_initial,
-                              "cout": plan.cout + extra, "motif": "absence"})
-        report = (nouvelle.debut.date() - it.debut.date()).days
-        if it.patient.priorite >= 3 and report > SEUIL_ALERTE_REPORT_JOURS:
-            alerte = (f"Absence du Dr {c['praticien']} : P{it.pid} (priorité {it.patient.priorite}) repoussé de "
-                      f"{report} jours, au {SMA.jour_txt(nouvelle.debut.date())} -> à valider par le cadre de bloc")
-            reg.alertes.append(alerte)
-            m.annoncer(f"  ⚠ {alerte}")
-        if evinces:
-            reg._replacer(evinces, conv)
 
 
 def _urgence_tracee(m: SMA.BlocOperatoire, evt) -> None:

@@ -7,7 +7,7 @@ Onglet URGENCES : gestion dynamique par le système multi-agent.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 import streamlit as st
@@ -253,6 +253,74 @@ def _logistique(sim: S.Simulation) -> None:
                 st.session_state["flash_urgence"] = ("ok", f"{asc_id} remis en service : le SMA tente de ré-avancer "
                                                            "les patients décalés.")
                 st.rerun()
+
+    st.divider()
+    _prolongation(sim, u, maintenant)
+    if C.est("regulation", "admin"):
+        st.divider()
+        _lits_indisponibles(sim, u, maintenant)
+
+
+def _prolongation(sim: S.Simulation, u: dict, maintenant: datetime) -> None:
+    """Une intervention durera plus longtemps que prévu : la salle réordonne la suite de son créneau ; les patients
+    qui ne tiennent plus dans les heures de la vacation sont replacés."""
+    noms = C.noms_patients(sim)
+    moi = S.id_chirurgien(u["praticien"]) if u.get("role") == "chirurgien" and u.get("praticien") else None
+    en_cours = [it for it in sim.modele.interventions() if it.debut.date() == maintenant.date() and it.fin > maintenant
+                and (moi is None or it.chirurgien_id == moi)]
+    st.markdown("**Prolongation d'une intervention**")
+    if not en_cours:
+        st.caption("Aucune intervention en cours ou à venir aujourd'hui.")
+        return
+    with st.form("prolongation"):
+        c1, c2 = st.columns([3, 1])
+        it = c1.selectbox("Intervention", en_cours, format_func=lambda i: (
+            f"{i.debut:%H:%M}–{i.fin:%H:%M} · {sim.modele.salles[i.salle_id].nom_affiche} · "
+            f"{noms.get(i.pid, i.pid)} · {S.nom_chirurgien(i.chirurgien_id)}"))
+        minutes = c2.number_input("Minutes en plus", 5, 300, 30, step=5)
+        ok = st.form_submit_button("Déclarer la prolongation", type="primary")
+    if ok:
+        nom = noms.get(it.pid, f"P{it.pid}")
+        C.appliquer(lambda: DB.ajouter_evenement(maintenant, "prolongation_intervention",
+                                                 {"pid": it.pid, "minutes": int(minutes)}, u["login"]),
+                    categorie="Programme", action="Prolongation d'une intervention", patient=nom,
+                    detail=f"+{int(minutes)} min, {sim.modele.salles[it.salle_id].nom_affiche}", motif="Aléa opératoire")
+        st.session_state["flash_urgence"] = ("ok", f"{nom} : prolongation de {int(minutes)} min enregistrée ; la suite "
+                                                   "du créneau a été réordonnée.")
+        st.rerun()
+
+
+def _lits_indisponibles(sim: S.Simulation, u: dict, maintenant: datetime) -> None:
+    """Lits fermés sur une période : la capacité programmable baisse ; les hospitalisés en trop sont déplacés,
+    priorité la plus faible d'abord. La réserve des urgences n'est touchée qu'en dernier."""
+    st.markdown("**Lits indisponibles** (cadre de bloc, administrateur)")
+    actives = [e for e in DB.lister_evenements() if e["type"] == "indisponibilite_lits"
+               and date.fromisoformat(e["contenu"]["au"]) >= maintenant.date() and e["heure"] <= maintenant]
+    for e in actives:
+        c = e["contenu"]
+        st.caption(f"{c['nb_lits']} lit(s) indisponible(s) du {date.fromisoformat(c['du']):%d/%m} au "
+                   f"{date.fromisoformat(c['au']):%d/%m} — {c.get('motif') or 'motif non précisé'}")
+    with st.form("lits_indisponibles"):
+        c1, c2, c3, c4 = st.columns(4)
+        nb = c1.number_input("Lits fermés", 1, 200, 2)
+        du = c2.date_input("Du", value=maintenant.date(), min_value=maintenant.date(), format="DD/MM/YYYY")
+        au = c3.date_input("Au (inclus)", value=maintenant.date() + timedelta(days=2), min_value=maintenant.date(),
+                           format="DD/MM/YYYY")
+        motif = c4.text_input("Motif", placeholder="ex. travaux, infection")
+        ok = st.form_submit_button("Déclarer l'indisponibilité", type="primary")
+    if ok:
+        if au < du:
+            st.error("La date de fin doit suivre la date de début.")
+            return
+        C.appliquer(lambda: DB.ajouter_evenement(maintenant, "indisponibilite_lits",
+                                                 {"nb_lits": int(nb), "du": du.isoformat(), "au": au.isoformat(),
+                                                  "motif": motif.strip()}, u["login"]),
+                    categorie="Logistique", action="Indisponibilité de lits",
+                    detail=f"{int(nb)} lit(s) du {du:%d/%m} au {au:%d/%m}", motif=motif.strip() or "non précisé")
+        d = next((x for x in reversed(C.simulation().decisions()) if x["type"] == "indisponibilite_lits"), None)
+        st.session_state["flash_urgence"] = ("ok", f"{int(nb)} lit(s) indisponible(s) du {du:%d/%m} au {au:%d/%m}"
+                                             + (f" : {d['patients_deplaces']} patient(s) déplacé(s)." if d else "."))
+        st.rerun()
 
 
 # =============================================================================

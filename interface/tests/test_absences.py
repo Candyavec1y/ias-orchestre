@@ -34,7 +34,7 @@ def test_patients_sans_consentement_restent_chez_leur_chirurgien_avec_prevenance
     for pid in concernes:
         it = sim.intervention(pid)
         assert it.chirurgien_id == CT
-        assert it.debut.date() >= DECLARATION.date() + timedelta(days=S.PREVENANCE_JOURS)
+        assert it.debut.date() >= DECLARATION.date() + timedelta(days=S.SMA.ParametresSMA().prevenance_absence_jours)
 
 
 def test_patient_ayant_accepte_un_confrere_peut_etre_opere_pendant_l_absence(prog):
@@ -76,7 +76,7 @@ def test_alerte_pour_chaque_patient_prioritaire_repousse_de_plus_de_3_jours(prog
     sim = S.simuler(prog, [absence(samedi, "CT", DU, AU + timedelta(days=7))], samedi + timedelta(minutes=1))
     attendues = {d["patient"] for d in sim.decisions() if d["type"] == "replacement" and d.get("motif") == "absence"
                  and sim.intervention(d["patient"]).patient.priorite >= 3
-                 and (d["debut"].date() - avant[d["patient"]]).days > S.SEUIL_ALERTE_REPORT_JOURS}
+                 and (d["debut"].date() - avant[d["patient"]]).days > S.SMA.ParametresSMA().seuil_alerte_report_jours}
     signalees = {pid for pid in avant if any(f"P{pid} " in a and "repoussé" in a for a in sim.alertes())}
     assert attendues, "le scénario doit repousser au moins un patient prioritaire"
     assert signalees == attendues
