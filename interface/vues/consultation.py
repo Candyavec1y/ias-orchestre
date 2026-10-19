@@ -147,9 +147,6 @@ def _etape_validation() -> None:
     met = ml.metriques()
 
     st.markdown("#### Ce que prédit le modèle")
-    if pred.hors_vocabulaire:
-        st.warning("Valeurs jamais vues à l'entraînement : " + ", ".join(pred.hors_vocabulaire)
-                   + ". Le modèle les traite comme manquantes : vérifiez attentivement les prédictions.")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Prise en charge", "Ambulatoire" if pred.ambulatoire else "Hospitalisation",
               f"{pred.proba_ambulatoire if pred.ambulatoire else 1 - pred.proba_ambulatoire:.0%} de confiance",

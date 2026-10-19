@@ -42,7 +42,7 @@ MESURES = """
 | Durée de conservation | Purge automatique N jours après l'intervention (paramétrable). |
 | Droits des personnes | Export JSON (accès / portabilité), suppression (effacement) qui se propage au programme rejoué par le SMA. |
 | Intervention humaine (art. 22) | Les prédictions et les créneaux sont des **propositions** : le chirurgien valide ou corrige ; l'écart prédiction / décision est conservé. |
-| Transparence de l'IA | Qualité du modèle mesurée sur 20 % de données jamais vues affichée à chaque prédiction ; alerte si une valeur est inconnue du modèle. |
+| Transparence de l'IA | Qualité du modèle mesurée sur 20 % de données jamais vues affichée à chaque prédiction. |
 | Données d'entraînement | Seules des métriques agrégées sont conservées ; aucune ligne de l'historique n'est affichée. |
 """
 

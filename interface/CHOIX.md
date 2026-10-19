@@ -106,7 +106,7 @@ au SMA, aux indicateurs, à l'étude de saturation et au validateur :
   * année / mois / jour de semaine sont **déduits de la date « opérable au plus tôt »** (les modèles ont
     appris sur la date d'intervention ; prendre la date du jour biaiserait ces trois variables).
   * listes déroulantes = **modalités vues à l'entraînement**, lues dans l'encodeur interne du modèle,
-    avec saisie libre possible ; une valeur inconnue du modèle déclenche un avertissement.
+    avec saisie libre possible (une valeur inconnue du modèle est traitée comme manquante, sans avertissement).
 * **Non collectés** (minimisation) : nom, prénom, date de naissance (l'âge suffit), CIM associés 1-5 et
   CCAM 2-4 (présents dans les données mais **inutilisés** par les modèles).
 * **Modèles utilisés** : les 4 modèles du dépôt (`machine_learning/outputs/models_rapide/*.joblib` : type de prise
