@@ -8,26 +8,28 @@ du dépôt `ias-orchestre`. Les points qui demandent un arbitrage de l'équipe s
 
 ## 1. Technologie : Streamlit, 100 % Python
 
-* Le dépôt contenait déjà deux maquettes Streamlit (`app.py`, `app_chirurgien.py`). Je les ai reprises
-  comme point de départ (parcours « ajouter un patient → propositions → choix », grille des vacations,
-  validation des codes CIM-10 / CCAM par expressions régulières) au lieu d'introduire un autre framework.
+* Le dépôt contenait deux maquettes Streamlit (`app.py`, `app_chirurgien.py`), reprises comme point de départ
+  (parcours « ajouter un patient → propositions → choix », grille des vacations, validation des codes CIM-10 /
+  CCAM par expressions régulières) au lieu d'introduire un autre framework ; elles ne sont plus dans le dépôt.
 * Navigation multipage native (`st.navigation`), graphiques Plotly (Gantt interactif au survol),
   base SQLite locale (aucun serveur à installer).
-* Les deux maquettes d'origine ne sont pas modifiées ; la nouvelle interface est dans `interface/`.
 
 ```
 interface/
 ├── app.py                 point d'entrée : connexion, rôles, navigation
 ├── orchestre/             NOYAU sans interface graphique (testable)
 │   ├── chemins.py         accès aux dossiers du dépôt (sys.path), commun/ en premier
-│   ├── ml.py              modèles .joblib, vocabulaires, prédiction, validation 80/20
-│   ├── programme.py       planning v28, niveau 1, programme niveau 2 (hybridations)
+│   ├── ml.py              modèles .joblib, vocabulaires, prédiction, métriques sur le jeu de test
+│   ├── programme.py       planning v28, niveau 1 (instance d'étude), programme niveau 2 (hybridation)
 │   ├── sma_service.py     rejeu des événements dans le SMA, inscription, annulation
 │   └── stockage.py        SQLite, chiffrement, comptes, traces, purge RGPD
 ├── vues/                  une page par onglet + graphiques
 ├── tests/                 tests du noyau (pytest)
 └── donnees/               base locale, clé, caches — créé au lancement, ignoré par git
-commun/structures_communes.py   version FUSIONNÉE des classes communes (voir § 2)
+commun/
+├── parametres.py          capacités, budget, graines, horizons : définis UNE seule fois
+├── structures_communes.py version FUSIONNÉE des classes communes (voir § 2), occupation des lits
+└── validation.py          validateur de faisabilité indépendant (niveaux 1 et 2)
 ```
 
 ## 2. Une seule version des classes communes
@@ -49,13 +51,50 @@ celui qu'attendent les métaheuristiques et les agents. Les deux copies ont ensu
 ## 3. Chaîne de décision
 
 ```
- Consultation ──► ML (5 modèles) ──► validation par le chirurgien ──┐
+ Consultation ──► ML (4 modèles) + règle d'urgence ──► validation par le chirurgien ──┐
                                                                     ▼
  Planning v28 (vacations fixes) ──► Métaheuristiques / hybridation ──► Programme initial
-                                    (patients → vacations, niveau 2)        │
+                                    (patients → vacations, niveau 2)        │ validateur de faisabilité
                                                                             ▼
- Urgences, pannes, annulations, nouvelles inscriptions ──► SMA (Mesa) ──► Programme courant
+ Urgences, pannes, absences, prolongations, lits fermés,
+ annulations, nouvelles inscriptions ──► SMA (Mesa) ──► Programme courant
 ```
+
+**Séparation des niveaux (D6).** Le niveau 1 (chirurgiens → plages horaires) est étudié sur l'**instance d'étude
+fictive** (8 chirurgiens, 3 salles, blocs de 2 h). Le niveau 2 (patients → vacations) et le SMA travaillent sur le
+**planning réel v28** (vacations fixes). Les deux ne sont chaînés que sur l'instance d'étude
+(`hybridation.py --instance etude`).
+
+**Paramètres (`commun/parametres.py`).** Capacités, budget de calcul, graines et horizons y sont définis une seule
+fois ; aucun autre fichier ne les écrit en dur.
+
+| Paramètre | Valeur | Utilisé par |
+|---|---|---|
+| Lits / dont réserve des urgences / places ambulatoires du site | 30 / 3 / 20 | application, N2 et SMA sur v28 (D4) |
+| Lits / réserve / places de l'instance d'étude N1 | 14 / 2 / 10 | instance d'étude fictive uniquement |
+| Budget de calcul d'une métaheuristique | 10 s | interface, `hybridation.py --temps` |
+| Graines | 42 (étude, Mesa, ML, saturation), 43 (patients), 1 (scénarios SMA) | option `--graine` de chaque script |
+| Horizon du programme / du SMA / des reports | 4 semaines / 52 semaines / 3 semaines | programme, SMA, hybridation |
+
+Les capacités du site restent à remplacer par les capacités réelles (§ 10).
+
+**Validateur de faisabilité (D9, `commun/validation.py`).** Indépendant des fonctions objectif et des algorithmes,
+il contrôle au niveau 1 l'affectation, les plages, les salles autorisées, les disponibilités, les conflits de salle
+et de chirurgien, et au niveau 2 l'affectation, la vacation, le chirurgien, la date au plus tôt, la capacité utile
+des vacations, les lits et les places. Chaque résultat de métaheuristique et le programme de l'interface portent
+leur validation ; la meilleure solution retenue est une solution faisable, et une solution non faisable est
+signalée « NON VALIDE ». Dans l'onglet Planning, la régulation et l'administrateur voient un bandeau rouge et la
+liste des contraintes violées.
+
+**Occupation des lits et des places (Q13).** Une seule fonction de décompte (`jours_occupation`) sert au niveau 2,
+au SMA, aux indicateurs, à l'étude de saturation et au validateur :
+
+* un patient hospitalisé occupe un lit par **nuitée**, de son admission (jour de l'intervention moins les nuits
+  avant) à la veille de sa sortie ; il sort à **midi** (`HEURE_SORTIE_HOSPITALISATION`) et son lit est réutilisable
+  le même jour après **remise en état** (`DUREE_REMISE_EN_ETAT_LIT_MIN` = 60 min, hypothèse) ; jamais deux patients
+  à la fois dans un lit ; un hospitalisé sans nuitée occupe un lit le jour de son intervention ;
+* un patient ambulatoire occupe une place **toute la journée** de son intervention (un découpage de la journée
+  demanderait des heures d'arrivée, de surveillance et de sortie qui ne sont pas dans les données).
 
 ## 4. Onglet Consultation (machine learning)
 
@@ -63,17 +102,20 @@ celui qu'attendent les métaheuristiques et les agents. Les deux copies ont ensu
   `modele_prediction_rapide.py`) : type d'intervention, CIM-10 principal, CCAM 1, sexe, praticien,
   type d'anesthésie, anesthésie loco-régionale, âge, année, mois, jour de la semaine.
   * année / mois / jour de semaine sont **déduits de la date « opérable au plus tôt »** (les modèles ont
-    appris sur la date d'intervention ; `creation_patients.py` utilisait la date du jour, ce qui biaise
-    ces trois variables).
+    appris sur la date d'intervention ; prendre la date du jour biaiserait ces trois variables).
   * listes déroulantes = **modalités vues à l'entraînement**, lues dans l'encodeur interne du modèle,
     avec saisie libre possible ; une valeur inconnue du modèle déclenche un avertissement.
 * **Non collectés** (minimisation) : nom, prénom, date de naissance (l'âge suffit), CIM associés 1-5 et
-  CCAM 2-4 (présents dans `creation_patients.py` mais **inutilisés** par les modèles).
-* **Modèles utilisés** : ceux du dépôt (`machine_learning/outputs/models_rapide/*.joblib`), appelés via
-  `predire_patient()` de `utilisation_modèle.py`. La qualité affichée vient du protocole
-  **80 % entraînement / 20 % test** (`valider_sur_jeu_de_test`), recalculée par l'interface ; seules des
-  métriques agrégées sont conservées (`donnees/metriques_ml.json`).
-* **Score d'urgence 1-10 → priorité 1-4** des structures communes : 1-2 → 1, 3-4 → 2, 5-7 → 3, 8-10 → 4.
+  CCAM 2-4 (présents dans les données mais **inutilisés** par les modèles).
+* **Modèles utilisés** : les 4 modèles du dépôt (`machine_learning/outputs/models_rapide/*.joblib` : type de prise
+  en charge, durée au bloc, nuits avant, nuits après), appelés via `predire_patient()` de `utilisation_modele.py`.
+  Préparation des données, découpage et évaluation sont communs (`machine_learning/preparation.py`) : un seul
+  découpage **80 % entraînement / 20 % test** stratifié (graine `GRAINE_ML`), nuits avant / après apprises et
+  évaluées sur les seuls hospitalisés. La qualité affichée est recalculée par l'interface
+  (`valider_sur_jeu_de_test`) ; seules des métriques agrégées sont conservées (`donnees/metriques_ml.json`).
+* **Score d'urgence (D8)** : il n'est pas prédit par un modèle. C'est une **règle du projet** (`regle_urgence`,
+  d'après le code CIM-10 principal et le premier acte CCAM), **non validée cliniquement**. Le score 1-10 donne une
+  **priorité proposée** 1-4 (1-2 → 1, 3-4 → 2, 5-7 → 3, 8-10 → 4) que le médecin valide ou corrige.
   Au-delà de 8, l'interface conseille de passer par l'onglet Urgences.
 * **Le chirurgien valide ou corrige** chaque valeur (prise en charge, durée, nuits, priorité). La
   prédiction ET la valeur retenue sont conservées (on peut mesurer l'écart a posteriori).
@@ -95,24 +137,34 @@ celui qu'attendent les métaheuristiques et les agents. Les deux copies ont ensu
   propres classes, recuit simulé et AGS seuls) ont été retirées du dépôt (voir NETTOYAGE.md).
 * **Niveau 1 (chirurgiens → plages)** : l'hybridation N1 travaille sur des blocs de 2 h. Le planning v28
   a des horaires irréguliers (7 h 45, 15 h 30…) et n'est donc pas ré-optimisable tel quel. L'onglet lance
-  le niveau 1 sur l'**instance d'étude commune** (8 chirurgiens, 3 salles) et affiche le planning obtenu.
-  Brancher le N1 sur v28 demande de définir une grille de créneaux
-  (question ouverte § 10).
+  le niveau 1 sur l'**instance d'étude fictive** (8 chirurgiens, 3 salles) et affiche le planning obtenu (D6).
+  Brancher le N1 sur v28 demande de définir une grille de créneaux (question ouverte § 10).
 * **Programme initial fictif** : le dépôt ne contient pas de liste de patients à programmer. J'utilise le
   générateur commun `generer_patients_etude` (patients `DEMO-xxxx`) sur un **horizon de 4 semaines**, avec
   une charge décroissante (85-100 %, 60-75 %, 35-50 %, 10-25 % des heures de vacation) : un programme se
   remplit à l'approche de la date, et il reste de la place pour les nouvelles consultations.
-* **Hébergement** : les capacités de l'étude (14 lits dont 2 de réserve, 10 places) sont calibrées pour
-  8 chirurgiens ; avec la vingtaine de praticiens et 4 salles de v28, 45 patients restaient non placés.
-  J'ai retenu **30 lits (dont 3 de réserve) et 20 places ambulatoires** (pic observé : 25 lits). À
-  remplacer par les capacités réelles (question ouverte).
+* **Hébergement (D4)** : 30 lits dont 3 de réserve pour les urgences, 20 places ambulatoires, pour l'application,
+  le niveau 2 et le SMA sur v28 ; l'instance d'étude du niveau 1 garde ses propres capacités (14 lits dont 2 de
+  réserve, 10 places), calibrées pour 8 chirurgiens. L'administrateur peut modifier les capacités du site
+  (Administration → Lits et places). À remplacer par les capacités réelles (question ouverte).
+
+### Générateurs de patients (D7)
+
+Trois générateurs, aux objectifs différents, volontairement séparés :
+
+| Générateur | Objectif | Distributions | Graine |
+|---|---|---|---|
+| `generer_patients_etude` (`commun/structures_communes.py`) | instances d'optimisation : instance d'étude, programme de démonstration, scénarios du SMA | **hypothèses** : durée uniforme dans {30…150} min, 40 % d'ambulatoires, nuits avant / après fixées, priorités 15 / 50 / 25 / 10 %, 5 % d'urgences, charge 90-110 % des vacations | `GRAINE_PATIENTS` (+ 97 par semaine) |
+| `tirer_patients_profils_reels` (`interface/tests/saturation.py`) | étude de saturation | durée, mode et nuits **observés** (séjour tiré au hasard dans les données hospitalières, lues en mémoire, rien n'est écrit) ; chirurgien au prorata du temps de vacation, priorité 2 (hypothèses) | `GRAINE_SATURATION` |
+| `urgences_semaine_aleatoire` (`sma/scenarios_sma.py`) | arrivées d'urgences des scénarios du SMA | jour, heure, durée, ambulatoire, nuits calibrés sur l'historique 2019-2022 ; gravités et praticiens : hypothèses | `GRAINE_SCENARIOS_SMA` |
 
 ## 6. Onglet Urgences (système multi-agent)
 
 * **Le SMA du dépôt est utilisé tel quel** (`sma/sma_urgences.py`, Mesa, agents Triage, Régulation, Salle,
   Chirurgien, Hébergement, Logistique, protocole Contract Net). L'interface permet de déclarer une
   urgence (gravité vitale / urgente / différable), une panne, une prolongation ou une fin de panne du
-  monte-lit, et affiche décisions, alertes, Gantt de la journée et messages FIPA-ACL.
+  monte-lit, une absence, la prolongation d'une intervention, des lits indisponibles, et affiche décisions,
+  alertes, Gantt de la journée et messages FIPA-ACL.
 * **Approche événementielle (« event sourcing »)** : la base ne stocke que le programme initial et la liste
   des événements ; l'état du bloc est obtenu en **rejouant** les événements dans un modèle Mesa neuf
   jusqu'à l'heure courante (≈ 0,5 s). Avantages : état reproductible et vérifiable
@@ -122,16 +174,28 @@ celui qu'attendent les métaheuristiques et les agents. Les deux copies ont ensu
   j'ai ajouté, **sans modifier les agents**, un événement « inscription » qui réutilise l'appel d'offres
   `cfp_replacement` de l'agent de Régulation ; les agents Chirurgien et Hébergement valident chaque
   proposition. Les 4 meilleures (une par créneau) sont **présentées au chirurgien, qui choisit**. Au
-  rejeu, le créneau choisi est réappliqué ; s'il n'est plus possible, la meilleure alternative est prise ;
-  sinon le patient va en liste d'attente (relancée chaque matin à 7 h par la Régulation).
+  rejeu, le créneau choisi est réappliqué ; s'il n'est plus possible, la meilleure alternative est prise.
+  Le planning des vacations étant connu sur 52 semaines, un créneau plus tardif existe presque toujours ; la
+  liste d'attente (relancée chaque matin à 7 h par la Régulation) ne sert qu'en dernier recours.
 * **Annulation** : un événement libère le créneau et la Régulation relance la liste d'attente.
 * Correctif côté interface : pour un patient de consultation, l'heure « initiale » de référence est celle
   de son **premier placement** (sinon le bilan du SMA le comptait comme « décalé » depuis minuit).
 * Une urgence est enregistrée **à l'heure courante** (pas de saisie rétroactive, qui réécrirait l'histoire).
 * **Horloge** : temps réel (Europe/Paris) par défaut ; l'administrateur peut figer une **heure de
   démonstration** et l'avancer (+30 min, +2 h, lendemain 7 h 30) pour montrer le SMA en action.
-* Spécialités : le SMA ne connaît que 5 spécialités (`SPECIALITES_V28`, hypothèse du jeu de test). Hors de
-  ces 5 chirurgiens, un patient ne peut pas être « repris par un confrère ».
+* Spécialités : tous les praticiens du planning sont dans le même service (`SPECIALITE_SERVICE`,
+  orthopédie-traumatologie) ; un confrère du service peut reprendre un patient qui l'a accepté.
+
+### Aléas gérés par le SMA
+
+| Aléa | Événement | Traitement |
+|---|---|---|
+| Urgence | `ArriveeUrgence` | appel d'offres aux salles, délai selon la gravité ; escalade jusqu'au planning de garde (niveau 4) ; **transfert proposé** (niveau 5, D12) si aucun chirurgien compétent pour la spécialité de l'urgence, garde comprise, ne peut opérer avant la limite acceptable : décision `urgence_transferee` et alerte « décision humaine requise : transfert proposé » ; le meilleur plan interne éventuel est gardé ; le SMA ne transfère jamais de lui-même. Spécialités couvertes par la garde : `ParametresSMA.specialites_garde` (spécialité du service) |
+| Panne du monte-lit | `PanneAscenseur`, `ProlongationPanne`, `FinPanne` | aucun patient hospitalisé brancardé pendant la panne ; suite du programme décalée |
+| Absence d'un chirurgien | `AbsenceChirurgien` | vacations fermées ; patients replacés au plus tôt 2 jours après la déclaration ; confrère seulement si accepté ; urgences dans leur délai ; alerte pour un patient prioritaire repoussé de plus de 3 jours ou qui commence dans l'heure |
+| Prolongation d'une intervention | `ProlongationIntervention` | la salle réordonne la suite du créneau ; les patients qui ne tiennent plus dans les heures du créneau sont replacés (pas d'heures supplémentaires) ; salle de réveil et brancardage pris en compte |
+| Lits indisponibles | `IndisponibiliteLits` | capacité réduite sur la période, **d'abord sur les lits programmables** (la réserve des urgences reste entière tant qu'il reste assez de lits) ; patients hospitalisés non commencés déplacés, priorité la plus faible puis intervention la plus tardive d'abord ; liste d'attente relancée à la fin de la période |
+| Annulation, nouvelle inscription | événements du site « annulation », « inscription » | créneau libéré et liste d'attente relancée / appel d'offres de replacement |
 
 ## 7. Protection des données (RGPD / recommandations CNIL)
 
@@ -171,10 +235,11 @@ fuite de données de santé ; voir § 10.
 ## 9. Lancer, tester
 
 ```bash
-pip install -r interface/requirements.txt
-streamlit run interface/app.py            # depuis la racine du dépôt
-python -m pytest interface/tests -q       # tests du noyau
+python -m pip install -r interface/requirements.txt
+python -m streamlit run interface/app.py          # depuis la racine du dépôt
+python -m pytest interface/tests -m "not lent"    # tests rapides
 ```
+Les autres commandes (hybridation, scénarios du SMA, modèles, saturation) sont dans le [README](../README.md).
 Au premier lancement : comptes de démonstration dans `interface/donnees/comptes_demo.txt`
 (admin, regulation, dr.ct, dr.cl, dr.lz), mot de passe à changer à la première connexion.
 
@@ -184,7 +249,8 @@ Au premier lancement : comptes de démonstration dans `interface/donnees/comptes
    (`git filter-repo`), prévenir l'encadrant / le DPO du fournisseur des données.
 2. **Codes praticiens** : le ML connaît 23 codes (BO, CL, CT…), le planning v28 en a d'autres (GHREA,
    DEVOS, DS, DN, TDO/BS) inconnus du modèle → prédictions moins fiables pour eux.
-3. **Spécialités réelles** des chirurgiens (le SMA n'en connaît que 5, par hypothèse).
+3. **Spécialités réelles** des chirurgiens et spécialités couvertes par l'équipe de garde (aujourd'hui : un seul
+   service).
 4. **Capacités d'hébergement réelles** (lits, places ambulatoires, réserve).
 5. **Niveau 1 sur le planning réel** : quelle grille de créneaux adopter pour ré-optimiser v28 ?
 6. **Fusion de `structures_communes.py`** : adopter `commun/` comme unique version ?

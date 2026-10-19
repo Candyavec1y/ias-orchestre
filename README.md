@@ -99,14 +99,30 @@ du monte-lit.
 
 ---
 
-## 5. Tests
+## 5. Tests et commandes
+
+Toujours depuis la racine, environnement activé :
 
 ```bash
-python -m pytest interface/tests -m "not lent"     # tests rapides (environ 1 min)
+python -m pytest interface/tests -m "not lent"     # tests rapides (environ 1 min 30)
+python -m pytest interface/tests                   # tous les tests
 python interface/tests/saturation.py               # étude : combien de patients pour saturer le bloc ?
+
+python metaheuristiques/hybridation.py --help                                 # options de l'hybridation
+python metaheuristiques/hybridation.py                                        # niveau 2 sur le planning v28
+python metaheuristiques/hybridation.py --instance etude                       # niveaux 1 et 2, instance d'étude
+python metaheuristiques/hybridation.py --semaines 4 --temps 20 --graines 1 2 3   # campagne sur plusieurs graines
+
+python sma/scenarios_sma.py --liste                # scénarios du système multi-agent
+python sma/scenarios_sma.py insertion_simple       # un scénario (--messages : messages entre agents)
+python sma/scenarios_sma.py --tous                 # tous les scénarios, tableau récapitulatif
+
+python machine_learning/modele_prediction_rapide.py --evaluer-seulement     # métriques, sans réécrire les modèles
 ```
 
-Détail des tests et de l'étude de saturation : [interface/tests/README.md](interface/tests/README.md).
+Toutes les commandes acceptent `--graine` ; capacités, budget, graines et horizons par défaut sont dans
+[`commun/parametres.py`](commun/parametres.py). Détail des tests et de l'étude de saturation :
+[interface/tests/README.md](interface/tests/README.md).
 
 ---
 
@@ -127,11 +143,25 @@ Détail des tests et de l'étude de saturation : [interface/tests/README.md](int
 
 | Dossier | Contenu |
 |---|---|
-| `interface/` | l'application web (`app.py`), ses pages (`vues/`), sa logique (`orchestre/`) et ses tests |
-| `machine_learning/` | données historiques, entraînement et modèles de prédiction (`outputs/models_rapide/`) |
+| `interface/` | l'application web (`app.py`), ses pages (`vues/`), sa logique (`orchestre/`) et ses tests (`tests/`) |
+| `machine_learning/` | données historiques, préparation et évaluation communes (`preparation.py`), entraînement (`modele_prediction_rapide.py`), utilisation (`utilisation_modele.py`) et les 4 modèles (`outputs/models_rapide/`) |
 | `metaheuristiques/` | hybridation AGS + recuit simulé + recherche taboue (`hybridation.py`, seule implémentation de chaque algorithme) et format des résultats (`sorties.py`) |
-| `planning_vacations/` | planning de référence des vacations des chirurgiens |
-| `SMA/` | système multi-agent de gestion des urgences et des aléas (Mesa) |
-| `commun/` | `structures_communes.py`, structures de données partagées par tous les modules |
+| `planning_vacations/` | planning réel des vacations des chirurgiens (`planning_vacations_v28.py`, cycle de 4 semaines) |
+| `sma/` | système multi-agent de gestion des urgences et des aléas (`sma_urgences.py`, Mesa), scénarios (`scenarios_sma.py`), optimisation globale (`optimisation_sma.py`, `metaheuristiques_sma.py`) |
+| `commun/` | paramètres partagés (`parametres.py`), structures de données communes (`structures_communes.py`), validateur de faisabilité (`validation.py`) |
+
+### En bref
+
+* **Niveau 1** (chirurgiens → plages) : étudié sur une instance d'étude fictive ; **niveau 2** (patients →
+  vacations) et **SMA** : sur le planning réel v28.
+* **Capacités du site** : 30 lits dont 3 de réserve pour les urgences, 20 places ambulatoires (modifiables par
+  l'administrateur) ; l'instance d'étude du niveau 1 a ses propres capacités (14 / 2 / 10).
+* **Lits** comptés par nuitée, sortie à midi ; **places ambulatoires** occupées la journée de l'intervention.
+* **Priorité proposée** en consultation : règle du projet (CIM-10 / CCAM), non validée cliniquement, que le
+  médecin valide ou corrige ; les durées et nuits sont prédites par les modèles.
+* Chaque programme est contrôlé par un **validateur de faisabilité** indépendant ; les contraintes violées sont
+  affichées.
+* **Aléas** gérés par le SMA : urgences (avec transfert proposé, jamais décidé seul), pannes du monte-lit,
+  absences de chirurgien, prolongations d'intervention, lits indisponibles, annulations.
 
 Les choix de conception sont détaillés dans [`interface/CHOIX.md`](interface/CHOIX.md).
