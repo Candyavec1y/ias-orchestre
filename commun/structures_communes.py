@@ -72,7 +72,7 @@ if str(Path(__file__).resolve().parent) not in sys.path:      # commun/parametre
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from parametres import (  # noqa: E402  (valeurs partagées : définies une seule fois dans commun/parametres.py)
-    COUT_LIT_EN_TROP, GRAINE_ETUDE, GRAINE_PATIENTS, LITS_INSTANCE_ETUDE_N1, LITS_SITE,
+    COUT_LIT_EN_TROP, DECALAGE_GRAINE_PRIORITES, GRAINE_ETUDE, GRAINE_PATIENTS, LITS_INSTANCE_ETUDE_N1, LITS_SITE,
     PLACES_AMBULATOIRES_INSTANCE_ETUDE_N1, PLACES_AMBULATOIRES_SITE, RESERVE_LITS_INSTANCE_ETUDE_N1,
     RESERVE_LITS_SITE, TAUX_MARGE_VACATION,
 )
@@ -1012,14 +1012,26 @@ PRENOMS = ["Léo", "Emma", "Hugo", "Alice", "Noah", "Léa", "Jules", "Chloé", "
 def generer_patients_etude(vacations: dict[int, Vacation], graine: int = GRAINE_PATIENTS,
                            charge_min: float = 0.90, charge_max: float = 1.10) -> dict[int, Patient]:
     """
-    Générateur de patients COMMUN (logique du Tabou) : pour chaque chirurgien, des
-    patients jusqu'à `charge_min`..`charge_max` fois la durée de ses vacations
-    (donc un peu plus que la capacité utile : il y aura du surplus à gérer).
-    Priorité / urgence (distribution de l'AGS de Tanguy) tirées avec un second
-    générateur pour ne pas modifier les tirages d'origine.
+    Générateur 1/3 — INSTANCES SYNTHÉTIQUES D'OPTIMISATION (règles fixes, aucune donnée réelle).
+
+    Usage : instance d'étude (niveaux 1 et 2, construire_instance_niveau2), programme de démonstration de
+    l'interface sur le planning v28 (programme.construire_instances, patients DEMO-xxxx) et scénarios du SMA
+    (sma_urgences.construire_instances_v28).
+
+    Pour chaque chirurgien, des patients jusqu'à `charge_min`..`charge_max` fois la durée de ses vacations
+    (un peu plus que la capacité utile : il y a du surplus à gérer). Distributions — toutes des HYPOTHÈSES de
+    l'étude, pas des observations :
+      * durée au bloc : tirée uniformément dans {30, 45, 60, 75, 90, 105, 120, 150} min (≤ temps restant + 15) ;
+      * ambulatoire : 40 % ; hospitalisé : 1 nuit avant dans 30 % des cas, 1 / 1 / 2 / 2 / 3 nuits après ;
+      * priorité 1 / 2 / 3 / 4 : 15 / 50 / 25 / 10 %, et 5 % d'urgences (priorité 4) ;
+      * âge uniforme 5–90 ans, sexe et prénom tirés au hasard.
+    Graines : `graine` (par défaut GRAINE_PATIENTS ; + PAS_GRAINE_SEMAINE x k pour la semaine k d'un horizon) ;
+    priorités tirées avec un second générateur, graine + DECALAGE_GRAINE_PRIORITES, pour ne pas modifier les
+    autres tirages. Différences avec les deux autres générateurs : voir saturation.tirer_patients_profils_reels
+    (profils de séjours RÉELS) et scenarios_sma.urgences_semaine_aleatoire (URGENCES).
     """
     tirage = random.Random(graine)
-    tirage_prio = random.Random(graine + 1000)
+    tirage_prio = random.Random(graine + DECALAGE_GRAINE_PRIORITES)
     capacite: dict[int, float] = {}
     for v in vacations.values():
         if not v.supplementaire:

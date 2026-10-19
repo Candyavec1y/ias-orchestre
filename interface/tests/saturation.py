@@ -92,8 +92,18 @@ def _poids_chirurgiens(lundi: date, semaines: int) -> dict[str, float]:
     return dict(minutes)
 
 
-def tirer_patients(n: int, lundi: date, semaines: int, graine: int = GRAINE_SATURATION) -> list[SC.Patient]:
-    """N patients au profil réel : séjours tirés dans les données hospitalières, chirurgien au prorata des vacations."""
+def tirer_patients_profils_reels(n: int, lundi: date, semaines: int, graine: int = GRAINE_SATURATION
+                                 ) -> list[SC.Patient]:
+    """
+    Générateur 2/3 — PROFILS DE SÉJOURS RÉELS, pour l'étude de saturation uniquement.
+
+    N patients dont la durée au bloc, le mode (ambulatoire / hospitalisé) et les nuits avant / après sont ceux d'un
+    séjour tiré au hasard dans machine_learning/donnees_hospitalieres.csv (OBSERVÉS ; durée arrondie à 5 min,
+    au moins 15 min ; nuits avant plafonnées à 3, nuits après entre 1 et 30 pour un hospitalisé). HYPOTHÈSES :
+    chirurgien tiré au prorata de son temps de vacation sur l'horizon (la demande a la forme de l'offre),
+    priorité 2 pour tous, date au plus tôt = premier lundi. Graine : `graine` (GRAINE_SATURATION, --graine).
+    Les séjours sont lus en mémoire ; aucun enregistrement individuel n'est écrit sur disque.
+    """
     rng = random.Random(graine)
     sejours = _sejours_reels()
     poids = _poids_chirurgiens(lundi, semaines)
@@ -131,7 +141,7 @@ def etudier(semaines: int = 4, n_patients: Optional[int] = None, *, lundi: date 
     minutes_utiles = sum(v.capacite_utile_minutes for v in fenetres)
     if n_patients is None:                  # assez pour déborder nettement : 1,6 x la capacité au temps moyen réel
         n_patients = int(1.6 * minutes_utiles / 77) + 20
-    patients = tirer_patients(n_patients, lundi, semaines, graine)
+    patients = tirer_patients_profils_reels(n_patients, lundi, semaines, graine)
 
     debut = datetime.combine(lundi, datetime.min.time())
     evts = [{"id": k, "heure": debut + timedelta(seconds=k), "type": "inscription", "auteur": "saturation",

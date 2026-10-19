@@ -157,8 +157,11 @@ SCENARIOS: dict[str, Scenario] = {
 
 # =====================================================================================================
 # SCÉNARIOS ALÉATOIRES (charge normale / surcharge)
-# Profil calibré sur l'historique 2019-2022 (diagnostics de traumatologie, proxy d'urgence)
 # =====================================================================================================
+# PROFIL DES URGENCES (générateur 3/3, utilisé seulement par urgences_semaine_aleatoire). D'après l'en-tête
+# d'origine, jour, heure, durée, part d'ambulatoires et nuits sont calibrés sur l'historique 2019-2022
+# (diagnostics de traumatologie pris comme indicateur d'urgence) ; la répartition des gravités et des praticiens
+# est une HYPOTHÈSE des scénarios.
 
 POIDS_JOUR = [0.18, 0.11, 0.27, 0.165, 0.255]                                   # lundi..vendredi
 TRANCHES_HEURE = [(8, 10, .14), (10, 12, .20), (12, 13.5, .19), (13.5, 15.5, .25), (15.5, 17.5, .12), (17.5, 19, .03)]
@@ -166,8 +169,8 @@ DUREES = [30, 45, 60, 75, 90, 120, 150]
 POIDS_DUREES = [.12, .22, .20, .14, .13, .12, .07]                              # médiane ~66 min
 PROBA_AMBU = 0.67
 NUITS, POIDS_NUITS = [1, 2, 3, 4, 5], [.55, .17, .11, .09, .08]
-GRAVITES_TIRAGE = [("vitale", .10), ("urgente", .20), ("differable", .70)]
-SPECIALITES_TIRAGE = [(ORTHO, .45), (("MO", "Orthopédie"), .15), (MAIN, .25), (RACHIS, .10), (VASC, .05)]
+GRAVITES_TIRAGE = [("vitale", .10), ("urgente", .20), ("differable", .70)]       # hypothèse
+SPECIALITES_TIRAGE = [(ORTHO, .45), (("MO", "Orthopédie"), .15), (MAIN, .25), (RACHIS, .10), (VASC, .05)]  # hypothèse
 
 
 def _poisson(rng: random.Random, lam: float) -> int:
@@ -179,9 +182,14 @@ def _poisson(rng: random.Random, lam: float) -> int:
         k += 1
 
 
-def semaine_aleatoire(taux_par_jour: float = 1.0, graine: int = GRAINE_SCENARIOS_SMA, pannes: int = 0) -> list:
-    """Urgences d'une semaine ouvrée (lundi 12/10) : nombre ~ Poisson(taux x 5 x poids du jour), heure, durée,
-    ambulatoire, nuits et gravité tirés selon le profil ci-dessus ; + `pannes` pannes du monte-lit de 1 à 3 h."""
+def urgences_semaine_aleatoire(taux_par_jour: float = 1.0, graine: int = GRAINE_SCENARIOS_SMA,
+                               pannes: int = 0) -> list:
+    """Générateur 3/3 — URGENCES des scénarios aléatoires du SMA (semaine_normale, semaine_surcharge).
+
+    Urgences d'une semaine ouvrée (lundi 12/10) : nombre ~ Poisson(taux x 5 x poids du jour) ; heure, durée,
+    ambulatoire, nuits, gravité et praticien tirés selon le PROFIL DES URGENCES ci-dessus ; + `pannes` pannes du
+    monte-lit de 1 à 3 h. Graine : `graine` (GRAINE_SCENARIOS_SMA, --graine). À la différence des générateurs 1 et 2,
+    il produit des ÉVÉNEMENTS (arrivées d'urgence), pas un programme à optimiser."""
     rng = random.Random(graine)
     evts, pid = [], 9500
     for j in range(5):
@@ -208,12 +216,12 @@ SCENARIOS.update({
     "semaine_normale": Scenario(
         "Semaine en charge normale",
         "Urgences aléatoires : 1 par jour en moyenne, aucune panne (graine : --graine).",
-        lambda: semaine_aleatoire(1.0, graine=GRAINE[0]), SEMAINE, h(23, 20),
+        lambda: urgences_semaine_aleatoire(1.0, graine=GRAINE[0]), SEMAINE, h(23, 20),
         "la plupart des urgences passent sans toucher au programme ; une vitale arrivée quand aucun chirurgien compétent n'est libre est transférée."),
     "semaine_surcharge": Scenario(
         "Semaine en surcharge",
         "Urgences aléatoires : 3 par jour en moyenne + 2 pannes du monte-lit (graine : --graine).",
-        lambda: semaine_aleatoire(3.0, graine=GRAINE[0], pannes=2), SEMAINE, h(23, 20),
+        lambda: urgences_semaine_aleatoire(3.0, graine=GRAINE[0], pannes=2), SEMAINE, h(23, 20),
         "plus de décalages, déprogrammations, liste d'attente, et des alertes (délais dépassés, transferts)."),
 })
 

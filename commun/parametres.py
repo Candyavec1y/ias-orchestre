@@ -36,6 +36,7 @@ BUDGET_OPTIMISATION_S = 10.0
 # =============================================================================
 GRAINE_ETUDE = 42                 # recherche (métaheuristiques), solution initiale N1, instance d'étude
 GRAINE_PATIENTS = GRAINE_ETUDE + 1  # générateur de patients des instances synthétiques (generer_patients_etude)
+DECALAGE_GRAINE_PRIORITES = 1000  # generer_patients_etude : priorités tirées avec graine + 1000 (second générateur)
 PAS_GRAINE_SEMAINE = 97           # semaine k d'un horizon : graine = GRAINE_PATIENTS + PAS_GRAINE_SEMAINE x k
 GRAINE_POPULATION_N1 = 1000       # individus supplémentaires de la population AGS N1 : graine + k
 GRAINE_MESA = 42                  # modèle Mesa du SMA
