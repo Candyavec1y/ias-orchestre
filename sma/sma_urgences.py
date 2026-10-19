@@ -94,8 +94,10 @@ for _dossier in (_RACINE / "planning_vacations", _RACINE / "metaheuristiques"):
         sys.path.append(str(_dossier))
 
 import planning_vacations_v28 as V28
+from parametres import COUT_LIT_EN_TROP, GRAINE_MESA, NB_SEMAINES_SCENARIOS_SMA, PAS_GRAINE_SEMAINE
 from structures_communes import (
-    GRAINE_PATIENTS, JOURS_FR, POIDS_N2, Chirurgien, InstanceNiveau2, InstanceProbleme, ParametresHebergement, Patient,
+    GRAINE_PATIENTS, HEBERGEMENT_SITE, JOURS_FR, POIDS_N2, Chirurgien, InstanceNiveau2, InstanceProbleme,
+    ParametresHebergement, Patient,
     PlageBloc, SolutionPatients, construire_meilleure_affectation_initiale, generer_patients_etude,
     jours_occupation, type_semaine,
 )
@@ -140,9 +142,9 @@ def specialites_par_id() -> dict[int, str]:
 SPECIALITES_V28 = {nom: specialite_de(nom) for nom in V28.ID_PAR_NOM if specialite_de(nom)}   # (compatibilité)
 
 
-def construire_instances_v28(lundi: date, nb_semaines: int = 2, patients: Optional[dict] = None,
-                             graine: int = GRAINE_PATIENTS,
-                             hebergement: ParametresHebergement = ParametresHebergement()
+def construire_instances_v28(lundi: date, nb_semaines: int = NB_SEMAINES_SCENARIOS_SMA,
+                             patients: Optional[dict] = None, graine: int = GRAINE_PATIENTS,
+                             hebergement: ParametresHebergement = HEBERGEMENT_SITE
                              ) -> tuple[InstanceProbleme, InstanceNiveau2]:
     lundi = lundi - timedelta(days=lundi.weekday())
     spe = specialites_par_id()
@@ -171,7 +173,7 @@ def construire_instances_v28(lundi: date, nb_semaines: int = 2, patients: Option
             minutes[v.chirurgien_id] = minutes.get(v.chirurgien_id, 0) + v.duree_minutes
         if patients is None:
             # patients de la semaine k : uniquement pour les vrais chirurgiens, pas avant ce lundi
-            for p in generer_patients_etude(vac_reelles, graine + 97 * k).values():
+            for p in generer_patients_etude(vac_reelles, graine + PAS_GRAINE_SEMAINE * k).values():
                 patients_generes[pid] = replace(p, id=pid, date_min=lundi_k, nom=f"Patient {pid:03d}",
                                                 specialite=spe.get(p.chirurgien_id, ""))
                 pid += 1
@@ -244,7 +246,7 @@ class ParametresSMA:
     c_changement_chirurgien: float = 300.0   # patient programmé repris par un confrère
     c_astreinte: float = 500.0          # chirurgien rappelé hors de ses jours de présence
     c_lit_reserve: float = 300.0
-    c_lit_depassement: float = 5000.0
+    c_lit_depassement: float = COUT_LIT_EN_TROP   # même valeur que PoidsNiveau2.lit (commun/parametres.py)
     c_report_jour: float = 100.0        # par jour de report, x priorité
     max_deprogrammations: int = 3       # plafond des reports au niveau 1 de l'escalade (aucun plafond au niveau 2)
     propositions_par_salle: int = 4
@@ -1745,7 +1747,7 @@ class BlocOperatoire(mesa.Model):
     def __init__(self, instance1: InstanceProbleme, instance2: InstanceNiveau2, solution: SolutionPatients,
                  specialites: Optional[dict[int, str]] = None, chirurgien_garde: Optional[int] = None,
                  parametres: ParametresSMA = ParametresSMA(), batiment: Batiment = Batiment(),
-                 verbeux: int = 1, seed: Optional[int] = 42):
+                 verbeux: int = 1, seed: Optional[int] = GRAINE_MESA):
         try:
             super().__init__(rng=seed)          # Mesa >= 3.2
         except TypeError:
@@ -1840,7 +1842,8 @@ class BlocOperatoire(mesa.Model):
 
     # ------------------------------------------------------------------ constructeurs
     @classmethod
-    def depuis_v28(cls, lundi: date, nb_semaines: int = 2, solution: Optional[SolutionPatients] = None,
+    def depuis_v28(cls, lundi: date, nb_semaines: int = NB_SEMAINES_SCENARIOS_SMA,
+                   solution: Optional[SolutionPatients] = None,
                    instances: Optional[tuple[InstanceProbleme, InstanceNiveau2]] = None, **kw) -> "BlocOperatoire":
         """Planning réel planning_vacations_v28 à partir de `lundi` (parité déduite de la date).
         `solution` : affectation N2 de vos métaheuristiques / de l'hybridation, calculée sur

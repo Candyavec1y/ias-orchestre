@@ -61,7 +61,8 @@ def _capacites() -> None:
                                       "réaffecte les patients de démonstration en respectant les nouvelles capacités.")
         mode = st.selectbox("Méthode de calcul du programme (si recalcul)", modes, format_func=P.MODES_HYBRIDES.get,
                             index=modes.index(cfg["mode"]) if cfg.get("mode") in modes else 0,
-                            help="Toutes les méthodes (hybrides et références RS / Tabou / AGS seuls) tournent 10 s.")
+                            help=f"Toutes les méthodes (hybrides et références RS / Tabou / AGS seuls) tournent "
+                                 f"{P.BUDGET_OPTIMISATION_S:.0f} s.")
         motif = st.text_input("Motif (obligatoire, tracé)", placeholder="ex. capacités réelles du service")
         ok = st.form_submit_button("Enregistrer", type="primary")
     if not ok:
@@ -87,7 +88,7 @@ def _capacites() -> None:
                                             "reserve_lits": nouveau.reserve_lits})
         if recalculer:
             prog = P.calculer_programme(date.fromisoformat(cfg["lundi"]) if cfg else C.maintenant().date(),
-                                        mode, 10.0, hebergement=nouveau)
+                                        mode, P.BUDGET_OPTIMISATION_S, hebergement=nouveau)
             C.enregistrer_programme(prog, C.utilisateur()["login"])
 
     with st.spinner("Recalcul du programme opératoire…" if recalculer else "Enregistrement…"):
@@ -157,7 +158,7 @@ def _planning_vacations() -> None:
         effet = prochain_lundi
     c2.markdown(f"<div class='petit'>Modification appliquée à partir du <b>{C.jour_long(effet)}</b>. "
                 + ("Cette date tombe dans les semaines déjà optimisées : le programme opératoire sera <b>recalculé</b> "
-                   "(environ 10 s)." if effet < fin_optimise else
+                   f"(environ {P.BUDGET_OPTIMISATION_S:.0f} s)." if effet < fin_optimise else
                    "Les semaines optimisées ne changent pas : seul le système multi-agent utilise le nouveau planning.")
                 + "</div>", unsafe_allow_html=True)
     actuels = V28.blocs_pour(effet)
@@ -235,7 +236,8 @@ def _appliquer_planning(nouveau: dict, effet: date, fin_optimise: date, action: 
         if recalcul:
             cfg = C.config_programme()
             prog = P.calculer_programme(date.fromisoformat(cfg["lundi"]) if cfg else C.maintenant().date(),
-                                        (cfg or {}).get("mode") or "memetique", 10.0, hebergement=C.hebergement())
+                                        (cfg or {}).get("mode") or "memetique", P.BUDGET_OPTIMISATION_S,
+                                        hebergement=C.hebergement())
             C.enregistrer_programme(prog, C.utilisateur()["login"])
 
     with st.spinner("Recalcul du programme opératoire…" if recalcul else "Enregistrement…"):

@@ -43,6 +43,7 @@ from orchestre import sma_service as S  # noqa: E402
 
 import sma_urgences as SMA  # noqa: E402
 import structures_communes as SC  # noqa: E402
+from parametres import GRAINE_SATURATION  # noqa: E402
 
 LUNDI_DEFAUT = date(2026, 10, 12)
 DOSSIER_RESULTATS = Path(__file__).resolve().parent / "resultats"
@@ -91,7 +92,7 @@ def _poids_chirurgiens(lundi: date, semaines: int) -> dict[str, float]:
     return dict(minutes)
 
 
-def tirer_patients(n: int, lundi: date, semaines: int, graine: int = 42) -> list[SC.Patient]:
+def tirer_patients(n: int, lundi: date, semaines: int, graine: int = GRAINE_SATURATION) -> list[SC.Patient]:
     """N patients au profil réel : séjours tirés dans les données hospitalières, chirurgien au prorata des vacations."""
     rng = random.Random(graine)
     sejours = _sejours_reels()
@@ -117,7 +118,8 @@ def programme_vide(lundi: date, semaines: int, hebergement: SC.ParametresHeberge
 
 
 def etudier(semaines: int = 4, n_patients: Optional[int] = None, *, lundi: date = LUNDI_DEFAUT,
-            hebergement: SC.ParametresHebergement = P.HEBERGEMENT_V28, confrere: bool = False, graine: int = 42,
+            hebergement: SC.ParametresHebergement = SC.HEBERGEMENT_SITE, confrere: bool = False,
+            graine: int = GRAINE_SATURATION,
             pas_courbe: int = 10, analyser_ressources: bool = True) -> Resultat:
     """`analyser_ressources` : rejoue l'étude avec des lits puis des places illimités ; la ressource dont la levée
     augmente le plus la capacité est la ressource limitante (aucune : c'est le temps opératoire)."""
@@ -240,11 +242,11 @@ def main(argv=None) -> Resultat:
     ap = argparse.ArgumentParser(description="Étude de saturation du bloc opératoire")
     ap.add_argument("--semaines", type=int, default=4)
     ap.add_argument("--patients", type=int, default=None, help="par défaut : assez pour déborder (1,6 x la capacité)")
-    ap.add_argument("--lits", type=int, default=P.HEBERGEMENT_V28.lits_disponibles_par_jour)
-    ap.add_argument("--reserve", type=int, default=P.HEBERGEMENT_V28.reserve_lits)
-    ap.add_argument("--places", type=int, default=P.HEBERGEMENT_V28.places_ambulatoires_par_jour)
+    ap.add_argument("--lits", type=int, default=SC.HEBERGEMENT_SITE.lits_disponibles_par_jour)
+    ap.add_argument("--reserve", type=int, default=SC.HEBERGEMENT_SITE.reserve_lits)
+    ap.add_argument("--places", type=int, default=SC.HEBERGEMENT_SITE.places_ambulatoires_par_jour)
     ap.add_argument("--confrere", action="store_true", help="les patients acceptent un confrère du service")
-    ap.add_argument("--graine", type=int, default=42)
+    ap.add_argument("--graine", type=int, default=GRAINE_SATURATION)
     a = ap.parse_args(argv)
     r = etudier(a.semaines, a.patients, confrere=a.confrere, graine=a.graine,
                 hebergement=SC.ParametresHebergement(a.lits, a.places, a.reserve))

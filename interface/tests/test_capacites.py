@@ -37,7 +37,7 @@ def test_une_urgence_peut_utiliser_la_reserve():
 def test_capacites_reglees_par_l_administrateur(base_isolee):
     from orchestre import stockage as DB
     from vues import commun as C
-    assert C.hebergement() == P.HEBERGEMENT_V28
+    assert C.hebergement() == SC.HEBERGEMENT_SITE
     DB.ecrire_parametre("hebergement", {"lits_disponibles_par_jour": 42, "places_ambulatoires_par_jour": 18,
                                         "reserve_lits": 4})
     h = C.hebergement()

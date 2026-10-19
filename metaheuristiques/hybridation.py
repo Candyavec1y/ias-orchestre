@@ -39,7 +39,7 @@ Résultat principal : resultats/<jeu>/AGS+RS+TABOU_n<k>.json ; le reste dans var
 
 Utilisation
 -----------
-    python metaheuristiques/hybridation.py                 # instance d'étude, 20 s par mode et par niveau
+    python metaheuristiques/hybridation.py                 # instance d'étude, BUDGET_OPTIMISATION_S par mode
     python metaheuristiques/hybridation.py --temps 10
     from hybridation import executer_campagne              # depuis un autre script
 """
@@ -63,6 +63,7 @@ except NameError:
 sys.path.insert(0, str(_DOSSIER))
 if str(_DOSSIER.parent / "commun") not in sys.path:   # structures_communes.py partagé : dossier commun/
     sys.path.insert(0, str(_DOSSIER.parent / "commun"))
+from parametres import BUDGET_OPTIMISATION_S, GRAINE_POPULATION_N1, NB_SEMAINES_REPORT  # noqa: E402
 from structures_communes import (  # noqa: E402
     GRAINE_ETUDE, JOURS_FR, EtatNiveau2, InstanceNiveau2, InstanceProbleme, Individu, ParametresAGS,
     ProblemeGenetique, SolutionPatients, SolutionPlanning, calculer_occupation_par_jour,
@@ -71,14 +72,14 @@ from structures_communes import (  # noqa: E402
     evaluer_planning, generer_solution_initiale_niveau1, instance_niveau2_reference,
     plages_possibles_pour_chirurgien, vacations_compatibles,
 )
-try:                                     # versions récentes de structures_communes (horizon multi-semaines)
-    from structures_communes import plages_possibles_pour_bloc  # noqa: E402
-except ImportError:                      # versions plus anciennes : domaine d'un bloc = domaine du chirurgien
-    def plages_possibles_pour_bloc(instance, bloc_id):
-        return plages_possibles_pour_chirurgien(instance, instance.blocs_a_placer[bloc_id].chirurgien_id)
 from sorties import (  # noqa: E402
     ResultatMetaheuristique, SuiviExecution, afficher_planning, resultat_niveau1, resultat_niveau2,
 )
+
+def plages_possibles_pour_bloc(instance, bloc_id):
+    """Domaine d'un bloc N1 : les plages possibles de son chirurgien."""
+    return plages_possibles_pour_chirurgien(instance, instance.blocs_a_placer[bloc_id].chirurgien_id)
+
 
 NOM_ALGO = "AGS+RS+TABOU"
 NOM_RL = "RS>TABOU"
@@ -121,7 +122,7 @@ class ParametresHybride:
     ags: ParametresAGS = ParametresAGS(taille_population=30, generations=100_000, taux_croisement=0.9,
                                        taux_mutation=0.4, taille_tournoi=3, elites=2)
     rl: ParametresRechercheLocale = ParametresRechercheLocale()
-    temps_max_s: float = 20.0
+    temps_max_s: float = BUDGET_OPTIMISATION_S
     individus_ameliores: int = 2               # enfants passés à la recherche locale à chaque génération
     part_finale: float = 0.25                  # part du temps réservée à l'intensification finale
     part_rl_initiale: float = 0.40             # mode "RS>AGS>TABOU" : part du temps des RL de départ
@@ -572,7 +573,8 @@ class ProblemeHybrideN1(ProblemeGenetique):
         k = 0
         while len(pop) < min(taille, len(graines) + taille // 3):   # 1/3 : backtracking diversifié
             k += 1
-            pop.append(self.depuis_solution(generer_solution_initiale_niveau1(self.inst, random.Random(1000 + k))))
+            pop.append(self.depuis_solution(generer_solution_initiale_niveau1(
+                self.inst, random.Random(GRAINE_POPULATION_N1 + k))))
         while len(pop) < taille:                                    # reste : aléatoire réparé
             pop.append(self.individu_aleatoire(rng))
         return pop
@@ -867,7 +869,7 @@ class ProblemeHybrideN2(ProblemeGenetique):
 # une pénalité de report (comme ags_final) : PENALITE_SEMAINE_REPORT x poids(priorité) x semaines.
 # Le score_final sauvegardé reste celui de la fonction objectif COMMUNE (comparable).
 
-NB_SEMAINES_REPORT = 3                       # semaines +1..+K ouvertes au report
+# NB_SEMAINES_REPORT (commun/parametres.py) : semaines +1..+K ajoutées APRÈS l'horizon, ouvertes au report
 PENALITE_SEMAINE_REPORT = 100.0              # par semaine d'attente, x poids de priorité
 POIDS_PRIORITE_REPORT = {1: 1, 2: 2, 3: 3, 4: 5}
 
@@ -1219,7 +1221,7 @@ def afficher_rapport_niveau2(instance2: InstanceNiveau2, solution: SolutionPatie
               f"{libelle_jour(adm):<24} {libelle_jour(v.jour):<24} {libelle_jour(sortie):<24} {p.duree_bloc:>5}")
 
 
-def executer_campagne(jeu: str = "etude", temps_n1: float = 20.0, temps_n2: float = 20.0,
+def executer_campagne(jeu: str = "etude", temps_n1: float = BUDGET_OPTIMISATION_S, temps_n2: float = BUDGET_OPTIMISATION_S,
                       modes=MODES, references: bool = True, dossier: str = "resultats",
                       graine: int = GRAINE_ETUDE, afficher: bool = True,
                       rl_params: ParametresRechercheLocale = ParametresRechercheLocale(),
@@ -1292,7 +1294,7 @@ def executer_campagne(jeu: str = "etude", temps_n1: float = 20.0, temps_n2: floa
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=f"Hybridation {NOM_ALGO} (niveaux 1 et 2).")
     ap.add_argument("--jeu", default="etude", choices=["etude"], help="instance d'étude (niveau 1 et niveau 2)")
-    ap.add_argument("--temps", type=float, default=20.0, help="secondes par mode et par niveau")
+    ap.add_argument("--temps", type=float, default=BUDGET_OPTIMISATION_S, help="secondes par mode et par niveau")
     ap.add_argument("--modes", nargs="+", default=list(MODES), choices=list(MODES))
     ap.add_argument("--sans-references", action="store_true", help="ne pas lancer AGS seul / RL seule")
     ap.add_argument("--sortie", default="resultats")

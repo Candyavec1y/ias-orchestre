@@ -61,10 +61,21 @@ Choix d'uniformisation (v2)
 from __future__ import annotations
 
 import random
+import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta
+from pathlib import Path
 from typing import Literal, Optional
+
+if str(Path(__file__).resolve().parent) not in sys.path:      # commun/parametres.py
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from parametres import (  # noqa: E402  (valeurs partagées : définies une seule fois dans commun/parametres.py)
+    COUT_LIT_EN_TROP, GRAINE_ETUDE, GRAINE_PATIENTS, LITS_INSTANCE_ETUDE_N1, LITS_SITE,
+    PLACES_AMBULATOIRES_INSTANCE_ETUDE_N1, PLACES_AMBULATOIRES_SITE, RESERVE_LITS_INSTANCE_ETUDE_N1,
+    RESERVE_LITS_SITE, TAUX_MARGE_VACATION,
+)
 
 
 # =============================================================================
@@ -72,9 +83,7 @@ from typing import Literal, Optional
 # =============================================================================
 
 DUREE_CRENEAU_MINUTES = 120
-TAUX_MARGE_VACATION = 0.10       # 10 % de chaque vacation réservé aux aléas
-GRAINE_ETUDE = 42                # N1 (solution initiale commune)
-GRAINE_PATIENTS = GRAINE_ETUDE + 1
+# TAUX_MARGE_VACATION, GRAINE_ETUDE, GRAINE_PATIENTS : commun/parametres.py
 
 TypePlage = Literal["LIBRE", "URGENCE", "INDISPONIBLE"]
 NomAlgo = Literal["RS", "TABOU", "AGS"]
@@ -243,10 +252,11 @@ class InstanceProbleme:
 
 @dataclass(frozen=True)
 class ParametresHebergement:
-    """Capacités d'hébergement, constantes chaque jour."""
-    lits_disponibles_par_jour: int = 14
-    places_ambulatoires_par_jour: int = 10
-    reserve_lits: int = 2
+    """Capacités d'hébergement, constantes chaque jour. Valeurs par défaut : instance d'étude du niveau 1 ;
+    l'application et le planning v28 utilisent HEBERGEMENT_SITE."""
+    lits_disponibles_par_jour: int = LITS_INSTANCE_ETUDE_N1
+    places_ambulatoires_par_jour: int = PLACES_AMBULATOIRES_INSTANCE_ETUDE_N1
+    reserve_lits: int = RESERVE_LITS_INSTANCE_ETUDE_N1
 
     @property
     def cap_lits(self) -> int:
@@ -255,6 +265,12 @@ class ParametresHebergement:
     @property
     def cap_places(self) -> int:
         return self.places_ambulatoires_par_jour
+
+
+# Capacités de référence (D4) : application et planning v28 / instance d'étude du niveau 1
+HEBERGEMENT_SITE = ParametresHebergement(LITS_SITE, PLACES_AMBULATOIRES_SITE, RESERVE_LITS_SITE)
+HEBERGEMENT_INSTANCE_ETUDE_N1 = ParametresHebergement(LITS_INSTANCE_ETUDE_N1, PLACES_AMBULATOIRES_INSTANCE_ETUDE_N1,
+                                                      RESERVE_LITS_INSTANCE_ETUDE_N1)
 
 
 @dataclass
@@ -318,7 +334,7 @@ class PoidsNiveau2:
     non_place: float = 8000.0
     depassement_vac: float = 100.0     # par minute au-delà de la capacité utile
     bloc_inoccupe: float = 1.0         # par minute inoccupée (vacations régulières)
-    lit: float = 5000.0                # par lit x jour au-delà de la capacité
+    lit: float = COUT_LIT_EN_TROP      # par lit x jour au-delà de la capacité (même valeur que le SMA)
     var_lits: float = 20.0
     place: float = 5000.0
     var_places: float = 20.0
@@ -1040,7 +1056,7 @@ def generer_patients_etude(vacations: dict[int, Vacation], graine: int = GRAINE_
 
 def construire_instance_niveau2(instance1: InstanceProbleme, solution1: SolutionPlanning,
                                 graine_patients: int = GRAINE_PATIENTS,
-                                hebergement: ParametresHebergement = ParametresHebergement(),
+                                hebergement: ParametresHebergement = HEBERGEMENT_INSTANCE_ETUDE_N1,
                                 nom: str = "n2") -> InstanceNiveau2:
     """Instance N2 à partir d'un planning N1 : vacations (marge 10 %) + patients générés."""
     vacations = construire_vacations(instance1, solution1)

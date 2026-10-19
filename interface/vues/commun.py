@@ -227,7 +227,7 @@ def config_programme() -> Optional[dict]:
 def hebergement() -> SC.ParametresHebergement:
     """Capacités d'hébergement réglées par l'administrateur (sinon les valeurs par défaut du planning v28)."""
     d = DB.lire_parametre("hebergement")
-    return SC.ParametresHebergement(**d) if d else P.HEBERGEMENT_V28
+    return SC.ParametresHebergement(**d) if d else SC.HEBERGEMENT_SITE
 
 
 def absences() -> list[dict]:
@@ -427,8 +427,9 @@ def garantir_programme() -> Optional[P.Programme]:
     if config_programme():
         return programme()
     with st.spinner("Premier lancement : calcul du programme opératoire initial par l'hybridation "
-                    "AGS + RS + Tabou (environ 10 s)…"):
-        prog = P.calculer_programme(maintenant().date(), "memetique", 10.0, hebergement=hebergement())
+                    f"AGS + RS + Tabou (environ {P.BUDGET_OPTIMISATION_S:.0f} s)…"):
+        prog = P.calculer_programme(maintenant().date(), "memetique", P.BUDGET_OPTIMISATION_S,
+                                    hebergement=hebergement())
         enregistrer_programme(prog, "système")
     return programme()
 

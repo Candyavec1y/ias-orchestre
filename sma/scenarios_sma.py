@@ -36,6 +36,7 @@ from sma_urgences import (  # noqa: E402
     ID_PAR_NOM, ArriveeUrgence, BlocOperatoire, FinPanne, PanneAscenseur, ProlongationPanne,
     construire_instances_v28, jour_txt, patient_urgent, solution_n2_par_defaut,
 )
+from parametres import GRAINE_SCENARIOS_SMA  # noqa: E402  (commun/ ajouté au chemin par sma_urgences)
 
 LUNDI = date(2026, 10, 12)
 
@@ -178,7 +179,7 @@ def _poisson(rng: random.Random, lam: float) -> int:
         k += 1
 
 
-def semaine_aleatoire(taux_par_jour: float = 1.0, graine: int = 1, pannes: int = 0) -> list:
+def semaine_aleatoire(taux_par_jour: float = 1.0, graine: int = GRAINE_SCENARIOS_SMA, pannes: int = 0) -> list:
     """Urgences d'une semaine ouvrée (lundi 12/10) : nombre ~ Poisson(taux x 5 x poids du jour), heure, durée,
     ambulatoire, nuits et gravité tirés selon le profil ci-dessus ; + `pannes` pannes du monte-lit de 1 à 3 h."""
     rng = random.Random(graine)
@@ -202,16 +203,17 @@ def semaine_aleatoire(taux_par_jour: float = 1.0, graine: int = 1, pannes: int =
 
 
 SEMAINE = [LUNDI + timedelta(days=k) for k in range(5)]
+GRAINE = [GRAINE_SCENARIOS_SMA]          # graine des scénarios aléatoires (modifiable par --graine)
 SCENARIOS.update({
     "semaine_normale": Scenario(
         "Semaine en charge normale",
-        "Urgences aléatoires : 1 par jour en moyenne, aucune panne (graine 1).",
-        lambda: semaine_aleatoire(1.0, graine=1), SEMAINE, h(23, 20),
+        "Urgences aléatoires : 1 par jour en moyenne, aucune panne (graine : --graine).",
+        lambda: semaine_aleatoire(1.0, graine=GRAINE[0]), SEMAINE, h(23, 20),
         "la plupart des urgences passent sans toucher au programme ; une vitale arrivée quand aucun chirurgien compétent n'est libre est transférée."),
     "semaine_surcharge": Scenario(
         "Semaine en surcharge",
-        "Urgences aléatoires : 3 par jour en moyenne + 2 pannes du monte-lit (graine 1).",
-        lambda: semaine_aleatoire(3.0, graine=1, pannes=2), SEMAINE, h(23, 20),
+        "Urgences aléatoires : 3 par jour en moyenne + 2 pannes du monte-lit (graine : --graine).",
+        lambda: semaine_aleatoire(3.0, graine=GRAINE[0], pannes=2), SEMAINE, h(23, 20),
         "plus de décalages, déprogrammations, liste d'attente, et des alertes (délais dépassés, transferts)."),
 })
 
@@ -224,10 +226,11 @@ _INSTANCES = None
 
 
 def instances_par_defaut():
-    """Planning v28 + patients sur 2 semaines, et solution N2 par défaut (glouton commun) — calculés une fois."""
+    """Planning v28 + patients sur NB_SEMAINES_SCENARIOS_SMA semaines, et solution N2 par défaut (glouton commun) —
+    calculés une fois."""
     global _INSTANCES
     if _INSTANCES is None:
-        i1, i2 = construire_instances_v28(LUNDI, nb_semaines=2)
+        i1, i2 = construire_instances_v28(LUNDI)
         _INSTANCES = (i1, i2, solution_n2_par_defaut(i2))
     return _INSTANCES
 
@@ -287,7 +290,9 @@ def main():
     ap.add_argument("--tous", action="store_true", help="joue tous les scénarios et affiche un récapitulatif")
     ap.add_argument("--messages", action="store_true", help="affiche chaque message échangé entre agents")
     ap.add_argument("--gantt", metavar="DOSSIER", help="enregistre les Gantt avant / après dans ce dossier")
+    ap.add_argument("--graine", type=int, default=GRAINE_SCENARIOS_SMA, help="graine des scénarios aléatoires")
     o = ap.parse_args()
+    GRAINE[0] = o.graine
     if o.liste or not (o.scenarios or o.tous):
         for nom, sc in SCENARIOS.items():
             print(f"  {nom:<22} {sc.titre} — {sc.description}")

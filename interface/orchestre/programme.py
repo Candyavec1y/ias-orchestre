@@ -21,19 +21,18 @@ from . import chemins
 import structures_communes as SC  # noqa: E402
 import planning_vacations_v28 as V28  # noqa: E402
 import sma_urgences as SMA  # noqa: E402
+from parametres import (  # noqa: E402,F401  (ré-exportés pour l'interface : P.NB_SEMAINES_HORIZON...)
+    BUDGET_OPTIMISATION_S, NB_SEMAINES_HORIZON, NB_SEMAINES_SMA, PAS_GRAINE_SEMAINE,
+)
 
 # Charge de la programmation déjà existante, semaine par semaine (un programme se remplit à
 # l'approche de la date). Bornes (min, max) en fraction des heures de vacation du chirurgien.
 CHARGES_PAR_SEMAINE = ((0.85, 1.00), (0.60, 0.75), (0.35, 0.50), (0.10, 0.25))
-NB_SEMAINES_HORIZON = 4
 # Le planning des vacations (v28, cycle fixe de 4 semaines) est supposé IDENTIQUE sur toutes les semaines à venir :
-# le SMA connaît ses vacations sur NB_SEMAINES_SMA semaines (au-delà des 4 semaines optimisées, semaines ouvertes
-# sans patient de démonstration). Une inscription ou un report trouve donc toujours un créneau, plus tard au besoin.
-NB_SEMAINES_SMA = 52
-# Hébergement : les valeurs de l'étude (14 lits / 10 places) ont été calibrées pour 8 chirurgiens ;
-# le planning v28 en compte une vingtaine sur 4 salles -> capacités relevées (voir CHOIX.md).
-HEBERGEMENT_V28 = SC.ParametresHebergement(lits_disponibles_par_jour=30, places_ambulatoires_par_jour=20,
-                                           reserve_lits=3)
+# le SMA connaît ses vacations sur NB_SEMAINES_SMA semaines (au-delà des NB_SEMAINES_HORIZON semaines optimisées,
+# semaines ouvertes sans patient de démonstration). Une inscription ou un report trouve donc toujours un créneau.
+# Hébergement : SC.HEBERGEMENT_SITE (commun/parametres.py), modifiable par l'administrateur.
+
 
 MODES_HYBRIDES = {
     "memetique": "Mémétique (AGS + polissage Tabou, finale RS→Tabou)",
@@ -133,7 +132,7 @@ def recalculer_planning_niveau1(modes: list[str], temps_s: float, graine: int = 
 # =============================================================================
 
 def construire_instances(lundi: date, nb_semaines: int = NB_SEMAINES_HORIZON, graine: int = SC.GRAINE_PATIENTS,
-                         charges=CHARGES_PAR_SEMAINE, hebergement=HEBERGEMENT_V28):
+                         charges=CHARGES_PAR_SEMAINE, hebergement=SC.HEBERGEMENT_SITE):
     """Instances N1/N2 du SMA sur `nb_semaines` à partir de `lundi` (planning v28) avec une
     programmation existante FICTIVE (générateur commun de l'étude), décroissante dans le temps."""
     lundi = lundi_de(lundi)
@@ -146,7 +145,7 @@ def construire_instances(lundi: date, nb_semaines: int = NB_SEMAINES_HORIZON, gr
         reelles = {vid + dec: replace(v, id=vid + dec) for vid, v in vac_k.items()
                    if v.chirurgien_id not in (V28.ID_URGENCE, V28.ID_LIBRE)}
         cmin, cmax = charges[min(k, len(charges) - 1)]
-        for p in SC.generer_patients_etude(reelles, graine + 97 * k, cmin, cmax).values():
+        for p in SC.generer_patients_etude(reelles, graine + PAS_GRAINE_SEMAINE * k, cmin, cmax).values():
             patients[pid] = replace(p, id=pid, date_min=lundi_k, nom=f"DEMO-{pid:04d}",
                                     specialite=spe.get(p.chirurgien_id, ""))
             pid += 1
@@ -180,9 +179,9 @@ class Programme:
     calcule_le: str = ""
 
 
-def calculer_programme(lundi: date, mode: str = "memetique", temps_s: float = 15.0,
+def calculer_programme(lundi: date, mode: str = "memetique", temps_s: float = BUDGET_OPTIMISATION_S,
                        nb_semaines: int = NB_SEMAINES_HORIZON, graine: int = SC.GRAINE_ETUDE,
-                       hebergement=HEBERGEMENT_V28) -> Programme:
+                       hebergement=SC.HEBERGEMENT_SITE) -> Programme:
     i1, i2 = construire_instances(lundi, nb_semaines, hebergement=hebergement)
     glouton = SC.construire_meilleure_affectation_initiale(i2)
     s_glouton = SC.evaluer_niveau2(i2, glouton).score_total
