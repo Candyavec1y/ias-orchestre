@@ -962,10 +962,14 @@ class AgentRegulation(AgentSMA):
         self.decisions: list[dict] = []
         self.alertes: list[str] = []
         self.urgences_info: dict[int, tuple] = {}     # pid -> (patient, arrivée, gravité, chirurgiens compétents)
+        self.chirurgiens_autorises: dict[int, list[int]] = {}   # pid -> chirurgiens acceptés à la consultation
         self._dernier_matin: Optional[date] = None
 
     def competents(self, it: Intervention) -> list[int]:
-        """Chirurgiens pouvant opérer ce patient : son chirurgien et ceux de la même spécialité."""
+        """Chirurgiens pouvant opérer ce patient : son chirurgien et ceux de la même spécialité, ou seulement
+        ceux acceptés à la consultation (confrère refusé) s'ils ont été enregistrés."""
+        if it.pid in self.chirurgiens_autorises:
+            return self.chirurgiens_autorises[it.pid]
         spe = it.patient.specialite or self.specialites.get(it.chirurgien_initial, "")
         return sorted({it.chirurgien_initial} | {c for c, s in self.specialites.items() if s and s == spe})
 

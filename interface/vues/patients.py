@@ -12,6 +12,8 @@ from orchestre import sma_service as S
 from orchestre import stockage as DB
 from vues import commun as C
 
+A_VENIR = ("programmé", "liste d'attente", "à programmer", "urgence à venir")
+
 
 def afficher() -> None:
     u = C.utilisateur()
@@ -24,9 +26,13 @@ def afficher() -> None:
         C.synchroniser_statuts(sim)
     fiches = DB.lister_patients(u["praticien"] if chir else None)
     urgences = _lignes_urgences(sim, u["praticien"] if chir else None)
+    if chir:                            # un chirurgien ne voit que ses patients à venir (pas les opérés ni annulés)
+        fiches = [f for f in fiches if f["statut"] in A_VENIR]
+        urgences = [l for l in urgences if l["Statut"] in A_VENIR]
     C.tracer("consultation de la liste des patients", f"{len(fiches)} fiche(s), {len(urgences)} urgence(s)")
     if not fiches and not urgences:
-        st.info("Aucun patient pour le moment. Utilisez l'onglet **Consultation** pour en inscrire un.")
+        st.info("Aucun patient à venir. Utilisez l'onglet **Consultation** pour en inscrire un." if chir else
+                "Aucun patient pour le moment. Utilisez l'onglet **Consultation** pour en inscrire un.")
         return
 
     lignes = []
@@ -40,15 +46,21 @@ def afficher() -> None:
                        "Programmé le": f"{C.jour_long(it.debut.date())} {it.debut:%H:%M}" if it else "—",
                        "Salle": sim.modele.salles[it.salle_id].nom_affiche if it else "—",
                        "Créé le": f["cree_le"][:16].replace("T", " ")})
-    st.dataframe(pd.DataFrame(lignes + urgences), hide_index=True, width="stretch")
-    if not fiches:
-        return
+    st.dataframe(pd.DataFrame(lignes + [{k: v for k, v in l.items() if k != "_evt"} for l in urgences]),
+                 hide_index=True, width="stretch")
 
     st.markdown("#### Détail d'un patient")
-    choix = st.selectbox("Patient", fiches, format_func=lambda f: f"{f['pseudo']} — {f['entrees'].get('type_intervention', '')}")
-    if not choix:
+    options = [("fiche", f) for f in fiches] + [("urgence", l) for l in urgences]
+    i = st.selectbox("Patient", range(len(options)), format_func=lambda i: (
+        f"{options[i][1]['pseudo']} — {options[i][1]['entrees'].get('type_intervention', '')}" if options[i][0] == "fiche"
+        else f"{options[i][1]['Pseudonyme']} — {options[i][1]['Intervention']} (urgence)"))
+    if i is None:
         return
-    _detail(choix, sim)
+    choix = options[i]
+    if choix[0] == "fiche":
+        _detail(choix[1], sim)
+    else:
+        _detail_urgence(choix[1], sim)
 
 
 def _lignes_urgences(sim, praticien) -> list[dict]:
@@ -77,8 +89,33 @@ def _lignes_urgences(sim, praticien) -> list[dict]:
                        "Priorité": p.get("priorite"), "Statut": statut,
                        "Programmé le": f"{C.jour_long(it.debut.date())} {it.debut:%H:%M}" if it else "—",
                        "Salle": sim.modele.salles[it.salle_id].nom_affiche if it else "—",
-                       "Créé le": f"{e['heure']:%Y-%m-%d %H:%M}"})
+                       "Créé le": f"{e['heure']:%Y-%m-%d %H:%M}", "_evt": e})
     return lignes
+
+
+def _detail_urgence(l: dict, sim) -> None:
+    """Fiche d'une urgence : pas de consultation ni de prédiction enregistrée, seulement la déclaration."""
+    e = l["_evt"]
+    p, gravite = e["contenu"]["patient"], e["contenu"].get("gravite", "")
+    c1, c2 = st.columns(2)
+    with c1.container(border=True):
+        st.markdown("**Déclaration de l'urgence**")
+        st.markdown(f"{S.LIBELLES_GRAVITE.get(gravite, gravite)}  \n"
+                    f"Déclarée le {C.jour_long(e['heure'].date()).lower()} à {e['heure']:%H:%M} par {e['auteur']}  \n"
+                    f"Vue par Dr {S.code_chirurgien(p['chirurgien_id'])}  \n"
+                    f"Motif : {p.get('type_intervention') or 'non renseigné'}")
+    with c2.container(border=True):
+        st.markdown("**Prise en charge prévue**")
+        st.markdown(f"Durée estimée : **{p.get('duree_bloc')} min**  \n"
+                    + ("**Ambulatoire**" if p.get("ambulatoire") else
+                       f"**Hospitalisation**, {p.get('nuits_post_op', 0)} nuit(s) après")
+                    + (f"  \nCIM-10 : {ml.avec_libelle(p['diagnostic'], 'cim')}" if p.get("diagnostic") else ""))
+    it = sim.intervention(p["id"]) if sim else None
+    if it:
+        st.success(f"Programmé le {C.jour_long(it.debut.date())} de {it.debut:%H:%M} à {it.fin:%H:%M} — "
+                   f"{sim.modele.salles[it.salle_id].nom_affiche}, {l['Chirurgien']}")
+    else:
+        st.info(f"Statut : {l['Statut']}.")
 
 
 def _detail(f: dict, sim) -> None:

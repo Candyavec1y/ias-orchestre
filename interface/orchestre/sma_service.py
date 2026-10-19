@@ -285,6 +285,7 @@ def _inscrire(m: SMA.BlocOperatoire, c: dict) -> None:
     p = patient_depuis_dict(c["patient"])
     jour_min = date.fromisoformat(c["jour_min"])
     conv = m.nouvelle_conversation("CONS")
+    reg.chirurgiens_autorises[p.id] = sorted(c.get("chirurgiens") or [p.chirurgien_id])   # relances / replacements
     m.annoncer(f"\n[{SMA.jour_txt(m.maintenant.date())} {SMA.hm(m.maintenant)}] {conv} — CONSULTATION : {p.nom} "
                f"(Dr {code_chirurgien(p.chirurgien_id)}, {p.duree_bloc} min, priorité {p.priorite}, "
                f"{'ambulatoire' if p.ambulatoire else 'hospitalisé'}, au plus tôt le {jour_min:%d/%m})")
@@ -294,7 +295,7 @@ def _inscrire(m: SMA.BlocOperatoire, c: dict) -> None:
         m.annoncer(f"  {p.nom} inscrit(e) en liste d'attente (relance chaque matin et à chaque créneau libéré)")
         reg.decisions.append({"type": "consultation_attente", "heure": m.maintenant, "patient": p.id})
         return
-    it, props, valides = _appel_offres(m, p, jour_min, c.get("chirurgiens") or [p.chirurgien_id], conv)
+    it, props, valides = _appel_offres(m, p, jour_min, reg.chirurgiens_autorises[p.id], conv)
     choix = None
     voulu = (c.get("salle_id"), c.get("fenetre_id"))
     meme = [v for v in valides if (v[1].salle_id, v[1].fenetre_id) == voulu]
