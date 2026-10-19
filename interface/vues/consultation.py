@@ -6,7 +6,7 @@ chirurgien, puis insertion dans le programme par le système multi-agent (propos
 """
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 import streamlit as st
 
@@ -245,7 +245,7 @@ def _etape_creneaux() -> None:
             if p["hebergement"] != "capacité OK":
                 impacts.append(f"Hébergement : {p['hebergement']}")
             st.markdown("<br>".join(f"<span class='petit'>{t}</span>" for t in impacts) or
-                        f"<span class='petit'>Aucun impact sur les autres patients</span>", unsafe_allow_html=True)
+                        "<span class='petit'>Aucun impact sur les autres patients</span>", unsafe_allow_html=True)
             st.caption(f"Coût SMA : {p['cout']:,.0f}".replace(",", " "))
             if st.button("Retenir ce créneau", key=f"choix_{i}", type="primary" if i == 0 else "secondary",
                          width="stretch"):

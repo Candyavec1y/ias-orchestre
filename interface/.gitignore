@@ -1,3 +1,4 @@
 # Base locale, clé de chiffrement, comptes de démonstration, caches : ne JAMAIS versionner
 donnees/
+tests/resultats/
 __pycache__/

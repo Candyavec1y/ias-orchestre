@@ -102,8 +102,11 @@ du monte-lit.
 ## 5. Tests
 
 ```bash
-python -m pytest interface/tests -q
+python -m pytest interface/tests -m "not lent"     # tests rapides (environ 1 min)
+python interface/tests/saturation.py               # étude : combien de patients pour saturer le bloc ?
 ```
+
+Détail des tests et de l'étude de saturation : [interface/tests/README.md](interface/tests/README.md).
 
 ---
 

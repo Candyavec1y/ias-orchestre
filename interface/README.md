@@ -28,7 +28,9 @@ Installation et lancement : voir le [README à la racine du dépôt](../README.m
 ## Tests
 
 ```bash
-python -m pytest interface/tests -q
+python -m pytest interface/tests -m "not lent"
 ```
+
+Détail : [tests/README.md](tests/README.md).
 
 Les choix de conception (et les questions ouvertes) sont détaillés dans [CHOIX.md](CHOIX.md).

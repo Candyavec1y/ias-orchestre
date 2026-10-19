@@ -429,13 +429,8 @@ def _absence(m: SMA.BlocOperatoire, c: dict) -> None:
         reg._replacer(urgences, conv)           # une urgence garde son délai : nouvel appel d'offres urgence
     for it in [i for i in touches if i not in urgences]:
         autorises = reg.chirurgiens_autorises.get(it.pid, [it.chirurgien_initial])
-        reponses = reg.diffuser(SMA.AgentSalle, "CFP", "cfp_replacement",
-                                {"intervention": it, "apres": au_plus_tot, "fenetres": reg._fenetres(conv),
-                                 "agendas": reg._agendas(conv), "chirurgiens": autorises,
-                                 "jour_reference": it.debut.date()},
-                                conv, f"replacer P{it.pid} (absence du Dr {c['praticien']})")
-        props = [(r.emetteur, pl) for r in reponses if r.performatif == "PROPOSE" for pl in r.contenu["plans"]]
-        choix = reg._choisir(props, conv, lambda pl: (False, pl.cout))
+        props, choix = reg.appel_offres_replacement(it, au_plus_tot, autorises, it.debut.date(), conv,
+                                                    f"replacer P{it.pid} (absence du Dr {c['praticien']})")
         if choix is None:
             reg.liste_attente.append((it, it.debut.date()))
             m.annoncer(f"    ↳ P{it.pid} : aucune vacation compatible -> liste d'attente")
@@ -477,17 +472,27 @@ def _appel_offres(m: SMA.BlocOperatoire, patient: SC.Patient, jour_min: date, ch
     reg = m.regulation
     apres = max(m.maintenant + m.parametres.preparation_rattrapage_min * SMA.MIN, datetime.combine(jour_min, time(0)))
     it = SMA.Intervention(patient, 0, apres, 0)
-    reponses = reg.diffuser(SMA.AgentSalle, "CFP", "cfp_replacement",
-                            {"intervention": it, "apres": apres, "fenetres": reg._fenetres(conv),
-                             "chirurgiens": chirurgiens, "jour_reference": jour_min},
-                            conv, f"placer {patient.nom} ({patient.duree_bloc} min, prio {patient.priorite})")
-    props = [(r.emetteur, pl) for r in reponses if r.performatif == "PROPOSE" for pl in r.contenu["plans"]]
-    valides = []
-    for agent, pl in sorted(props, key=lambda x: x[1].cout):
-        ok, extra, motif = reg._valider(pl, conv)
-        if ok:
-            valides.append((agent, pl, extra, motif))
-    return it, props, valides
+    # comme AgentRegulation.appel_offres_replacement, mais en gardant TOUTES les propositions valides d'un tour
+    # (le chirurgien choisit parmi elles en consultation) ; jours refusés par les ressources exclus au tour suivant
+    exclus, recues = set(), []
+    for _ in range(reg.MAX_TOURS_REPLACEMENT):
+        reponses = reg.diffuser(SMA.AgentSalle, "CFP", "cfp_replacement",
+                                {"intervention": it, "apres": apres, "fenetres": reg._fenetres(conv),
+                                 "chirurgiens": chirurgiens, "jour_reference": jour_min, "jours_exclus": frozenset(exclus)},
+                                conv, f"placer {patient.nom} ({patient.duree_bloc} min, prio {patient.priorite})")
+        props = [(r.emetteur, pl) for r in reponses if r.performatif == "PROPOSE" for pl in r.contenu["plans"]]
+        if not props:
+            break
+        recues += props
+        valides = []
+        for agent, pl in sorted(props, key=lambda x: x[1].cout):
+            ok, extra, motif = reg._valider(pl, conv)
+            if ok:
+                valides.append((agent, pl, extra, motif))
+        if valides:
+            return it, recues, valides
+        exclus |= {pl.jour for _, pl in props}
+    return it, recues, []
 
 
 def chirurgiens_possibles(patient: SC.Patient, accepter_confrere: bool) -> list[int]:

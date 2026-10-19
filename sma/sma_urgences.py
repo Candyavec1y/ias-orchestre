@@ -1053,7 +1053,7 @@ class AgentSalle(AgentSMA):
         for fen in self.creneaux.values():
             if fen.urgence or fen.chirurgien_id not in competents or fen.fin <= apres or fen.jour < apres.date():
                 continue
-            if self.model.fenetre_fermee(fen):
+            if self.model.fenetre_fermee(fen) or fen.jour in c.get("jours_exclus", ()):
                 continue
             if p0.date_min is not None and fen.jour < p0.date_min:
                 continue
@@ -1663,6 +1663,30 @@ class AgentRegulation(AgentSMA):
         return fait
 
     # ---------- replacement (chaque patient déclenche son propre appel d'offres)
+    MAX_TOURS_REPLACEMENT = 60
+
+    def appel_offres_replacement(self, it: Intervention, apres: datetime, chirurgiens: list[int], jour_reference: date,
+                                 conv, resume: str):
+        """Appel d'offres de replacement. Chaque salle ne renvoie que ses meilleures propositions (les plus proches) :
+        si les ressources les refusent toutes (lits pleins ces jours-là), on relance en excluant ces jours, jusqu'à
+        trouver une date valide. Renvoie (propositions reçues, choix ou None)."""
+        exclus, recues = set(), []
+        for _ in range(self.MAX_TOURS_REPLACEMENT):
+            reponses = self.diffuser(AgentSalle, "CFP", "cfp_replacement",
+                                     {"intervention": it, "apres": apres, "fenetres": self._fenetres(conv),
+                                      "agendas": self._agendas(conv), "chirurgiens": chirurgiens,
+                                      "jour_reference": jour_reference, "jours_exclus": frozenset(exclus)},
+                                     conv, resume)
+            props = [(r.emetteur, pl) for r in reponses if r.performatif == "PROPOSE" for pl in r.contenu["plans"]]
+            if not props:
+                break
+            recues += props
+            choix = self._choisir(props, conv, lambda pl: (False, pl.cout))
+            if choix is not None:
+                return recues, choix
+            exclus |= {pl.jour for _, pl in props}
+        return recues, None
+
     def _relancer_attente(self, conv, apres: datetime):
         if not self.liste_attente:
             return
@@ -1680,13 +1704,8 @@ class AgentRegulation(AgentSMA):
             it = file.pop(0)
             jour_ref = (references or {}).get(it.pid, it.debut.date())
             debut = apres or self.maintenant + self.p.preparation_rattrapage_min * MIN
-            reponses = self.diffuser(AgentSalle, "CFP", "cfp_replacement",
-                                     {"intervention": it, "apres": debut, "fenetres": self._fenetres(conv),
-                                      "agendas": self._agendas(conv),
-                                      "chirurgiens": self.competents(it), "jour_reference": jour_ref},
-                                     conv, f"replacer P{it.pid} ({it.patient.duree_bloc} min)")
-            props = [(r.emetteur, pl) for r in reponses if r.performatif == "PROPOSE" for pl in r.contenu["plans"]]
-            choix = self._choisir(props, conv, lambda pl: (False, pl.cout))
+            props, choix = self.appel_offres_replacement(it, debut, self.competents(it), jour_ref, conv,
+                                                         f"replacer P{it.pid} ({it.patient.duree_bloc} min)")
             if choix is None:
                 self.liste_attente.append((it, jour_ref))
                 self.annoncer(f"    ↳ P{it.pid} (prio {it.patient.priorite}) : aucune place sur les heures du planning "

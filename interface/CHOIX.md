@@ -95,8 +95,8 @@ celui qu'attendent les métaheuristiques et les agents. Les deux copies ont ensu
   redéfinissent leurs propres classes (`Patient`, `Vacation`… incompatibles avec les structures
   communes) et lisent des fichiers Excel sur un chemin local (`C:\Users\Richard\Downloads\…`).
   `hybridage2.py` s'appuie uniquement sur `structures_communes.py` et `sorties.py` : c'est la version
-  intégrable. Les idées de `hybridage.py` (horizon compact, vacations supplémentaires) mériteraient d'être
-  portées sur les structures communes.
+  intégrable. `hybridage.py`, inutilisé, a été retiré du dépôt ; ses idées (horizon compact, vacations
+  supplémentaires) mériteraient d'être portées sur les structures communes.
 * **Niveau 1 (chirurgiens → plages)** : l'hybridation N1 travaille sur des blocs de 2 h. Le planning v28
   a des horaires irréguliers (7 h 45, 15 h 30…) et n'est donc pas ré-optimisable tel quel. L'onglet lance
   le niveau 1 sur l'**instance d'étude commune** (8 chirurgiens, 3 salles) et affiche le planning obtenu

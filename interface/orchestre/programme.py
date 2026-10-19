@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import contextlib
 import io
-import random
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from typing import Optional
@@ -159,7 +158,7 @@ def construire_instances(lundi: date, nb_semaines: int = NB_SEMAINES_HORIZON, gr
 def instances_sma(programme: "Programme", nb_semaines: int = NB_SEMAINES_SMA):
     """Instances du SMA : mêmes patients et mêmes identifiants de vacations que le programme optimisé (4 semaines),
     plus les vacations des semaines suivantes du planning fixe."""
-    cle = ("_instances_sma", nb_semaines)
+    cle = ("_instances_sma", nb_semaines, V28.REVISION)
     if getattr(programme, "_cache_sma", (None,))[0] != cle:
         i1, i2 = SMA.construire_instances_v28(programme.lundi, max(nb_semaines, programme.nb_semaines),
                                               patients=programme.instance2.patients,

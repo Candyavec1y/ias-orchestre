@@ -221,6 +221,7 @@ def construire_semaine(lundi: date) -> tuple[dict[int, Creneau], dict[int, Vacat
 
 MAX_VACATIONS_MODELE = 99
 _VERSIONS: list[tuple[date, list, dict[int, Creneau], dict[int, Vacation]]] = []   # triées par date d'effet
+REVISION = 0                     # incrémenté à chaque definir_versions : invalide les caches qui dépendent du planning
 
 
 def ajouter_praticiens(noms, ids_connus: Optional[dict[str, int]] = None) -> dict[str, int]:
@@ -289,7 +290,7 @@ def _conflits(vacations: dict[int, Vacation]) -> list[str]:
 def definir_versions(versions: list[tuple[date, list]], ids_praticiens: Optional[dict[str, int]] = None) -> dict[str, int]:
     """Remplace les versions du planning : [(lundi d'effet, blocs au format BLOCS), ...]. `ids_praticiens` : ids déjà
     attribués aux praticiens ajoutés (stables d'un lancement à l'autre). Renvoie tous les ids attribués."""
-    global _VERSIONS, _SALLES_PREF
+    global _VERSIONS, _SALLES_PREF, REVISION
     res, attribues = [], dict(ids_praticiens or {})
     for effet, blocs in sorted(versions, key=lambda x: x[0]):
         blocs = [tuple(b[:5]) + (tuple(b[5]),) for b in blocs]
@@ -298,6 +299,7 @@ def definir_versions(versions: list[tuple[date, list]], ids_praticiens: Optional
         res.append((effet - timedelta(days=effet.weekday()), blocs, creneaux, vacations))
     _VERSIONS = res
     _SALLES_PREF = _salles_et_preference([VACATIONS_MODELE] + [v[3] for v in res])
+    REVISION += 1
     return attribues
 
 
