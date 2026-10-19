@@ -3,7 +3,7 @@
 # commun/structures_communes.py — VERSION FUSIONNÉE utilisée par l'interface OR'CHESTRE
 # Le dépôt contenait deux copies divergentes de ce fichier :
 #   planning_vacations/ (parité des semaines : type_semaine, planning_pour_semaine, Vacation.semaines)
-#   metaheuristiques/   (priorité : penalite_priorite_patient, calculer_f_priorite, PoidsNiveau2.priorite)
+#   metaheuristiques/   (priorité : penalite_priorite_patient)
 # Ce fichier est leur UNION, sans aucune modification de code ; les deux copies ont été supprimées.
 # Tous les scripts (interface, métaheuristiques, planning v28, SMA) l'importent depuis commun/ et
 # partagent donc les MÊMES classes.
@@ -33,9 +33,7 @@ Organisation
        1.7 Outils niveau 2     occupation, évaluation complète, évaluation INCRÉMENTALE, glouton
        1.8 Interface commune   ProblemeOptimisation
        1.9 Données de l'étude  instance N1, générateur de patients, instance N2 de référence
-    2. RS     ParametresRecuit, ProblemeRecuit
-    3. TABOU  ParametresTabou, ParametresVacationsSupplementaires, ProblemeTabou
-    4. AGS    ParametresAGS, ProblemeGenetique
+    2. AGS    ParametresAGS, ProblemeGenetique (codage de l'hybridation)
 
 Choix d'uniformisation (v2)
 ---------------------------
@@ -69,7 +67,7 @@ import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 
 # =============================================================================
@@ -327,7 +325,6 @@ class PoidsNiveau2:
     var_lits: float = 20.0
     place: float = 5000.0
     var_places: float = 20.0
-    priorite: float = 50.0
 
 
 POIDS_N1 = ParametresNiveau1()
@@ -639,39 +636,6 @@ def penalite_priorite_patient(patient: Patient, vacation_id: int, vacations: dic
     return (
         priorite_effective / 4.0
     ) * retard_normalise
-
-
-def calculer_f_priorite(
-    instance2: InstanceNiveau2,
-    solution: SolutionPatients,
-) -> float:
-    """
-    Retard moyen pondéré par la priorité clinique.
-
-    Les patients non placés ne sont pas comptés ici :
-    ils sont déjà fortement pénalisés par le terme non_place.
-    """
-
-    penalites = []
-
-    for patient_id, vacation_id in solution.affectations.items():
-
-        if vacation_id is None:
-            continue
-
-        penalites.append(
-            penalite_priorite_patient(
-                instance2.patients[patient_id],
-                vacation_id,
-                instance2.vacations,
-            )
-        )
-
-    return (
-        sum(penalites) / len(penalites)
-        if penalites
-        else 0.0
-    )
 
 
 def jours_occupation(patient: Patient, jour_operation: date) -> list[date]:
@@ -1100,73 +1064,7 @@ def instance_niveau2_reference() -> tuple[InstanceProbleme, InstanceNiveau2]:
 
 
 # =============================================================================
-# 2. RS — RECUIT SIMULÉ
-# =============================================================================
-
-@dataclass(frozen=True)
-class ParametresRecuit:
-    temperature_initiale: float = 100.0
-    temperature_min: float = 0.01
-    alpha: float = 0.95                      # refroidissement géométrique T <- alpha*T
-    iterations_par_temperature: int = 100
-    nb_paliers: int = 100
-    graine: int = GRAINE_ETUDE
-
-    def __post_init__(self):
-        if self.temperature_initiale <= 0:
-            raise ValueError("temperature_initiale doit être > 0")
-        if not 0 < self.alpha < 1:
-            raise ValueError("alpha doit être dans ]0, 1[")
-        if self.iterations_par_temperature <= 0 or self.nb_paliers <= 0:
-            raise ValueError("iterations_par_temperature et nb_paliers doivent être > 0")
-
-
-class ProblemeRecuit(ProblemeOptimisation):
-    """Un problème optimisable par le recuit : sait produire UN voisin aléatoire."""
-
-    @abstractmethod
-    def voisin(self, solution, rng: random.Random):
-        """Nouvelle solution obtenue par une petite perturbation de `solution`."""
-
-
-# =============================================================================
-# 3. TABOU — RECHERCHE TABOUE
-# =============================================================================
-
-@dataclass(frozen=True)
-class ParametresTabou:
-    iterations: int = 300
-    taille_tabou: int = 10
-    taille_tabou_alea: int = 0               # durée taboue += randint(0, alea)
-    patience: int = 80                       # itérations sans amélioration avant arrêt / perturbation
-    maximum_voisins: int = 500               # N1 : taille du voisinage échantillonné
-    nb_echanges_par_iteration: int = 500     # N2 : paires échangées testées par itération
-    temps_max_secondes: Optional[float] = None
-    perturbation_si_stagnation: bool = False # N2 : True (on repart du meilleur perturbé)
-    graine: int = GRAINE_ETUDE + 7
-
-
-@dataclass(frozen=True)
-class ParametresVacationsSupplementaires:
-    """Ouverture de vacations en plus pour absorber les patients non placés (Tabou N2)."""
-    actif: bool = True
-    max_tours: int = 3
-    semaines_extra: int = 1
-    planning_repete: bool = False
-    marge_besoin: float = 1.10
-    temps_par_tour: float = 15.0
-
-
-class ProblemeTabou(ProblemeOptimisation):
-    """Un problème optimisable par la recherche taboue : sait lister ses voisins."""
-
-    @abstractmethod
-    def voisinage(self, solution, rng: random.Random) -> list[tuple[Any, Mouvement]]:
-        """Liste de (voisin, mouvement). Le mouvement alimente la liste taboue."""
-
-
-# =============================================================================
-# 4. AGS — ALGORITHME GÉNÉTIQUE SIMPLE
+# 2. AGS — ALGORITHME GÉNÉTIQUE SIMPLE
 # =============================================================================
 
 Individu = list   # chromosome : liste de gènes (N1 : plage par bloc ; N2 : vacation par patient)

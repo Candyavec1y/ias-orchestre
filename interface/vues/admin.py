@@ -61,8 +61,7 @@ def _capacites() -> None:
                                       "réaffecte les patients de démonstration en respectant les nouvelles capacités.")
         mode = st.selectbox("Méthode de calcul du programme (si recalcul)", modes, format_func=P.MODES_HYBRIDES.get,
                             index=modes.index(cfg["mode"]) if cfg.get("mode") in modes else 0,
-                            help="Les modes hybrides tournent 10 s ; recuit_simulé.py et algorithme_genetique.py "
-                                 "ont un budget fixe d'itérations / de générations (1 à 2 s).")
+                            help="Toutes les méthodes (hybrides et références RS / Tabou / AGS seuls) tournent 10 s.")
         motif = st.text_input("Motif (obligatoire, tracé)", placeholder="ex. capacités réelles du service")
         ok = st.form_submit_button("Enregistrer", type="primary")
     if not ok:

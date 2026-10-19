@@ -42,8 +42,6 @@ MODES_HYBRIDES = {
     "RS seul": "Recuit simulé seul (référence)",
     "TABOU seul": "Recherche taboue seule (référence)",
     "AGS seul": "Algorithme génétique seul (référence)",
-    "recuit_simule.py": "Recuit simulé du dépôt (recuit_simulé.py, paramètres calibrés)",
-    "algorithme_genetique.py": "Algorithme génétique du dépôt (algorithme_genetique.py)",
     "glouton": "Glouton multi-départ (sans métaheuristique)",
 }
 
@@ -191,12 +189,6 @@ def calculer_programme(lundi: date, mode: str = "memetique", temps_s: float = 15
     resultat = None
     if mode == "glouton":
         sol = glouton
-    elif mode == "recuit_simule.py":
-        resultat = _recuit_depot(i2)
-        sol = resultat.solution_patients()
-    elif mode == "algorithme_genetique.py":
-        resultat = _ags_depot(i2)
-        sol = resultat.solution_patients()
     else:
         H = chemins.module("hybridage2")
         with contextlib.redirect_stdout(io.StringIO()):
@@ -206,37 +198,13 @@ def calculer_programme(lundi: date, mode: str = "memetique", temps_s: float = 15
                      datetime.now(ZoneInfo("Europe/Paris")).replace(tzinfo=None).isoformat(timespec="seconds"))
 
 
-def _recuit_depot(i2):
-    """recuit_simulé.py (niveau 2) avec ses paramètres calibrés : budget en itérations, pas en secondes."""
-    RS = chemins.importer_fichier("recuit_simule", chemins.RACINE / "metaheuristiques" / "recuit_simulé.py")
-    with contextlib.redirect_stdout(io.StringIO()):
-        r = RS.resoudre_niveau2(i2)
-    r.variante = "recuit_simule.py"
-    return r
-
-
-def _ags_depot(i2):
-    """algorithme_genetique.py (niveau 2) avec ses paramètres : budget en générations, pas en secondes."""
-    AG = chemins.module("algorithme_genetique")
-    with contextlib.redirect_stdout(io.StringIO()):
-        r = AG.resoudre_niveau2(i2)
-    r.variante = "algorithme_genetique.py"
-    return r
-
-
 def comparer_algorithmes_n2(lundi: date, modes: list[str], temps_s: float, nb_semaines: int = NB_SEMAINES_HORIZON,
                             graine: int = SC.GRAINE_ETUDE) -> list:
     """Même instance, même départ, même budget : un ResultatMetaheuristique par mode."""
     _, i2 = construire_instances(lundi, nb_semaines)
     H = chemins.module("hybridage2")
-    hybrides = [m for m in modes if m not in ("recuit_simule.py", "algorithme_genetique.py")]
     with contextlib.redirect_stdout(io.StringIO()):
-        res = H._executer_niveau(2, i2, hybrides, temps_s, graine, H.ParametresRechercheLocale()) if hybrides else []
-    if "recuit_simule.py" in modes:
-        res.append(_recuit_depot(i2))
-    if "algorithme_genetique.py" in modes:
-        res.append(_ags_depot(i2))
-    return res
+        return H._executer_niveau(2, i2, list(modes), temps_s, graine, H.ParametresRechercheLocale())
 
 
 def indicateurs(programme: Programme):

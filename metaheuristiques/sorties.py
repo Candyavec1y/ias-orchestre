@@ -46,9 +46,9 @@ if _COMMUN not in sys.path:
     sys.path.insert(0, _COMMUN)
 
 from structures_communes import (  # noqa: E402
-    JOURS_FR, EvaluationNiveau2, EvaluationPlanning, InstanceNiveau2, InstanceProbleme, NomAlgo,
+    JOURS_FR, EvaluationNiveau2, InstanceNiveau2, InstanceProbleme, NomAlgo,
     SolutionPatients, SolutionPlanning, Vacation, calculer_occupation_par_jour, construire_vacations,
-    evaluer_niveau2, evaluer_planning, vacations_compatibles, verifier_solution_niveau1,
+    evaluer_niveau2, evaluer_planning, penalite_priorite_patient, verifier_solution_niveau1,
 )
 
 VERSION_FORMAT = "2.0"
@@ -142,15 +142,8 @@ def calculer_indicateurs_niveau2(instance2: InstanceNiveau2, solution: SolutionP
     reg = [vid for vid, v in V.items() if not v.supplementaire]
     lits, places = calculer_occupation_par_jour(instance2, solution)
 
-    pen = []
-    for pid, vid in solution.affectations.items():
-        if vid is None:
-            continue
-        p = instance2.patients[pid]
-        debuts = [V[c].debut for c in vacations_compatibles(p, V)]
-        amplitude = (max(debuts) - min(debuts)).total_seconds() if debuts else 0
-        r = (V[vid].debut - min(debuts)).total_seconds() / amplitude if amplitude > 0 else 0.0
-        pen.append(p.priorite / 4 * r)
+    pen = [penalite_priorite_patient(instance2.patients[pid], vid, V)
+           for pid, vid in solution.affectations.items() if vid is not None]
     np_prio: dict[int, int] = {}
     for pid in solution.non_places():
         pr = instance2.patients[pid].priorite

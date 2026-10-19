@@ -17,7 +17,6 @@ B) On charge les modèles de production déjà sauvegardés (.joblib) et
 import warnings
 warnings.filterwarnings("ignore")
 
-import time
 import numpy as np
 import pandas as pd
 import joblib
@@ -268,7 +267,7 @@ def valider_sur_jeu_de_test():
 
     acc = accuracy_score(df_test['type_capacite'], cap_pred_test)
     f1 = f1_score(df_test['type_capacite'], cap_pred_test, pos_label='lit_classique')
-    print(f"\n[Classification type_capacite]")
+    print("\n[Classification type_capacite]")
     print(f"  Accuracy : {acc:.3f}   F1 (lit_classique) : {f1:.3f}")
     print("  Matrice de confusion (lignes=réel, colonnes=prédit) :")
     print("  ", confusion_matrix(df_test['type_capacite'], cap_pred_test,
