@@ -97,8 +97,8 @@ for _dossier in (_RACINE / "planning_vacations", _RACINE / "metaheuristiques"):
         sys.path.append(str(_dossier))
 
 import planning_vacations_v28 as V28
-from parametres import (CHARGE_GENERATEUR, COUT_LIT_EN_TROP, GRAINE_MESA, NB_SEMAINES_SCENARIOS_SMA,  # noqa: E402
-                        PAS_GRAINE_SEMAINE)
+from parametres import (BUDGET_GLOBAL_SMA_S, BUDGET_LOCAL_SMA_S, CHARGE_GENERATEUR, COUT_LIT_EN_TROP,  # noqa: E402
+                        GRAINE_MESA, NB_SEMAINES_SCENARIOS_SMA, PAS_GRAINE_SEMAINE)
 from structures_communes import (
     GRAINE_PATIENTS, HEBERGEMENT_SITE, JOURS_FR, POIDS_N2, Chirurgien, InstanceNiveau2, InstanceProbleme,
     ParametresHebergement, Patient,
@@ -269,9 +269,9 @@ class ParametresSMA:
     # --- architecture hybride : vos métaheuristiques (metaheuristiques/hybridation.py) ---
     # modes : "RS seul" | "TABOU seul" | "AGS seul" | "memetique" | "AGS>RS>TABOU" | "RS>AGS>TABOU"
     methode_locale: Optional[str] = "TABOU seul"  # cas B, agents Salle ("glouton" ou None : pas d'optimisation locale)
-    budget_local_s: float = 0.02                  # secondes par créneau et par appel d'offres (temps réel)
+    budget_local_s: float = BUDGET_LOCAL_SMA_S    # secondes par créneau et par appel d'offres (temps réel)
     optimisation_globale: Optional[str] = "memetique"  # cas A, agent Optimisation (None : pas de réoptimisation)
-    budget_global_s: float = 1.0                  # secondes par réoptimisation globale
+    budget_global_s: float = BUDGET_GLOBAL_SMA_S  # secondes par réoptimisation globale
     gain_min_global: float = 50.0                 # gain minimal pour modifier le programme
     gel_optimisation_min: int = 60                # patients qui commencent dans l'heure : gelés (déjà convoqués)
     c_stabilite: float = 20.0                     # coût par patient déplacé par l'optimisation globale

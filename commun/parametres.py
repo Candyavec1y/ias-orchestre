@@ -30,7 +30,9 @@ PLACES_AMBULATOIRES_INSTANCE_ETUDE_N1 = 10
 # Secondes par méthode pour l'optimisation du programme (interface : premier lancement et recalcul ;
 # hybridation.py en ligne de commande, modifiable par --temps). Même budget pour toutes les méthodes.
 BUDGET_OPTIMISATION_S = 10.0
-# (les budgets du SMA, locaux et globaux, sont dans sma_urgences.ParametresSMA : budget_local_s, budget_global_s)
+# Budgets du SMA (temps réel, valeurs par défaut de sma_urgences.ParametresSMA) :
+BUDGET_LOCAL_SMA_S = 0.02         # optimisation locale : secondes par créneau et par appel d'offres
+BUDGET_GLOBAL_SMA_S = 1.0         # optimisation globale : secondes par réoptimisation
 
 # =============================================================================
 # Graines (reproductibilité) — tout script en ligne de commande accepte --graine
