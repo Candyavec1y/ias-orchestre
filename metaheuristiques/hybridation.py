@@ -39,9 +39,10 @@ Résultat principal : resultats/<jeu>/AGS+RS+TABOU_n<k>.json ; le reste dans var
 
 Utilisation
 -----------
-    python metaheuristiques/hybridation.py                 # instance d'étude, BUDGET_OPTIMISATION_S par mode
-    python metaheuristiques/hybridation.py --temps 10
-    from hybridation import executer_campagne              # depuis un autre script
+    python metaheuristiques/hybridation.py                            # N1 étude + N2 planning réel v28
+    python metaheuristiques/hybridation.py --instance etude           # N1 + N2 + chaînage sur l'instance d'étude
+    python metaheuristiques/hybridation.py --patients 300 --graines 1 2 3 --temps 20
+    from hybridation import executer_campagne, instance_v28           # depuis un autre script
 """
 from __future__ import annotations
 
@@ -52,7 +53,7 @@ import sys
 import time as chrono
 from collections import defaultdict
 from dataclasses import dataclass, replace
-from datetime import timedelta
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -63,9 +64,10 @@ except NameError:
 sys.path.insert(0, str(_DOSSIER))
 if str(_DOSSIER.parent / "commun") not in sys.path:   # structures_communes.py partagé : dossier commun/
     sys.path.insert(0, str(_DOSSIER.parent / "commun"))
-from parametres import BUDGET_OPTIMISATION_S, GRAINE_POPULATION_N1, NB_SEMAINES_REPORT  # noqa: E402
+from parametres import (BUDGET_OPTIMISATION_S, CHARGES_PAR_SEMAINE, GRAINE_POPULATION_N1,  # noqa: E402
+                        LUNDI_REFERENCE, NB_SEMAINES_HORIZON, NB_SEMAINES_REPORT)
 from structures_communes import (  # noqa: E402
-    GRAINE_ETUDE, JOURS_FR, EtatNiveau2, InstanceNiveau2, InstanceProbleme, Individu, ParametresAGS,
+    GRAINE_ETUDE, GRAINE_PATIENTS, HEBERGEMENT_SITE, JOURS_FR, EtatNiveau2, InstanceNiveau2, InstanceProbleme, Individu, ParametresAGS,
     ProblemeGenetique, SolutionPatients, SolutionPlanning, calculer_occupation_par_jour,
     construire_affectation_initiale,
     construire_instance_niveau2, construire_meilleure_affectation_initiale, evaluer_niveau2,
@@ -381,7 +383,7 @@ def voisinage_niveau2(pb: "ProblemeHybrideN2", etat: EtatNiveau2, rng: random.Ra
     for a, b in paires:
         pa, pb_ = pb.pids[a], pb.pids[b]
         va, vb = aff[pa], aff[pb_]
-        if va != vb:
+        if va != vb and pb.echange_possible(a, va, b, vb):
             mvs.append(((pa, va, vb), (pb_, vb, va)))
     non_places = [i for i in range(pb.n) if aff[pb.pids[i]] is None and pb.compat[i]]
     for _ in range(p.ejections_n2):
@@ -704,11 +706,17 @@ class ProblemeHybrideN2(ProblemeGenetique):
         self.pids = sorted(instance2.patients)
         self.n = len(self.pids)
         self.compat = [vacations_compatibles(instance2.patients[p], instance2.vacations) for p in self.pids]
+        self.compat_set = [set(c) for c in self.compat]
         self.chir = [instance2.patients[p].chirurgien_id for p in self.pids]
         self.indices_par_chir: dict[int, list[int]] = defaultdict(list)
         for i, c in enumerate(self.chir):
             self.indices_par_chir[c].append(i)
         self._cache: dict[tuple, float] = {}
+
+    def echange_possible(self, i: int, vi, j: int, vj) -> bool:
+        """Deux patients du même chirurgien peuvent échanger leurs vacations si chacun peut recevoir celle de
+        l'autre (date au plus tôt) ; « non placé » (None) reste toujours possible."""
+        return (vj is None or vj in self.compat_set[i]) and (vi is None or vi in self.compat_set[j])
 
     # ---------------- codage / évaluation ----------------
     def vers_solution(self, individu: Individu) -> SolutionPatients:
@@ -775,9 +783,10 @@ class ProblemeHybrideN2(ProblemeGenetique):
                 continue
             if rng.random() < 0.5:          # déplacement (rarement vers « non placé »)
                 ind[i] = rng.choice(self.compat[i])          # jamais « non placé »
-            else:                           # échange avec un patient du même chirurgien
+            else:                           # échange avec un patient du même chirurgien (si compatible)
                 j = rng.choice(self.indices_par_chir[self.chir[i]])
-                ind[i], ind[j] = ind[j], ind[i]
+                if self.echange_possible(i, ind[i], j, ind[j]):
+                    ind[i], ind[j] = ind[j], ind[i]
         return ind
 
     # ---------------- voisinage incrémental (recherche locale) ----------------
@@ -813,7 +822,7 @@ class ProblemeHybrideN2(ProblemeGenetique):
             j = rng.choice(self.indices_par_chir[self.chir[i]])
             pid2 = self.pids[j]
             o2 = aff[pid2]
-            if o2 == old:
+            if o2 == old or not self.echange_possible(i, old, j, o2):
                 continue
             return ((pid, old, o2), (pid2, o2, old))
         return None
@@ -875,16 +884,61 @@ POIDS_PRIORITE_REPORT = {1: 1, 2: 2, 3: 3, 4: 5}
 
 
 def etendre_horizon(instance2: InstanceNiveau2, nb_semaines: int = NB_SEMAINES_REPORT) -> InstanceNiveau2:
-    """Instance N2 dont les vacations régulières sont dupliquées sur les semaines +1..+nb_semaines."""
+    """Instance N2 + vacations de report sur les semaines +1..+nb_semaines APRÈS la fin de l'horizon.
+
+    Horizon de W semaines : la semaine de report k reprend les vacations régulières de la semaine (k - 1) mod W de
+    l'horizon, décalées pour tomber en semaine W + k - 1. Ainsi aucune vacation n'est dupliquée sur un créneau
+    existant et, pour le planning v28 (cycle de 4 semaines, W multiple de 4), la semaine de report a bien les
+    vacations du planning réel. W = 1 (instance d'étude) : chaque vacation est décalée de k semaines, comme à
+    l'origine. `semaine_decalage` = k (semaines après la fin de l'horizon) : c'est elle que pénalise le report."""
     V = dict(instance2.vacations)
     prochain = max(V, default=0) + 1
     regulieres = sorted((v for v in instance2.vacations.values() if not v.supplementaire), key=lambda v: v.id)
+    if not regulieres:
+        return InstanceNiveau2(instance2.patients, V, instance2.hebergement, instance2.noms_chirurgiens, instance2.nom)
+    premier = min(v.jour for v in regulieres)
+    lundi0 = premier - timedelta(days=premier.weekday())
+    semaine = {v.id: (v.jour - lundi0).days // 7 for v in regulieres}
+    w = max(semaine.values()) + 1
     for k in range(1, nb_semaines + 1):
+        source = (k - 1) % w
+        decalage = w + k - 1 - source
         for v in regulieres:
-            V[prochain] = replace(v, id=prochain, jour=v.jour + timedelta(days=7 * k),
-                                  supplementaire=True, semaine_decalage=k)
-            prochain += 1
+            if semaine[v.id] == source:
+                V[prochain] = replace(v, id=prochain, jour=v.jour + timedelta(days=7 * decalage),
+                                      supplementaire=True, semaine_decalage=k)
+                prochain += 1
     return InstanceNiveau2(instance2.patients, V, instance2.hebergement, instance2.noms_chirurgiens, instance2.nom)
+
+
+def instance_v28(lundi: date, semaines: int = NB_SEMAINES_HORIZON, graine: int = GRAINE_PATIENTS,
+                 charge: Optional[float] = None, nb_patients: Optional[int] = None) -> InstanceNiveau2:
+    """Instance N2 sur le planning RÉEL v28 (D5), construite comme le programme de l'interface : vacations v28,
+    capacités HEBERGEMENT_SITE, patients de generer_patients_etude (D7). Seul le nombre de patients varie :
+      * par défaut : charges décroissantes de l'interface (CHARGES_PAR_SEMAINE) ;
+      * `charge` x : même charge x (fraction des heures de vacation) chaque semaine ;
+      * `nb_patients` N : la charge est augmentée jusqu'à avoir au moins N patients, puis N patients sont tirés
+        au hasard (graine) — les règles du générateur (durées, nuits, priorités) ne changent pas."""
+    for d in ("planning_vacations", "sma"):
+        if str(_DOSSIER.parent / d) not in sys.path:
+            sys.path.append(str(_DOSSIER.parent / d))
+    import sma_urgences as SMA                 # import tardif : seule l'instance v28 a besoin du planning réel
+
+    def construire(charges):
+        return SMA.construire_instances_v28(lundi, semaines, graine=graine, hebergement=HEBERGEMENT_SITE,
+                                            charges=charges, format_nom="DEMO-{:04d}")[1]
+
+    if nb_patients is None:
+        return construire(((charge, charge),) if charge is not None else CHARGES_PAR_SEMAINE)
+    c, inst = 1.0, construire(((1.0, 1.0),))
+    for _ in range(8):
+        if len(inst.patients) >= nb_patients:
+            break
+        c *= 1.05 * nb_patients / max(1, len(inst.patients))
+        inst = construire(((c, c),))
+    garde = sorted(random.Random(graine).sample(sorted(inst.patients), min(nb_patients, len(inst.patients))))
+    return InstanceNiveau2({p: inst.patients[p] for p in garde}, inst.vacations, inst.hebergement,
+                           inst.noms_chirurgiens, f"{inst.nom}_{len(garde)}patients")
 
 
 class EtatAvecReport(EtatNiveau2):
@@ -1075,6 +1129,9 @@ def _executer_niveau(niveau: int, instance, modes, temps: float, graine: int,
         algo = NOM_ALGO if mode in MODES else mode.split()[0]
         r = fabrique(algo, instance, sol, score_initial=s0, suivi=suivi, parametres=p, graine=graine,
                      variante=mode, notes=f"Hybridation {NOM_ALGO}, mode {mode}")
+        r.score_recherche = pb.cout(ind)                     # D10 : score optimisé, report compris (N2)
+        if niveau == 2:
+            r.detail_score["report"] = pb.etat(ind).report
         print(f"  N{niveau} | {mode:<12} | départ {s0:>11,.1f} -> final {r.score_final:>11,.1f} "
               f"({r.gain_pct:5.1f} %) | {'faisable' if r.faisable else 'NON faisable'} | "
               f"{info['generations']:>5} gén. | {r.temps_calcul_s:5.1f} s")
@@ -1083,8 +1140,15 @@ def _executer_niveau(niveau: int, instance, modes, temps: float, graine: int,
 
 
 def _meilleur_hybride(resultats: list[ResultatMetaheuristique]) -> ResultatMetaheuristique:
+    """Meilleur mode hybride, aux deux niveaux : d'abord les solutions déclarées FAISABLES par le validateur
+    indépendant, puis le meilleur score. Si aucune n'est faisable, la meilleure est renvoyée marquée non valide
+    (r.faisable == False, r.validation["violations"]) : elle n'est jamais présentée comme un programme valide."""
     hybrides = [r for r in resultats if r.variante in MODES]
-    return min(hybrides, key=lambda r: (not r.faisable if r.niveau == 1 else 0, r.score_final))
+    meilleur = min(hybrides, key=lambda r: (not r.faisable, r.score_final))
+    if not meilleur.faisable:
+        print(f"  ⚠ N{meilleur.niveau} : AUCUNE solution faisable ; meilleure solution NON VALIDE ({meilleur.variante}) : "
+              + ", ".join(f"{n} {t}" for t, n in meilleur.validation.get("par_type", {}).items()))
+    return meilleur
 
 
 # =============================================================================
@@ -1225,10 +1289,15 @@ def executer_campagne(jeu: str = "etude", temps_n1: float = BUDGET_OPTIMISATION_
                       modes=MODES, references: bool = True, dossier: str = "resultats",
                       graine: int = GRAINE_ETUDE, afficher: bool = True,
                       rl_params: ParametresRechercheLocale = ParametresRechercheLocale(),
-                      nb_semaines_report: int = NB_SEMAINES_REPORT) -> dict:
-    """Niveau 1, niveau 2 (instance de référence commune, avec report possible sur les semaines
-    suivantes) puis niveau 2 chaîné sur le planning N1 obtenu."""
-    inst1, inst2_base, n2_chainee = charger_instances(jeu)
+                      nb_semaines_report: int = NB_SEMAINES_REPORT,
+                      instance2: Optional[InstanceNiveau2] = None, suffixe: str = "") -> dict:
+    """Niveau 1 sur l'instance d'étude (D6), puis niveau 2 avec report possible sur les semaines suivantes :
+    sur `instance2` si elle est fournie (planning réel v28, D5), sinon sur l'instance d'étude, suivi alors du
+    niveau 2 chaîné sur le planning N1 obtenu. Toutes les méthodes ont le même départ et le même budget.
+    `suffixe` : ajouté aux noms des JSON (ex. "_g2" pour la graine 2)."""
+    inst1, inst2_etude, n2_chainee = charger_instances("etude")
+    inst2_base = instance2 if instance2 is not None else inst2_etude
+    chainage = instance2 is None
     inst2 = etendre_horizon(inst2_base, nb_semaines_report)
     tous = list(modes) + (list(REFERENCES) if references else [])
     sortie = Path(dossier) / jeu
@@ -1249,22 +1318,24 @@ def executer_campagne(jeu: str = "etude", temps_n1: float = BUDGET_OPTIMISATION_
     print("\n  BENCHMARK NIVEAU 2 (score commun, à minimiser)")
     afficher_benchmark(res2, prio)
 
-    # Chaînage N1 -> N2 : patients générés sur les vacations du MEILLEUR planning N1 hybride
-    inst2c = etendre_horizon(n2_chainee(best1.solution_planning()), nb_semaines_report)
-    print("\n" + "=" * 110 + f"\n  {NOM_ALGO} — CHAÎNAGE N1 -> N2 ({len(inst2c.patients)} patients sur le planning N1 "
-          f"« {best1.variante} »)\n" + "=" * 110)
-    resc = _executer_niveau(2, inst2c, [best2.variante], temps_n2, graine, rl_params)[0]
-    resc.variante = f"chaine N1->N2 ({best2.variante})"
+    # Chaînage N1 -> N2 (instance d'étude seulement) : patients générés sur le MEILLEUR planning N1 hybride
+    resc = inst2c = None
+    if chainage:
+        inst2c = etendre_horizon(n2_chainee(best1.solution_planning()), nb_semaines_report)
+        print("\n" + "=" * 110 + f"\n  {NOM_ALGO} — CHAÎNAGE N1 -> N2 ({len(inst2c.patients)} patients sur le planning "
+              f"N1 « {best1.variante} »)\n" + "=" * 110)
+        resc = _executer_niveau(2, inst2c, [best2.variante], temps_n2, graine, rl_params)[0]
+        resc.variante = f"chaine N1->N2 ({best2.variante})"
 
-    # --- sauvegarde : résultat principal (variante "") + toutes les variantes ---
-    for r in res1 + res2 + [resc]:
+    # --- sauvegarde : résultat principal (variante "") + toutes les variantes, un JSON par (mode, graine) ---
+    for r in res1 + res2 + ([resc] if resc else []):
         nom = r.variante.replace(">", "-").replace(" ", "_").replace("(", "").replace(")", "")
-        r.sauvegarder(sortie / "variantes" / f"{r.algo}_{nom}_n{r.niveau}.json")
+        r.sauvegarder(sortie / "variantes" / f"{r.algo}_{nom}_n{r.niveau}{suffixe}.json")
     for best in (best1, best2):
         principal = ResultatMetaheuristique.from_dict(best.to_dict())
         principal.notes = f"Meilleur mode d'hybridation : {best.variante}"
         principal.variante = ""
-        principal.sauvegarder(sortie / f"{NOM_ALGO}_n{best.niveau}.json")
+        principal.sauvegarder(sortie / f"{NOM_ALGO}_n{best.niveau}{suffixe}.json")
 
     if afficher:
         print()
@@ -1272,8 +1343,9 @@ def executer_campagne(jeu: str = "etude", temps_n1: float = BUDGET_OPTIMISATION_
                           titre=f"PLANNING NIVEAU 1 — {NOM_ALGO}, mode « {best1.variante} »")
         afficher_rapport_niveau2(inst2, best2.solution_patients(),
                                  f"RAPPORT DÉTAILLÉ NIVEAU 2 — {NOM_ALGO}, mode « {best2.variante} »")
-        afficher_rapport_niveau2(inst2c, resc.solution_patients(),
-                                 f"RAPPORT NIVEAU 2 CHAÎNÉ — {NOM_ALGO}", detail=False)
+        if resc:
+            afficher_rapport_niveau2(inst2c, resc.solution_patients(),
+                                     f"RAPPORT NIVEAU 2 CHAÎNÉ — {NOM_ALGO}", detail=False)
 
     print("\n" + "=" * 110 + "\n  SYNTHÈSE\n" + "=" * 110)
     for best, res in ((best1, res1), (best2, res2)):
@@ -1282,6 +1354,8 @@ def executer_campagne(jeu: str = "etude", temps_n1: float = BUDGET_OPTIMISATION_
         print(f"  N{best.niveau} : meilleur mode = {best.variante:<12} score {best.score_final:,.1f} "
               f"(départ commun {best.score_initial:,.1f}, gain {best.gain_pct:.1f} %) | références : {txt}")
     for nom, r in (("N2", best2), ("N2 chaîné", resc)):
+        if r is None:
+            continue
         r._priorites = prio if nom == "N2" else {p: q.priorite for p, q in inst2c.patients.items()}
         nb, tot, _ = _reports(r)
         print(f"  {nom:<9} : {r.indicateurs.nb_non_places} patient(s) non placé(s), {nb} reporté(s) "
@@ -1291,17 +1365,40 @@ def executer_campagne(jeu: str = "etude", temps_n1: float = BUDGET_OPTIMISATION_
             "instance1": inst1, "instance2": inst2, "instance2_chainee": inst2c}
 
 
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser(description=f"Hybridation {NOM_ALGO} (niveaux 1 et 2).")
-    ap.add_argument("--jeu", default="etude", choices=["etude"], help="instance d'étude (niveau 1 et niveau 2)")
-    ap.add_argument("--temps", type=float, default=BUDGET_OPTIMISATION_S, help="secondes par mode et par niveau")
+def _arguments(argv=None):
+    ap = argparse.ArgumentParser(description=f"Hybridation {NOM_ALGO} (niveau 1 sur l'instance d'étude, niveau 2 sur "
+                                             f"le planning réel v28 ou l'instance d'étude).")
+    ap.add_argument("--instance", default="v28", choices=["v28", "etude"], help="instance du niveau 2 (défaut : v28)")
+    ap.add_argument("--lundi", type=date.fromisoformat, default=LUNDI_REFERENCE, help="v28 : premier lundi (AAAA-MM-JJ)")
+    ap.add_argument("--semaines", type=int, default=NB_SEMAINES_HORIZON, help="v28 : semaines de l'horizon")
+    groupe = ap.add_mutually_exclusive_group()
+    groupe.add_argument("--patients", type=int, help="v28 : nombre de patients")
+    groupe.add_argument("--charge", type=float, help="v28 : charge (fraction des heures de vacation) chaque semaine")
+    ap.add_argument("--temps", type=float, default=BUDGET_OPTIMISATION_S, help="secondes par méthode et par niveau")
     ap.add_argument("--modes", nargs="+", default=list(MODES), choices=list(MODES))
-    ap.add_argument("--sans-references", action="store_true", help="ne pas lancer AGS seul / RL seule")
+    ap.add_argument("--sans-references", action="store_true", help="ne pas lancer RS / Tabou / AGS seuls")
     ap.add_argument("--sortie", default="resultats")
-    ap.add_argument("--graine", type=int, default=GRAINE_ETUDE)
+    ap.add_argument("--graine", type=int, default=GRAINE_ETUDE, help="graine de la recherche")
+    ap.add_argument("--graines", type=int, nargs="+", help="plusieurs graines : un JSON par (méthode, graine)")
     ap.add_argument("--sans-detail", action="store_true", help="ne pas afficher planning et rapport détaillé")
     ap.add_argument("--semaines-report", type=int, default=NB_SEMAINES_REPORT,
-                    help="nombre de semaines suivantes ouvertes au report des patients")
-    a, _ = ap.parse_known_args()             # ignore les arguments ajoutés par Jupyter / Colab (-f ...)
-    executer_campagne(a.jeu, a.temps, a.temps, a.modes, not a.sans_references, a.sortie, a.graine,
-                      not a.sans_detail, nb_semaines_report=a.semaines_report)
+                    help="semaines ajoutées après l'horizon, ouvertes au report des patients")
+    a, _ = ap.parse_known_args(argv)         # ignore les arguments ajoutés par Jupyter / Colab (-f ...)
+    return a
+
+
+def main(argv=None) -> list[dict]:
+    a = _arguments(argv)
+    graines = a.graines or [a.graine]
+    resultats = []
+    for g in graines:
+        inst2 = (instance_v28(a.lundi, a.semaines, GRAINE_PATIENTS, a.charge, a.patients)
+                 if a.instance == "v28" else None)
+        resultats.append(executer_campagne(a.instance, a.temps, a.temps, a.modes, not a.sans_references, a.sortie, g,
+                                           not a.sans_detail, nb_semaines_report=a.semaines_report, instance2=inst2,
+                                           suffixe=f"_g{g}" if len(graines) > 1 else ""))
+    return resultats
+
+
+if __name__ == "__main__":
+    main()

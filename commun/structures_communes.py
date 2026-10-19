@@ -72,7 +72,8 @@ if str(Path(__file__).resolve().parent) not in sys.path:      # commun/parametre
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from parametres import (  # noqa: E402  (valeurs partagées : définies une seule fois dans commun/parametres.py)
-    COUT_LIT_EN_TROP, DECALAGE_GRAINE_PRIORITES, GRAINE_ETUDE, GRAINE_PATIENTS, LITS_INSTANCE_ETUDE_N1, LITS_SITE,
+    CHARGE_GENERATEUR, COUT_LIT_EN_TROP, DECALAGE_GRAINE_PRIORITES, GRAINE_ETUDE, GRAINE_PATIENTS,
+    LITS_INSTANCE_ETUDE_N1, LITS_SITE,
     PLACES_AMBULATOIRES_INSTANCE_ETUDE_N1, PLACES_AMBULATOIRES_SITE, RESERVE_LITS_INSTANCE_ETUDE_N1,
     RESERVE_LITS_SITE, TAUX_MARGE_VACATION,
 )
@@ -1010,7 +1011,8 @@ PRENOMS = ["Léo", "Emma", "Hugo", "Alice", "Noah", "Léa", "Jules", "Chloé", "
 
 
 def generer_patients_etude(vacations: dict[int, Vacation], graine: int = GRAINE_PATIENTS,
-                           charge_min: float = 0.90, charge_max: float = 1.10) -> dict[int, Patient]:
+                           charge_min: float = CHARGE_GENERATEUR[0],
+                           charge_max: float = CHARGE_GENERATEUR[1]) -> dict[int, Patient]:
     """
     Générateur 1/3 — INSTANCES SYNTHÉTIQUES D'OPTIMISATION (règles fixes, aucune donnée réelle).
 

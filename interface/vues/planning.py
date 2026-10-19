@@ -159,6 +159,8 @@ def _programme() -> None:
     if sim is None:
         st.info("Aucun programme calculé.")
         return
+    if not C.est("chirurgien"):
+        C.avertir_si_programme_non_valide()
     u = C.utilisateur()
     jours = sim.jours()
     aujourd = C.maintenant().date()

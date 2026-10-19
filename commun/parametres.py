@@ -7,6 +7,7 @@ Chaque valeur partagée par plusieurs modules est définie ICI, une seule fois ;
 la réécrire. Ce fichier ne dépend d'aucun autre (simples constantes) : structures_communes.py en construit les
 objets (ParametresHebergement…).
 """
+from datetime import date
 
 # =============================================================================
 # Capacités d'hébergement (par jour)
@@ -47,12 +48,22 @@ GRAINE_SATURATION = 42            # tirage des patients de l'étude de saturatio
 # =============================================================================
 # Horizons (en semaines)
 # =============================================================================
+LUNDI_REFERENCE = date(2026, 10, 12)   # premier lundi des instances v28 de référence (tests, saturation, campagnes)
+
+# -----------------------------------------------------------------------------
+# =============================================================================
 NB_SEMAINES_HORIZON = 4           # interface : semaines du programme optimisé (patients de démonstration)
 NB_SEMAINES_SMA = 52              # interface : semaines connues du SMA (planning fixe ; au-delà des 4 semaines
                                   # optimisées, semaines ouvertes sans patient de démonstration)
 NB_SEMAINES_SCENARIOS_SMA = 2     # scénarios du SMA (sma/scenarios_sma.py)
 NB_SEMAINES_REPORT = 3            # hybridation : semaines AJOUTÉES APRÈS l'horizon de l'instance, ouvertes au
                                   # report des patients (vacations dupliquées, pénalité de report)
+
+# Programme de démonstration de l'interface (et instance v28 par défaut des campagnes d'hybridation) : charge
+# déjà programmée semaine par semaine, en fraction des heures de vacation (un programme se remplit à l'approche
+# de la date). Bornes (min, max) passées à generer_patients_etude ; au-delà, la dernière valeur.
+CHARGES_PAR_SEMAINE = ((0.85, 1.00), (0.60, 0.75), (0.35, 0.50), (0.10, 0.25))
+CHARGE_GENERATEUR = (0.90, 1.10)  # charge par défaut de generer_patients_etude (instance d'étude, scénarios du SMA)
 
 # =============================================================================
 # Bloc et coûts partagés

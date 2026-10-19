@@ -94,7 +94,10 @@ def _capacites() -> None:
     with st.spinner("Recalcul du programme opératoire…" if recalculer else "Enregistrement…"):
         C.appliquer(modifier, categorie="Programme", action="Modification des capacités d'hébergement",
                     detail=detail, motif=motif.strip())
-    st.session_state["flash_capacites"] = f"Capacités enregistrées : {detail}."
+    validite = (C.config_programme() or {}).get("validation") or {}
+    st.session_state["flash_capacites"] = (f"Capacités enregistrées : {detail}."
+                                           + ("" if not recalculer or validite.get("faisable", True) else
+                                              " ATTENTION : le programme recalculé n'est PAS valide (voir Planning)."))
     st.rerun()
 
 

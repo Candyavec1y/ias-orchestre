@@ -94,7 +94,8 @@ for _dossier in (_RACINE / "planning_vacations", _RACINE / "metaheuristiques"):
         sys.path.append(str(_dossier))
 
 import planning_vacations_v28 as V28
-from parametres import COUT_LIT_EN_TROP, GRAINE_MESA, NB_SEMAINES_SCENARIOS_SMA, PAS_GRAINE_SEMAINE
+from parametres import (CHARGE_GENERATEUR, COUT_LIT_EN_TROP, GRAINE_MESA, NB_SEMAINES_SCENARIOS_SMA,  # noqa: E402
+                        PAS_GRAINE_SEMAINE)
 from structures_communes import (
     GRAINE_PATIENTS, HEBERGEMENT_SITE, JOURS_FR, POIDS_N2, Chirurgien, InstanceNiveau2, InstanceProbleme,
     ParametresHebergement, Patient,
@@ -144,8 +145,14 @@ SPECIALITES_V28 = {nom: specialite_de(nom) for nom in V28.ID_PAR_NOM if speciali
 
 def construire_instances_v28(lundi: date, nb_semaines: int = NB_SEMAINES_SCENARIOS_SMA,
                              patients: Optional[dict] = None, graine: int = GRAINE_PATIENTS,
-                             hebergement: ParametresHebergement = HEBERGEMENT_SITE
+                             hebergement: ParametresHebergement = HEBERGEMENT_SITE,
+                             charges: Optional[tuple] = None, format_nom: str = "Patient {:03d}"
                              ) -> tuple[InstanceProbleme, InstanceNiveau2]:
+    """Instances N1 / N2 du planning réel v28 sur `nb_semaines` à partir de `lundi`. Sans `patients`, les patients
+    sont générés semaine par semaine par generer_patients_etude (graine + PAS_GRAINE_SEMAINE x k, date au plus tôt =
+    lundi de la semaine) ; `charges` = bornes (min, max) de charge par semaine (défaut : CHARGE_GENERATEUR pour
+    toutes ; au-delà de la liste, la dernière valeur). Utilisé par le SMA, l'interface (programme de démonstration)
+    et l'hybridation (--instance v28)."""
     lundi = lundi - timedelta(days=lundi.weekday())
     spe = specialites_par_id()
     creneaux, plages, vacations, dispo = {}, {}, {}, {}
@@ -173,8 +180,9 @@ def construire_instances_v28(lundi: date, nb_semaines: int = NB_SEMAINES_SCENARI
             minutes[v.chirurgien_id] = minutes.get(v.chirurgien_id, 0) + v.duree_minutes
         if patients is None:
             # patients de la semaine k : uniquement pour les vrais chirurgiens, pas avant ce lundi
-            for p in generer_patients_etude(vac_reelles, graine + PAS_GRAINE_SEMAINE * k).values():
-                patients_generes[pid] = replace(p, id=pid, date_min=lundi_k, nom=f"Patient {pid:03d}",
+            cmin, cmax = (charges or (CHARGE_GENERATEUR,))[min(k, len(charges or (CHARGE_GENERATEUR,)) - 1)]
+            for p in generer_patients_etude(vac_reelles, graine + PAS_GRAINE_SEMAINE * k, cmin, cmax).values():
+                patients_generes[pid] = replace(p, id=pid, date_min=lundi_k, nom=format_nom.format(pid),
                                                 specialite=spe.get(p.chirurgien_id, ""))
                 pid += 1
 

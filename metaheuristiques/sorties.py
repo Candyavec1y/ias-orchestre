@@ -51,6 +51,8 @@ from structures_communes import (  # noqa: E402
     evaluer_niveau2, evaluer_planning, penalite_priorite_patient, verifier_solution_niveau1,
 )
 
+from validation import valider_niveau1, valider_niveau2  # noqa: E402  (commun/validation.py)
+
 VERSION_FORMAT = "2.0"
 
 
@@ -254,7 +256,10 @@ class ResultatMetaheuristique:
     # --- score (fonction objectif commune du niveau) ---
     score_initial: float = 0.0
     score_final: float = 0.0
-    detail_score: dict[str, float] = field(default_factory=dict)
+    detail_score: dict[str, float] = field(default_factory=dict)   # N2 : + "report" (pénalité de report)
+    score_recherche: Optional[float] = None    # score optimisé par l'algorithme (N2 : score commun + report)
+    # --- faisabilité (validateur indépendant commun/validation.py, D9) ---
+    validation: dict[str, Any] = field(default_factory=dict)        # {"faisable", "par_type", "violations"}
     # --- indicateurs ---
     indicateurs: Union[IndicateursNiveau1, IndicateursNiveau2, None] = None
     # --- solution ---
@@ -279,6 +284,9 @@ class ResultatMetaheuristique:
 
     @property
     def faisable(self) -> bool:
+        """Verdict du validateur indépendant (à défaut, ancien indicateur pour les JSON antérieurs)."""
+        if self.validation:
+            return bool(self.validation.get("faisable"))
         return bool(self.indicateurs and self.indicateurs.faisable)
 
     @property
@@ -296,6 +304,7 @@ class ResultatMetaheuristique:
         ligne = {
             "algo": self.nom, "niveau": self.niveau, "instance": self.nom_instance,
             "score_initial": round(self.score_initial, 1), "score_final": round(self.score_final, 1),
+            "score_recherche": None if self.score_recherche is None else round(self.score_recherche, 1),
             "gain_pct": round(self.gain_pct, 1), "faisable": self.faisable,
             "temps_s": round(self.temps_calcul_s, 2), "iterations": self.nb_iterations,
             "evaluations": self.nb_evaluations,
@@ -373,6 +382,7 @@ def resultat_niveau1(algo: NomAlgo, instance: InstanceProbleme, solution: Soluti
     return ResultatMetaheuristique(
         algo=algo, niveau=1, nom_instance=instance.nom, variante=variante,
         score_initial=score_initial, score_final=ev.score_total, detail_score=_detail(ev),
+        validation=valider_niveau1(instance, solution).to_dict(),
         indicateurs=calculer_indicateurs_niveau1(instance, solution),
         solution=dict(solution.affectations), vacations=construire_vacations(instance, solution),
         **_champs_execution(suivi, parametres, graine), notes=notes,
@@ -389,6 +399,7 @@ def resultat_niveau2(algo: NomAlgo, instance2: InstanceNiveau2, solution: Soluti
     return ResultatMetaheuristique(
         algo=algo, niveau=2, nom_instance=instance2.nom, variante=variante,
         score_initial=score_initial, score_final=ev.score_total, detail_score=_detail(ev),
+        validation=valider_niveau2(instance2, solution).to_dict(),
         indicateurs=calculer_indicateurs_niveau2(instance2, solution),
         solution=dict(solution.affectations), vacations=vacations,
         **_champs_execution(suivi, parametres, graine), notes=notes,

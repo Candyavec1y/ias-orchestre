@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import contextlib
 import io
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
@@ -21,13 +21,11 @@ from . import chemins
 import structures_communes as SC  # noqa: E402
 import planning_vacations_v28 as V28  # noqa: E402
 import sma_urgences as SMA  # noqa: E402
+from validation import valider_niveau2  # noqa: E402
 from parametres import (  # noqa: E402,F401  (ré-exportés pour l'interface : P.NB_SEMAINES_HORIZON...)
-    BUDGET_OPTIMISATION_S, NB_SEMAINES_HORIZON, NB_SEMAINES_SMA, PAS_GRAINE_SEMAINE,
+    BUDGET_OPTIMISATION_S, CHARGES_PAR_SEMAINE, NB_SEMAINES_HORIZON, NB_SEMAINES_SMA,
 )
 
-# Charge de la programmation déjà existante, semaine par semaine (un programme se remplit à
-# l'approche de la date). Bornes (min, max) en fraction des heures de vacation du chirurgien.
-CHARGES_PAR_SEMAINE = ((0.85, 1.00), (0.60, 0.75), (0.35, 0.50), (0.10, 0.25))
 # Le planning des vacations (v28, cycle fixe de 4 semaines) est supposé IDENTIQUE sur toutes les semaines à venir :
 # le SMA connaît ses vacations sur NB_SEMAINES_SMA semaines (au-delà des NB_SEMAINES_HORIZON semaines optimisées,
 # semaines ouvertes sans patient de démonstration). Une inscription ou un report trouve donc toujours un créneau.
@@ -133,23 +131,10 @@ def recalculer_planning_niveau1(modes: list[str], temps_s: float, graine: int = 
 
 def construire_instances(lundi: date, nb_semaines: int = NB_SEMAINES_HORIZON, graine: int = SC.GRAINE_PATIENTS,
                          charges=CHARGES_PAR_SEMAINE, hebergement=SC.HEBERGEMENT_SITE):
-    """Instances N1/N2 du SMA sur `nb_semaines` à partir de `lundi` (planning v28) avec une
-    programmation existante FICTIVE (générateur commun de l'étude), décroissante dans le temps."""
-    lundi = lundi_de(lundi)
-    spe = SMA.specialites_par_id()
-    patients, pid = {}, 1
-    for k in range(nb_semaines):
-        lundi_k = lundi + timedelta(weeks=k)
-        _, vac_k, _ = V28.construire_semaine(lundi_k)
-        dec = k * SMA.DECALAGE_ID_SEMAINE
-        reelles = {vid + dec: replace(v, id=vid + dec) for vid, v in vac_k.items()
-                   if v.chirurgien_id not in (V28.ID_URGENCE, V28.ID_LIBRE)}
-        cmin, cmax = charges[min(k, len(charges) - 1)]
-        for p in SC.generer_patients_etude(reelles, graine + PAS_GRAINE_SEMAINE * k, cmin, cmax).values():
-            patients[pid] = replace(p, id=pid, date_min=lundi_k, nom=f"DEMO-{pid:04d}",
-                                    specialite=spe.get(p.chirurgien_id, ""))
-            pid += 1
-    return SMA.construire_instances_v28(lundi, nb_semaines, patients=patients, hebergement=hebergement)
+    """Instances N1/N2 sur `nb_semaines` à partir de `lundi` (planning v28) avec une programmation existante FICTIVE
+    (patients DEMO-xxxx de generer_patients_etude), décroissante dans le temps (CHARGES_PAR_SEMAINE)."""
+    return SMA.construire_instances_v28(lundi_de(lundi), nb_semaines, graine=graine, hebergement=hebergement,
+                                        charges=charges, format_nom="DEMO-{:04d}")
 
 
 def instances_sma(programme: "Programme", nb_semaines: int = NB_SEMAINES_SMA):
@@ -177,6 +162,7 @@ class Programme:
     resultat: Optional[object] = None      # ResultatMetaheuristique (None pour le glouton)
     score_glouton: float = 0.0
     calcule_le: str = ""
+    validation: dict = field(default_factory=dict)   # validateur indépendant (commun/validation.py)
 
 
 def calculer_programme(lundi: date, mode: str = "memetique", temps_s: float = BUDGET_OPTIMISATION_S,
@@ -194,7 +180,8 @@ def calculer_programme(lundi: date, mode: str = "memetique", temps_s: float = BU
             resultat = H._executer_niveau(2, i2, [mode], temps_s, graine, H.ParametresRechercheLocale())[0]
         sol = resultat.solution_patients()
     return Programme(lundi_de(lundi), nb_semaines, mode, temps_s, graine, i1, i2, sol, resultat, s_glouton,
-                     datetime.now(ZoneInfo("Europe/Paris")).replace(tzinfo=None).isoformat(timespec="seconds"))
+                     datetime.now(ZoneInfo("Europe/Paris")).replace(tzinfo=None).isoformat(timespec="seconds"),
+                     validation=valider_niveau2(i2, sol).to_dict())
 
 
 def indicateurs(programme: Programme):
