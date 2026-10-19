@@ -35,7 +35,7 @@ def occupation_bloc(sim: S.Simulation, jour: date) -> dict[int, tuple[float, flo
     res = {sid: [0.0, 0.0] for sid in sim.modele.salles}
     for f in sim.fenetres_du_jour(jour):
         res[f.salle_id][0] += _minutes(f.debut, f.fin)
-    for it in sim.interventions():
+    for it in sim.modele.interventions():             # salles du bloc uniquement (pas la salle de garde)
         if it.debut.date() == jour:
             res[it.salle_id][1] += it.patient.duree_bloc
     return {sid: (o, p) for sid, (o, p) in res.items()}
@@ -132,13 +132,14 @@ def afficher() -> None:
 def _tableau_salles(sim: S.Simulation, bloc: dict, du_jour: list, ouvertes: set[int], noms: dict,
                     now: datetime) -> str:
     lignes = []
-    for sid, salle in sim.modele.salles.items():
+    for salle in sim.salles(now.date()):
+        sid = salle.salle_id
         its = [it for it in du_jour if it.salle_id == sid]
         cours = next((it for it in its if it.debut <= now < it.fin), None)
         suivante = next((it for it in its if it.debut > now), None)
         if cours:
             statut = C.badge("urgence en cours", "rouge") if cours.urgence else C.badge("en intervention", "bleu")
-            detail = (f"{escape(noms.get(cours.pid, str(cours.pid)))} · Dr {S.code_chirurgien(cours.chirurgien_id)}"
+            detail = (f"{escape(noms.get(cours.pid, str(cours.pid)))} · {S.nom_chirurgien(cours.chirurgien_id)}"
                       f"<small>fin prévue {cours.fin:%H:%M}</small>")
         elif sid in ouvertes:
             statut, detail = C.badge("disponible", "vert"), "—"

@@ -29,7 +29,7 @@ def gantt_jour(sim: S.Simulation, jour: date, noms: dict[int, str], moi: Optiona
                hauteur_ligne: int = 62, seulement: Optional[int] = None) -> go.Figure:
     """`seulement` : id d'un chirurgien -> n'affiche que ses vacations et ses interventions (confidentialité)."""
     m = sim.modele
-    salles = list(m.salles.values())
+    salles = sim.salles(jour)                  # + salle de garde si elle opère ce jour-là
     fenetres = sim.fenetres_du_jour(jour)
     du_jour = {s.salle_id: s.du_jour(jour) for s in salles}
     if seulement is not None:
@@ -64,7 +64,7 @@ def gantt_jour(sim: S.Simulation, jour: date, noms: dict[int, str], moi: Optiona
         for it in du_jour[s.salle_id]:
             urg = it.urgence
             c = ROUGE if urg else couleur.get(it.chirurgien_id, "#888")
-            leg = "Urgence" if urg else f"Dr {S.code_chirurgien(it.chirurgien_id)}"
+            leg = "Urgence" if urg else f"{S.nom_chirurgien(it.chirurgien_id)}"
             d = int((it.debut - it.debut_initial).total_seconds() // 60)
             etat = []
             if not urg and it.debut_initial.date() != it.debut.date():
@@ -75,7 +75,7 @@ def gantt_jour(sim: S.Simulation, jour: date, noms: dict[int, str], moi: Optiona
                 etat.append(f"repris (au lieu de {S.code_chirurgien(it.chirurgien_initial)})")
             p = it.patient
             txt = (f"<b>{noms.get(it.pid, it.pid)}</b><br>{it.debut:%H:%M}–{it.fin:%H:%M} ({p.duree_bloc} min)"
-                   f"<br>Dr {S.code_chirurgien(it.chirurgien_id)} · priorité {p.priorite}"
+                   f"<br>{S.nom_chirurgien(it.chirurgien_id)} · priorité {p.priorite}"
                    f"<br>{'ambulatoire' if p.ambulatoire else f'hospitalisé ({p.nuits_post_op} nuit(s) post-op)'}"
                    + (f"<br>{', '.join(etat)}" if etat else ""))
             fig.add_trace(go.Bar(
@@ -171,7 +171,7 @@ def taux_bloc(taux: dict[date, float], aujourd_hui: date) -> go.Figure:
 
 def bloc_occupe(sim: S.Simulation, jour: date, hauteur_ligne: int = 54) -> go.Figure:
     """Occupation des salles sans aucune donnée patient ni chirurgien : cadres = plages ouvertes, gris = salle occupée."""
-    salles = list(sim.modele.salles.values())
+    salles = sim.salles(jour)
     ordre = [s.nom_affiche for s in salles]
     fig = go.Figure()
     for f in sim.fenetres_du_jour(jour):

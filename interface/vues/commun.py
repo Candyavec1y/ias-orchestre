@@ -282,12 +282,7 @@ SYSTEME = "système (régulation automatique)"
 
 
 def _etat_programme(sim: Optional[S.Simulation]) -> dict[int, tuple]:
-    if sim is None:
-        return {}
-    etat = {it.pid: ("programmé", it.salle_id, it.debut, it.chirurgien_id) for it in sim.interventions()}
-    for it, _ in sim.en_attente():
-        etat[it.pid] = ("attente", None, None, it.chirurgien_initial)
-    return etat
+    return S.etat_programme(sim.modele) if sim is not None else {}
 
 
 def _lieu(sim: S.Simulation, e: tuple) -> str:
@@ -295,7 +290,7 @@ def _lieu(sim: S.Simulation, e: tuple) -> str:
     if statut == "attente":
         return "liste d'attente"
     return (f"{sim.modele.salles[salle].nom_affiche}, {jour_long(debut.date())} {debut:%H:%M}, "
-            f"Dr {S.code_chirurgien(chir)}")
+            f"{S.nom_chirurgien(chir)}")
 
 
 def _mouvement(a: Optional[tuple], b: Optional[tuple]) -> str:
@@ -348,27 +343,30 @@ def appliquer(modification, *, categorie: str, action: str, patient: str = "", d
 
 @st.cache_resource(max_entries=4, show_spinner=False)
 def _consequences_urgences(cle_programme: str, empreinte: str, instant: str) -> list[dict]:
-    prog, evts, now = programme(), DB.lister_evenements(), datetime.fromisoformat(instant)
+    """Lu dans la simulation courante : l'état du programme est photographié juste avant et juste après chaque
+    urgence pendant le rejeu (sma_service._urgence_tracee), sans rejouer la simulation pour chacune."""
+    sim, evts, now = simulation(), DB.lister_evenements(), datetime.fromisoformat(instant)
+    traces = getattr(sim.modele, "traces_urgences", {}) if sim else {}
+    noms = noms_patients(sim) if sim else {}
     res = []
-    for i, e in enumerate(evts):
+    for e in evts:
         if e["type"] != "urgence":
             continue
         pid, code = e["contenu"]["patient"]["id"], e["contenu"]["patient"].get("nom") or "URG"
         fiche = {"code": code, "gravite": e["contenu"].get("gravite", ""), "heure": e["heure"], "auteur": e["auteur"],
                  "survenue": e["heure"] <= now, "prise_en_charge": None, "deplaces": []}
         res.append(fiche)
-        if not fiche["survenue"]:
+        if not fiche["survenue"] or pid not in traces:
             continue
-        avant, apres = S.simuler(prog, evts[:i], now), S.simuler(prog, evts[:i + 1], now)
-        d = next((x for x in reversed(apres.decisions()) if x.get("patient") == pid and x["type"] == "urgence"), None)
+        apres = avant = sim
+        d = next((x for x in reversed(sim.decisions()) if x.get("patient") == pid and x["type"] == "urgence"), None)
         if d:
             fiche["prise_en_charge"] = {
                 "lieu": f"{apres.modele.salles[d['salle']].nom_affiche}, {jour_long(d['debut'].date())} "
-                        f"{d['debut']:%H:%M}, Dr {S.code_chirurgien(d['chirurgien'])}",
-                "attente_min": d["attente_min"], "dans_delai": d["dans_delai"],
+                        f"{d['debut']:%H:%M}, {S.nom_chirurgien(d['chirurgien'])}",
+                "attente_min": d["attente_min"], "dans_delai": d["dans_delai"], "garde": d.get("garde", False),
                 "delai_max": S.GRAVITES[fiche["gravite"]].delai_max_min if fiche["gravite"] in S.GRAVITES else None}
-        noms = {**noms_patients(avant), **noms_patients(apres)}
-        etat_avant, etat_apres = _etat_programme(avant), _etat_programme(apres)
+        etat_avant, etat_apres = traces[pid]
         for p in sorted(set(etat_avant) | set(etat_apres)):
             a, b = etat_avant.get(p), etat_apres.get(p)
             if p == pid or a == b:
@@ -379,8 +377,8 @@ def _consequences_urgences(cle_programme: str, empreinte: str, instant: str) -> 
 
 
 def consequences_urgences() -> list[dict]:
-    """Pour chaque urgence : sa prise en charge et les patients qu'elle a déplacés (programme rejoué sans puis avec
-    l'urgence, à l'heure courante). Les urgences les plus récentes en premier."""
+    """Pour chaque urgence : sa prise en charge et les patients qu'elle a déplacés au moment de son insertion
+    (programme juste avant / juste après, pendant le rejeu). Les urgences les plus récentes en premier."""
     cfg = config_programme()
     if not cfg:
         return []

@@ -18,7 +18,7 @@ réutilisant les protocoles existants :
 from __future__ import annotations
 
 import functools
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import date, datetime, time, timedelta
 from typing import Optional
 
@@ -52,7 +52,14 @@ def id_chirurgien(code: str) -> int:
 def code_chirurgien(cid: int) -> str:
     if cid == SMA.ID_CHIR_URGENCE:
         return "Chir. urgence"
+    if cid == SMA.ID_EQUIPE_GARDE:
+        return "Équipe de garde"
     return V28.NOM_PAR_ID.get(cid, f"chir {cid}")
+
+
+def nom_chirurgien(cid: int) -> str:
+    """« Dr CT », ou « Chir. urgence » / « Équipe de garde » (pas de « Dr » devant)."""
+    return code_chirurgien(cid) if cid in (SMA.ID_CHIR_URGENCE, SMA.ID_EQUIPE_GARDE) else f"Dr {code_chirurgien(cid)}"
 
 
 # =============================================================================
@@ -100,13 +107,21 @@ class Simulation:
 
     # ------------------------------------------------------------ consultation de l'état
     def interventions(self) -> list[SMA.Intervention]:
-        return self.modele.interventions()
+        """Interventions des salles du programme ET du planning de garde."""
+        return sorted(self.modele.interventions() + list(self.modele.garde.interventions.values()),
+                      key=lambda i: (i.debut, i.salle_id))
 
     def intervention(self, pid: int) -> Optional[SMA.Intervention]:
-        for s in self.modele.salles.values():
+        for s in self.salles():
             if pid in s.interventions:
                 return s.interventions[pid]
         return None
+
+    def salles(self, jour: Optional[date] = None) -> list:
+        """Salles du programme, plus la salle de garde si elle a des interventions (ce jour-là si `jour`)."""
+        g = self.modele.garde
+        avec_garde = g.du_jour(jour) if jour is not None else g.interventions
+        return list(self.modele.salles.values()) + ([g] if avec_garde else [])
 
     def en_attente(self) -> list[tuple[SMA.Intervention, date]]:
         return list(self.modele.regulation.liste_attente)
@@ -135,9 +150,11 @@ class Simulation:
 
 
 def construire_modele(programme) -> SMA.BlocOperatoire:
+    # Site : optimisation locale des salles conservée, réoptimisation globale désactivée (le site rejoue tous les
+    # événements à chaque affichage : ~3 s au lieu de ~18 s, sans perte de score mesurée sur les événements réels).
     return SMA.BlocOperatoire(programme.instance1, programme.instance2, programme.solution,
                               specialites=SMA.specialites_par_id(), chirurgien_garde=SMA.ID_CHIR_URGENCE,
-                              verbeux=1)
+                              parametres=SMA.ParametresSMA(optimisation_globale=None), verbeux=1)
 
 
 def simuler(programme, evenements: list[dict], maintenant: datetime) -> Simulation:
@@ -185,7 +202,9 @@ def _suivre_premiers_placements(m: SMA.BlocOperatoire) -> None:
 def _planifier(m: SMA.BlocOperatoire, e: dict) -> None:
     t, c = e["heure"], e["contenu"]
     if e["type"] == "urgence":
-        m.planifier(SMA.ArriveeUrgence(t, patient_depuis_dict(c["patient"]), gravite=c["gravite"]))
+        evt = SMA.ArriveeUrgence(t, patient_depuis_dict(c["patient"]), gravite=c["gravite"])
+        m.evenements.append(evt)
+        m.planifier_action(t, functools.partial(_urgence_tracee, m, evt))
     elif e["type"] == "panne":
         fin = datetime.fromisoformat(c["fin_estimee"]) if c.get("fin_estimee") else None
         m.planifier(SMA.PanneAscenseur(t, c["ascenseur"], fin))
@@ -197,6 +216,139 @@ def _planifier(m: SMA.BlocOperatoire, e: dict) -> None:
         m.planifier_action(t, functools.partial(_inscrire, m, c))
     elif e["type"] == "annulation":
         m.planifier_action(t, functools.partial(_annuler, m, c))
+    elif e["type"] == "reoptimisation":
+        m.planifier_action(t, functools.partial(_reoptimisation_rejouee, m, c))
+
+
+def etat_programme(m: SMA.BlocOperatoire) -> dict[int, tuple]:
+    """pid -> ("programmé", salle, début, chirurgien) ou ("attente", None, None, chirurgien)."""
+    its = m.interventions() + list(m.garde.interventions.values())
+    etat = {it.pid: ("programmé", it.salle_id, it.debut, it.chirurgien_id) for it in its}
+    for it, _ in m.regulation.liste_attente:
+        etat[it.pid] = ("attente", None, None, it.chirurgien_initial)
+    return etat
+
+
+# =============================================================================
+# Optimisation globale demandée par l'administrateur
+# =============================================================================
+# La métaheuristique tourne UNE fois (calculer_reoptimisation) ; l'événement enregistre son RÉSULTAT (les
+# déplacements), que chaque rejeu réapplique tel quel : rejeu rapide et toujours identique.
+
+def calculer_reoptimisation(programme, evenements: list[dict], maintenant: datetime, methode: str,
+                            budget_s: float) -> tuple[Optional[dict], str, dict]:
+    """Rejoue l'état courant, lance l'optimisation globale du SMA (agent Optimisation, contrôle groupé des agents
+    Chirurgien et Hébergement) et renvoie (contenu de l'événement ou None, message, scores)."""
+    sim = simuler(programme, evenements, maintenant)
+    m = sim.modele
+    avant_score = m.score_programme()["total"]
+    avant = etat_programme(m)
+    m.parametres = replace(m.parametres, optimisation_globale=methode, budget_global_s=budget_s)
+    n0 = len(m.optimisation.historique)
+    m._heure_evenement = maintenant
+    try:
+        m.regulation.reoptimiser(m.nouvelle_conversation("OPT"), "demande de l'administrateur")
+    finally:
+        m._heure_evenement = None
+    trace = m.optimisation.historique[-1] if len(m.optimisation.historique) > n0 else None
+    scores = {"avant": avant_score, "apres": m.score_programme()["total"],
+              "estime_avant": trace.cout_actuel if trace else None, "estime_apres": trace.cout_optimise if trace else None,
+              "temps_s": trace.temps_s if trace else 0.0, "evaluations": trace.evaluations if trace else 0}
+    if trace is None:
+        return None, "Rien à réoptimiser (aucun patient déplaçable).", scores
+    if not trace.applique:
+        return None, f"Aucun plan appliqué : {trace.motif_rejet or 'pas d’amélioration'}.", scores
+    apres = etat_programme(m)
+    par_pid = {it.pid: it for it in m.interventions()}
+    mouvements = []
+    for pid, b in apres.items():
+        if b[0] != "programmé" or avant.get(pid) == b or pid not in par_pid:
+            continue
+        it = par_pid[pid]
+        mouvements.append({"pid": pid, "salle_id": it.salle_id, "fenetre_id": it.fenetre_id,
+                           "debut": it.debut.isoformat(), "chirurgien_id": it.chirurgien_id})
+    contenu = {"methode": methode, "budget_s": budget_s, "mouvements": mouvements,
+               "score_avant": scores["avant"], "score_apres": scores["apres"]}
+    return contenu, f"{len(mouvements)} patient(s) déplacé(s).", scores
+
+
+def _reoptimisation_rejouee(m: SMA.BlocOperatoire, c: dict) -> None:
+    """Réapplique les déplacements enregistrés, après les mêmes contrôles que le SMA (agendas, lits, salles)."""
+    reg = m.regulation
+    conv = m.nouvelle_conversation("OPT")
+    m.annoncer(f"\n[{SMA.jour_txt(m.maintenant.date())} {SMA.hm(m.maintenant)}] {conv} — OPTIMISATION GLOBALE "
+               f"demandée par l'administrateur ({c.get('methode')}, {c.get('budget_s')} s) : "
+               f"{len(c['mouvements'])} déplacement(s) à appliquer")
+    places = {pid: it for s in m.salles.values() for pid, it in s.interventions.items()}
+    attente = {it.pid: it for it, _ in reg.liste_attente}
+    mvts, motif = [], ""
+    for mv in c["mouvements"]:
+        pid, debut = mv["pid"], datetime.fromisoformat(mv["debut"])
+        ancien = places.get(pid) or attente.get(pid)
+        salle = m.salles.get(mv["salle_id"]) if mv["salle_id"] in m.salles else None
+        fen = salle.creneaux.get(mv["fenetre_id"]) if salle else None
+        if ancien is None or fen is None:
+            motif = f"P{pid} ou son créneau n'existe plus"
+            break
+        if debut <= m.maintenant or (pid in places and ancien.debut <= m.maintenant):
+            motif = f"P{pid} : intervention déjà commencée"
+            break
+        nouveau = ancien.copie(patient=replace(ancien.patient, chirurgien_id=fen.chirurgien_id),
+                               salle_id=fen.salle_id, fenetre_id=fen.id, debut=debut)
+        mvts.append({"pid": pid, "de": (ancien.salle_id, ancien.fenetre_id) if pid in places else None,
+                     "vers": (fen.salle_id, fen.id), "debut": debut, "chirurgien": fen.chirurgien_id,
+                     "ancien": ancien, "nouveau": nouveau, "etait_place": pid in places})
+    if not motif:
+        # salles : pas de chevauchement dans chaque créneau d'arrivée, et rien hors des heures du planning
+        bouges = {mv["pid"] for mv in mvts}
+        for (sid, fid) in {mv["vers"] for mv in mvts}:
+            fen = m.salles[sid].creneaux[fid]
+            its = sorted([(i.debut, i.fin) for i in m.salles[sid].du_creneau(fid) if i.pid not in bouges]
+                         + [(mv["nouveau"].debut, mv["nouveau"].fin) for mv in mvts if mv["vers"] == (sid, fid)])
+            if its and (its[0][0] < fen.debut or its[-1][1] > fen.fin) or any(b[0] < a[1] for a, b in zip(its, its[1:])):
+                motif = f"{m.salles[sid].nom_affiche} : le plan ne tient plus dans le créneau"
+                break
+    if not motif:
+        ok, rejet = reg._valider_global(mvts, conv)
+        motif = "" if ok else rejet
+    if motif:
+        alerte = f"Optimisation globale de l'administrateur non appliquée : {motif} (programme modifié depuis)"
+        reg.alertes.append(alerte)
+        m.annoncer(f"  ⚠ {alerte}")
+        return
+    jour = m.maintenant.date()
+    departs: dict[int, list[int]] = {}
+    for mv in mvts:
+        if mv["etait_place"]:
+            departs.setdefault(mv["de"][0], []).append(mv["pid"])
+    for sid, pids in sorted(departs.items()):
+        reg.envoyer(f"salle_{sid}", "ACCEPT_PROPOSAL", "accept_proposal",
+                    {"plan": SMA.Plan(sid, SMA.ID_FENETRE_GARDE, jour, {}, retraits=pids)}, conv,
+                    f"optimisation : libérer {', '.join(f'P{p}' for p in pids)}")
+    arrivees: dict[int, list] = {}
+    for mv in mvts:
+        arrivees.setdefault(mv["vers"][0], []).append(mv["nouveau"])
+    for sid, its in sorted(arrivees.items()):
+        reg.envoyer(f"salle_{sid}", "ACCEPT_PROPOSAL", "accept_proposal",
+                    {"plan": SMA.Plan(sid, SMA.ID_FENETRE_GARDE, jour, {it.pid: it.debut for it in its}, ajouts=its)},
+                    conv, f"optimisation : placer {', '.join(f'P{it.pid}' for it in its)}")
+    sortis = {mv["pid"] for mv in mvts if not mv["etait_place"]}
+    reg.liste_attente = [(it, j) for it, j in reg.liste_attente if it.pid not in sortis]
+    m.annoncer(f"  ✦ {len(mvts)} patient(s) déplacé(s), score {c.get('score_avant', 0):,.0f} → {c.get('score_apres', 0):,.0f}")
+    reg.decisions.append({"type": "reoptimisation", "heure": m.maintenant, "motif": "demande de l'administrateur",
+                          "methode": c.get("methode"), "patients_deplaces": len(mvts),
+                          "patients_sortis_attente": len(sortis),
+                          "gain": c.get("score_avant", 0) - c.get("score_apres", 0)})
+
+
+def _urgence_tracee(m: SMA.BlocOperatoire, evt) -> None:
+    """Traite l'urgence et garde l'état du programme juste avant / juste après (patients qu'elle a déplacés),
+    sans rejouer la simulation une seconde fois."""
+    avant = etat_programme(m)
+    m._declencher(evt)
+    if not hasattr(m, "traces_urgences"):
+        m.traces_urgences = {}
+    m.traces_urgences[evt.patient.id] = (avant, etat_programme(m))
 
 
 # =============================================================================
@@ -287,7 +439,7 @@ def _inscrire(m: SMA.BlocOperatoire, c: dict) -> None:
     conv = m.nouvelle_conversation("CONS")
     reg.chirurgiens_autorises[p.id] = sorted(c.get("chirurgiens") or [p.chirurgien_id])   # relances / replacements
     m.annoncer(f"\n[{SMA.jour_txt(m.maintenant.date())} {SMA.hm(m.maintenant)}] {conv} — CONSULTATION : {p.nom} "
-               f"(Dr {code_chirurgien(p.chirurgien_id)}, {p.duree_bloc} min, priorité {p.priorite}, "
+               f"({nom_chirurgien(p.chirurgien_id)}, {p.duree_bloc} min, priorité {p.priorite}, "
                f"{'ambulatoire' if p.ambulatoire else 'hospitalisé'}, au plus tôt le {jour_min:%d/%m})")
     if c.get("attente"):
         apres = max(m.maintenant, datetime.combine(jour_min, time(0)))

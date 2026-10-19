@@ -130,7 +130,7 @@ def _operations_cliquables(cases: list[P.CaseVacation]) -> dict[int, str]:
         else:
             lignes = "".join(
                 f"<tr><td>{it.debut:%H:%M}–{it.fin:%H:%M}</td><td><b>{escape(str(noms.get(it.pid, it.pid)))}</b>"
-                + ("" if cid is not None else f" · Dr {escape(S.code_chirurgien(it.chirurgien_id))}")
+                + ("" if cid is not None else f" · {escape(S.nom_chirurgien(it.chirurgien_id))}")
                 + f"<br>{'ambulatoire' if it.patient.ambulatoire else f'hospit. {it.patient.nuits_post_op} n.'}"
                 f" · prio {it.patient.priorite}{' · fait' if it.fin <= sim.maintenant else ''}</td></tr>"
                 for it in its)
@@ -180,7 +180,7 @@ def _programme() -> None:
                "hachures = ambulatoire ; rouge plein = urgence. Survolez une barre pour le détail.")
 
     lignes = []
-    for s in sim.modele.salles.values():
+    for s in sim.salles(jour):
         for it in s.du_jour(jour):
             if restreint and it.chirurgien_id != moi:
                 continue
@@ -190,7 +190,7 @@ def _programme() -> None:
             if it.chirurgien_id != it.chirurgien_initial:
                 etat += " · repris par un confrère"
             lignes.append({"Début": it.debut.strftime("%H:%M"), "Fin": it.fin.strftime("%H:%M"), "Salle": s.nom_affiche,
-                           "Chirurgien": f"Dr {S.code_chirurgien(it.chirurgien_id)}", "Patient": noms.get(it.pid, it.pid),
+                           "Chirurgien": f"{S.nom_chirurgien(it.chirurgien_id)}", "Patient": noms.get(it.pid, it.pid),
                            "Durée (min)": it.patient.duree_bloc,
                            "Prise en charge": "Ambulatoire" if it.patient.ambulatoire else f"Hospit. ({it.patient.nuits_post_op} n.)",
                            "Priorité": it.patient.priorite, "État": etat,
@@ -208,7 +208,7 @@ def _programme() -> None:
     attente = [(i, j) for i, j in sim.en_attente() if not restreint or i.chirurgien_initial == moi]
     if attente:
         with st.expander(f"Liste d'attente ({len(attente)})"):
-            st.dataframe(pd.DataFrame([{"Patient": noms.get(i.pid, i.pid), "Chirurgien": f"Dr {S.code_chirurgien(i.chirurgien_initial)}",
+            st.dataframe(pd.DataFrame([{"Patient": noms.get(i.pid, i.pid), "Chirurgien": f"{S.nom_chirurgien(i.chirurgien_initial)}",
                                         "Durée (min)": i.patient.duree_bloc, "Priorité": i.patient.priorite,
                                         "Depuis le": j.strftime("%d/%m")} for i, j in attente]),
                          hide_index=True, width="stretch")

@@ -82,7 +82,8 @@ def _lignes_urgences(sim, praticien) -> list[dict]:
             statut = "urgence non programmée"
         else:
             statut = "opéré" if it.fin <= sim.maintenant else "programmé"
-        lignes.append({"Pseudonyme": p.get("nom") or f"P{p['id']}", "Chirurgien": operateur if operateur.startswith("Chir.") else f"Dr {operateur}",
+        lignes.append({"Pseudonyme": p.get("nom") or f"P{p['id']}",
+                       "Chirurgien": S.nom_chirurgien(it.chirurgien_id if it else p["chirurgien_id"]),
                        "Intervention": p.get("type_intervention") or "Urgence",
                        "Durée (min)": p.get("duree_bloc"),
                        "Prise en charge": "Ambulatoire" if p.get("ambulatoire") else "Hospit.",
@@ -102,7 +103,7 @@ def _detail_urgence(l: dict, sim) -> None:
         st.markdown("**Déclaration de l'urgence**")
         st.markdown(f"{S.LIBELLES_GRAVITE.get(gravite, gravite)}  \n"
                     f"Déclarée le {C.jour_long(e['heure'].date()).lower()} à {e['heure']:%H:%M} par {e['auteur']}  \n"
-                    f"Vue par Dr {S.code_chirurgien(p['chirurgien_id'])}  \n"
+                    f"Vue par {S.nom_chirurgien(p['chirurgien_id'])}  \n"
                     f"Motif : {p.get('type_intervention') or 'non renseigné'}")
     with c2.container(border=True):
         st.markdown("**Prise en charge prévue**")
@@ -142,7 +143,7 @@ def _detail(f: dict, sim) -> None:
     it = sim.intervention(S.pid_consultation(f["id"])) if sim else None
     if it:
         st.success(f"Programmé le {C.jour_long(it.debut.date())} de {it.debut:%H:%M} à {it.fin:%H:%M} — "
-                   f"{sim.modele.salles[it.salle_id].nom_affiche}, Dr {S.code_chirurgien(it.chirurgien_id)}"
+                   f"{sim.modele.salles[it.salle_id].nom_affiche}, {S.nom_chirurgien(it.chirurgien_id)}"
                    + (f" (initialement {it.debut_initial:%d/%m %H:%M})" if it.debut != it.debut_initial else ""))
 
     b1, b2, b3, b4 = st.columns(4)

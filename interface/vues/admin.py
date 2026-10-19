@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from orchestre import programme as P
+from orchestre import sma_service as S
 from orchestre import stockage as DB
 from vues import commun as C
 
@@ -20,11 +21,13 @@ def afficher() -> None:
         st.error("Accès réservé à l'administrateur.")
         return
     C.entete("Administration")
-    t1, t_cap, t2 = st.tabs(["Comptes", "Lits et places", "Horloge"])
+    t1, t_cap, t_opt, t2 = st.tabs(["Comptes", "Lits et places", "Optimisation globale", "Horloge"])
     with t1:
         _comptes()
     with t_cap:
         _capacites()
+    with t_opt:
+        _optimisation_globale()
     with t2:
         _horloge()
 
@@ -46,11 +49,17 @@ def _capacites() -> None:
         lits = c1.number_input("Lits d'hospitalisation", 1, 500, h.lits_disponibles_par_jour)
         reserve = c2.number_input("Réserve d'urgence (lits)", 0, 500, h.reserve_lits)
         places = c3.number_input("Places ambulatoires", 0, 500, h.places_ambulatoires_par_jour)
-        recalculer = st.checkbox("Recalculer aussi le programme opératoire avec ces capacités (environ 10 s)",
+        cfg = C.config_programme() or {}
+        modes = list(P.MODES_HYBRIDES)
+        recalculer = st.checkbox("Recalculer aussi le programme opératoire avec ces capacités",
                                  help="Sans recalcul, le programme déjà construit est conservé : les nouvelles "
                                       "capacités s'appliquent aux décisions du système multi-agent (urgences, "
                                       "inscriptions, replacements). Avec recalcul, l'hybridation AGS + RS + Tabou "
                                       "réaffecte les patients de démonstration en respectant les nouvelles capacités.")
+        mode = st.selectbox("Méthode de calcul du programme (si recalcul)", modes, format_func=P.MODES_HYBRIDES.get,
+                            index=modes.index(cfg["mode"]) if cfg.get("mode") in modes else 0,
+                            help="Les modes hybrides tournent 10 s ; recuit_simulé.py et algorithme_genetique.py "
+                                 "ont un budget fixe d'itérations / de générations (1 à 2 s).")
         motif = st.text_input("Motif (obligatoire, tracé)", placeholder="ex. capacités réelles du service")
         ok = st.form_submit_button("Enregistrer", type="primary")
     if not ok:
@@ -68,22 +77,80 @@ def _capacites() -> None:
     detail = ((f"lits {h.lits_disponibles_par_jour} → {nouveau.lits_disponibles_par_jour}, réserve {h.reserve_lits} → "
                f"{nouveau.reserve_lits}, places {h.places_ambulatoires_par_jour} → {nouveau.places_ambulatoires_par_jour}"
                if nouveau != h else "capacités inchangées")
-              + (" · programme recalculé" if recalculer else ""))
+              + (f" · programme recalculé ({P.MODES_HYBRIDES[mode]})" if recalculer else ""))
 
     def modifier():
         DB.ecrire_parametre("hebergement", {"lits_disponibles_par_jour": nouveau.lits_disponibles_par_jour,
                                             "places_ambulatoires_par_jour": nouveau.places_ambulatoires_par_jour,
                                             "reserve_lits": nouveau.reserve_lits})
         if recalculer:
-            cfg = C.config_programme()
             prog = P.calculer_programme(date.fromisoformat(cfg["lundi"]) if cfg else C.maintenant().date(),
-                                        "memetique", 10.0, hebergement=nouveau)
+                                        mode, 10.0, hebergement=nouveau)
             C.enregistrer_programme(prog, C.utilisateur()["login"])
 
     with st.spinner("Recalcul du programme opératoire…" if recalculer else "Enregistrement…"):
         C.appliquer(modifier, categorie="Programme", action="Modification des capacités d'hébergement",
                     detail=detail, motif=motif.strip())
     st.session_state["flash_capacites"] = f"Capacités enregistrées : {detail}."
+    st.rerun()
+
+
+def _optimisation_globale() -> None:
+    import metaheuristiques_sma as MS
+    if msg := st.session_state.pop("flash_optimisation", None):
+        {"ok": st.success, "info": st.info}[msg[0]](msg[1])
+    sim = C.simulation()
+    if sim is None:
+        st.info("Le programme opératoire n'est pas encore calculé.")
+        return
+    m = sim.modele
+
+    def nb(x: float) -> str:
+        return f"{x:,.0f}".replace(",", " ")
+
+    st.markdown("Sur le site, le système multi-agent réagit à chaque aléa par une optimisation **locale** (dans la "
+                "salle concernée). Si le programme vous semble trop dégradé, lancez ici une optimisation **globale** : "
+                "l'agent Optimisation réaffecte les patients encore déplaçables (toutes les salles, tout l'horizon), "
+                "puis les agents Chirurgien et Hébergement valident le plan. Il n'est appliqué que s'il améliore le "
+                "score. Les interventions commencées ou qui commencent dans l'heure, les urgences et le planning de "
+                "garde ne bougent pas.")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Score du programme", nb(m.score_programme()['total']),
+              help="Coût global à minimiser : décalages, reports, changements de chirurgien, liste d'attente, "
+                   "attente des urgences, lits et places.")
+    c2.metric("Patients en liste d'attente", len(sim.en_attente()))
+    faites = [d for d in sim.decisions() if d["type"] == "reoptimisation"]
+    c3.metric("Optimisations globales appliquées", len(faites))
+    with st.form("form_optimisation"):
+        c1, c2 = st.columns(2)
+        methode = c1.selectbox("Méthode", list(MS.MODES), index=list(MS.MODES).index("memetique"),
+                               format_func=lambda x: MS.NOMS.get(x, x))
+        budget = c2.slider("Temps de calcul (s)", 1, 30, 5)
+        motif = st.text_input("Motif (obligatoire, tracé)", placeholder="ex. nombreux patients décalés après les urgences")
+        ok = st.form_submit_button("Lancer l'optimisation globale", type="primary")
+    if faites:
+        st.caption("Dernières : " + " · ".join(f"{d['heure']:%d/%m %H:%M} {MS.NOMS.get(d['methode'], d['methode'])}, "
+                                              f"{d['patients_deplaces']} patient(s), gain {nb(d['gain'])}"
+                                              for d in faites[-3:]))
+    if not ok:
+        return
+    if not motif.strip():
+        st.error("Indiquez le motif de l'optimisation.")
+        return
+    now = C.maintenant()
+    with st.spinner(f"Optimisation globale ({MS.NOMS.get(methode, methode)}, {budget} s)…"):
+        contenu, message, scores = S.calculer_reoptimisation(C.programme(), DB.lister_evenements(), now, methode,
+                                                             float(budget))
+    if contenu is None:
+        C.tracer("optimisation globale sans effet", message)
+        st.session_state["flash_optimisation"] = ("info", f"Programme inchangé. {message}")
+        st.rerun()
+    u = C.utilisateur()
+    detail = (f"{MS.NOMS.get(methode, methode)}, {budget} s : score {nb(scores['avant'])} → {nb(scores['apres'])}, "
+              f"{message}")
+    C.appliquer(lambda: DB.ajouter_evenement(now, "reoptimisation", contenu, u["login"]), categorie="Programme",
+                action="Optimisation globale du programme", detail=detail, motif=motif.strip())
+    st.session_state["flash_optimisation"] = ("ok", f"Optimisation appliquée — {detail}")
     st.rerun()
 
 

@@ -291,7 +291,7 @@ def _inscrire(e: dict, proposition) -> None:
     if it is not None:
         st.session_state["flash"] = (f"{fiche['pseudo']} programmé(e) le {C.jour_long(it.debut.date())} à "
                                      f"{it.debut:%H:%M} ({sim.modele.salles[it.salle_id].nom_affiche}, "
-                                     f"Dr {S.code_chirurgien(it.chirurgien_id)}).")
+                                     f"{S.nom_chirurgien(it.chirurgien_id)}).")
     else:
         st.session_state["flash"] = f"{fiche['pseudo']} inscrit(e) en liste d'attente."
     st.rerun()

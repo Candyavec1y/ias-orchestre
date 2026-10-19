@@ -25,9 +25,39 @@ Agents (messages FIPA-ACL, protocole Contract Net)
     AgentChirurgien    son agenda ; refuse s'il est déjà au bloc, signale un rappel d'astreinte
     AgentHebergement   lits et places ambulatoires
     AgentLogistique    ascenseurs ; fenêtres où le brancardage est impossible
+    AgentGarde         planning de garde (soirs, nuits, jours sans programme) : prend toute urgence que le
+                       programme ne peut pas absorber, puis PRÉVIENT le système (INFORM à la régulation)
+    AgentOptimisation  réoptimisation GLOBALE du programme restant (toutes salles, tout l'horizon) par vos
+                       métaheuristiques ; propose, ne décide pas (optimisation_sma.py)
 
-Règles : on n'opère que pendant les heures du planning (vacations + plages URGENCE). Une urgence vitale
-sans solution dans le délai est transférée ; une non vitale est programmée plus tard avec une alerte.
+Architecture HYBRIDE (optimisation_sma.py, metaheuristiques_sma.py -> metaheuristiques/hybride_ags_rs_tabou.py)
+--------------------
+    Cas B, réaction immédiate : chaque AgentSalle chiffre ses propositions par un glouton, puis les améliore
+        localement (ordre de passage + patients reportés dans son créneau) par une métaheuristique courte
+        (`methode_locale`, `budget_local_s`) ; il garde le glouton si la recherche ne fait pas mieux.
+    Cas A, qualité globale : après chaque aléa, la Régulation envoie l'état du programme à l'AgentOptimisation
+        (`optimisation_globale`, `budget_global_s`), qui réaffecte les patients non gelés aux créneaux en démarrage
+        à chaud ; le plan n'est appliqué que s'il améliore le score ET passe le contrôle GROUPÉ des agents
+        Chirurgien et Hébergement (retraits puis ajouts, en deux phases).
+    Les modes disponibles et le choix par défaut sont justifiés par sma/comparer_metaheuristiques_sma.py.
+
+Règles
+------
+  * AUCUN transfert vers un autre établissement, AUCUN refus : toute urgence reçue est programmée,
+    soit dans le programme (vacations + plages URGENCE), soit dans le planning de garde.
+  * Les heures du programme restent une contrainte dure (pas d'heures supplémentaires).
+  * Planning de garde (HYPOTHÈSE réglable dans ParametresSMA) : une salle, une équipe, à partir de 18 h les jours
+    de programme et toute la journée les autres jours ; pour une urgence VITALE l'équipe de garde est rappelée
+    tout de suite (`garde_immediate`).
+  * Échelle d'escalade pour une urgence (le premier niveau qui donne un plan DANS LE DÉLAI est retenu) :
+        0  insertion en DÉCALANT les patients programmés (aucun report)
+        1  + REPORT de patients programmés à un autre jour (au plus `max_deprogrammations`, replacés ensuite)
+        2  + reports sans plafond, éviction d'urgences de gravité strictement inférieure
+        3  ATTENTE : plan hors délai accepté si l'incision a lieu avant délai + tolérance (« quelques heures »)
+        4  GARDE : l'urgence est confiée au planning de garde (ou au programme si c'est plus tôt), message au
+           système ; alerte au médecin régulateur si le délai est dépassé (décision humaine).
+  * Les Salles reçoivent dans l'appel d'offres un instantané des agendas des chirurgiens : elles ne
+    proposent que des horaires où le chirurgien est libre (les agents Chirurgien valident toujours).
 
 Utilisation
 -----------
@@ -57,22 +87,21 @@ from typing import Any, Optional, Union
 
 import mesa
 
-# --- accès aux fichiers du dépôt : commun/ (structures_communes.py partagé), planning_vacations/ (planning v28)
+# --- accès aux fichiers du dépôt (planning_vacations/ contient planning_vacations_v28.py et structures_communes.py)
 _RACINE = Path(__file__).resolve().parents[1]
-if str(_RACINE / "commun") not in sys.path:
-    sys.path.insert(0, str(_RACINE / "commun"))
 for _dossier in (_RACINE / "planning_vacations", _RACINE / "metaheuristiques"):
     if _dossier.is_dir() and str(_dossier) not in sys.path:
         sys.path.append(str(_dossier))
 
 import planning_vacations_v28 as V28
 from structures_communes import (
-    GRAINE_PATIENTS, JOURS_FR, Chirurgien, InstanceNiveau2, InstanceProbleme, ParametresHebergement, Patient,
+    GRAINE_PATIENTS, JOURS_FR, POIDS_N2, Chirurgien, InstanceNiveau2, InstanceProbleme, ParametresHebergement, Patient,
     PlageBloc, SolutionPatients, construire_meilleure_affectation_initiale, generer_patients_etude,
     jours_occupation, type_semaine,
 )
 
 MIN = timedelta(minutes=1)
+INFAISABLE = 1e9          # plan hors des heures du programme (pas d'heures supplémentaires) : écarté
 
 
 # =============================================================================
@@ -85,6 +114,9 @@ MIN = timedelta(minutes=1)
 # * Spécialités : HYPOTHÈSE reprise du jeu de test, à compléter.
 
 ID_CHIR_URGENCE = V28.ID_URGENCE          # 900
+ID_EQUIPE_GARDE = 950                      # équipe du planning de garde (hors programme)
+ID_SALLE_GARDE = 0                         # salle de garde (hors des salles du programme)
+ID_FENETRE_GARDE = 0
 ID_PAR_NOM = V28.ID_PAR_NOM                # code praticien -> id (ex. ID_PAR_NOM["CT"])
 DECALAGE_ID_SEMAINE = 100
 
@@ -162,13 +194,26 @@ class Gravite:
     delai_max_min: int          # délai maximal arrivée -> incision
     preparation_min: int        # bilan / préparation avant de pouvoir monter au bloc
     poids_attente: float        # coût par minute d'attente
+    tolerance_min: int = 0      # attente acceptée AU-DELÀ du délai avant de passer au planning de garde
+    rang: int = 0               # 3 vitale > 2 urgente > 1 différable (éviction d'une urgence moins grave)
+
+    def limite(self, arrivee: datetime) -> datetime:
+        return arrivee + self.delai_max_min * MIN
+
+    def limite_acceptable(self, arrivee: datetime) -> datetime:
+        return arrivee + (self.delai_max_min + self.tolerance_min) * MIN
 
 
+# HYPOTHÈSE à valider avec l'hôpital : tolérances (« une urgence peut attendre quelques heures »)
 GRAVITES = {
-    "vitale": Gravite("vitale", 60, 15, 100.0),
-    "urgente": Gravite("urgente", 360, 30, 10.0),
-    "differable": Gravite("differable", 24 * 60, 60, 1.0),
+    "vitale": Gravite("vitale", 60, 15, 100.0, tolerance_min=60, rang=3),
+    "urgente": Gravite("urgente", 360, 30, 10.0, tolerance_min=180, rang=2),
+    "differable": Gravite("differable", 24 * 60, 60, 1.0, tolerance_min=240, rang=1),
 }
+
+NIVEAUX_ESCALADE = {0: "insertion avec décalages", 1: "+ reports d'autres patients",
+                    2: "+ reports sans plafond / éviction d'une urgence moins grave",
+                    3: "attente au-delà du délai (tolérance)", 4: "au plus tôt : planning de garde ou programme"}
 
 
 @dataclass(frozen=True)
@@ -189,8 +234,24 @@ class ParametresSMA:
     c_lit_reserve: float = 300.0
     c_lit_depassement: float = 5000.0
     c_report_jour: float = 100.0        # par jour de report, x priorité
-    max_deprogrammations: int = 3
+    max_deprogrammations: int = 3       # plafond des reports au niveau 1 de l'escalade (aucun plafond au niveau 2)
     propositions_par_salle: int = 4
+    # --- planning de garde (HYPOTHÈSE : une salle de garde, une équipe, hors heures du programme) ---
+    garde_soir: time = time(18, 0)      # les jours de programme, la garde commence à...
+    garde_matin: time = time(8, 0)      # ... et se termine le lendemain à
+    garde_permanente: bool = False      # True : la salle de garde fonctionne aussi pendant la journée
+    # --- architecture hybride : vos métaheuristiques (metaheuristiques/hybride_ags_rs_tabou.py) ---
+    # modes : "RS seul" | "TABOU seul" | "AGS seul" | "memetique" | "AGS>RS>TABOU" | "RS>AGS>TABOU"
+    methode_locale: Optional[str] = "TABOU seul"  # cas B, agents Salle ("glouton" ou None : pas d'optimisation locale)
+    budget_local_s: float = 0.02                  # secondes par créneau et par appel d'offres (temps réel)
+    optimisation_globale: Optional[str] = "memetique"  # cas A, agent Optimisation (None : pas de réoptimisation)
+    budget_global_s: float = 1.0                  # secondes par réoptimisation globale
+    gain_min_global: float = 50.0                 # gain minimal pour modifier le programme
+    gel_optimisation_min: int = 60                # patients qui commencent dans l'heure : gelés (déjà convoqués)
+    c_stabilite: float = 20.0                     # coût par patient déplacé par l'optimisation globale
+    capturer_problemes: bool = False              # garde les problèmes posés (script de comparaison)
+    garde_immediate: tuple[str, ...] = ("vitale",)   # gravités pour lesquelles l'équipe de garde est rappelée
+                                                     # immédiatement, même pendant les heures du programme
 
 
 @dataclass(frozen=True)
@@ -250,6 +311,7 @@ class Intervention:
     debut_initial: Optional[datetime] = None
     urgence: bool = False
     chirurgien_initial: Optional[int] = None
+    gravite: Optional[str] = None       # pour une urgence insérée : "vitale" / "urgente" / "differable"
 
     def __post_init__(self):
         if self.debut_initial is None:
@@ -354,6 +416,20 @@ def premier_transfert_possible(debut: datetime, fenetres, duree_tr: int) -> date
         for a, b in fenetres:
             if chevauche(debut - tr, debut, a, b):
                 debut, change = b + tr, True
+    return debut
+
+
+def premier_debut_possible(debut: datetime, duree: timedelta, fenetres, duree_tr: int,
+                           occupations=()) -> datetime:
+    """Plus petite heure >= debut où le brancardage évite les pannes ET où le chirurgien est libre
+    pendant [debut ; debut + duree[ (occupations = intervalles déjà pris dans son agenda)."""
+    change = True
+    while change:
+        change = False
+        debut = premier_transfert_possible(debut, fenetres, duree_tr)
+        for a, b in occupations:
+            if chevauche(debut, debut + duree, a, b):
+                debut, change = b, True
     return debut
 
 
@@ -624,6 +700,13 @@ class AgentChirurgien(AgentSMA):
         return msg.reponse("AGREE", {"cout": self.p.c_astreinte if astreinte else 0.0},
                            "rappel d'astreinte" if astreinte else "disponible")
 
+    def sur_instantane_agenda(self, msg: Message):
+        """Instantané de l'agenda, transmis aux Salles dans les appels d'offres."""
+        return msg.reponse("INFORM", {"chirurgien": self.chir_id,
+                                      "occupe": [(d, f, pid) for pid, (d, f, _) in self.agenda.items()
+                                                 if f > msg.contenu.get("apres", datetime.min)]},
+                           f"{len(self.agenda)} intervention(s) à l'agenda")
+
     def sur_maj_agenda(self, msg: Message):
         for pid in msg.contenu.get("retraits", []):
             self.agenda.pop(pid, None)
@@ -646,6 +729,7 @@ class AgentSalle(AgentSMA):
         self.creneaux: dict[int, Fenetre] = {f.id: f for f in fenetres}
         self.interventions: dict[int, Intervention] = {}
         self.en_cours: Optional[int] = None
+        self.n_evaluations = 0                     # plans chiffrés (comparaison glouton / métaheuristiques)
 
     # ---------------- outils
     def du_creneau(self, fid: int) -> list[Intervention]:
@@ -661,15 +745,25 @@ class AgentSalle(AgentSMA):
         t0 = max([fen.debut, maintenant] + [i.fin for i in commencees])
         return libres, t0
 
-    def _sequencer(self, items, minimums, t0, fenetres, en_liste: bool):
+    def _occupations(self, agendas: Optional[dict], fen: Fenetre, ignorer=()) -> dict[int, list]:
+        """Intervalles où chaque chirurgien est pris AILLEURS que dans ce créneau (instantané de la régulation).
+        `ignorer` : patients en cours de déplacement (leur ancien horaire ne compte pas)."""
+        if not agendas:
+            return {}
+        ici = {i.pid for i in self.du_creneau(fen.id)} | set(ignorer)
+        return {cid: [(d, f) for d, f, pid in occ if pid not in ici] for cid, occ in agendas.items()}
+
+    def _sequencer(self, items, minimums, t0, fenetres, en_liste: bool, occ: Optional[dict] = None):
         """Placement à la suite depuis t0 ; en_liste=True : au plus tôt réalisable d'abord (ordre initial
-        en cas d'égalité) -> les ambulatoires passent devant les hospitalisés bloqués par l'ascenseur."""
+        en cas d'égalité) -> les ambulatoires passent devant les hospitalisés bloqués par l'ascenseur.
+        `occ` : agendas des chirurgiens -> on ne place pas un patient quand son chirurgien est ailleurs."""
         t, restant, res = t0, list(items), []
+        occ = occ or {}
         while restant:
             choix = None
             for it in (restant if en_liste else restant[:1]):
-                s = premier_transfert_possible(max(t, minimums[it.pid]), fenetres.get(it.origine, []),
-                                               self.p.transfert_min)
+                s = premier_debut_possible(max(t, minimums[it.pid]), it.duree, fenetres.get(it.origine, []),
+                                           self.p.transfert_min, occ.get(it.chirurgien_id, ()))
                 if choix is None or (s, it.debut) < choix[0]:
                     choix = ((s, it.debut), it, s)
             _, it, s = choix
@@ -679,6 +773,7 @@ class AgentSalle(AgentSMA):
         return res
 
     def _evaluer(self, fen: Fenetre, placement, retraits, fenetres, ctx: dict) -> Plan:
+        self.n_evaluations += 1
         p, cout, det = self.p, 0.0, {}
 
         def ajoute(cle, v):
@@ -713,7 +808,7 @@ class AgentSalle(AgentSMA):
         for cle, v in ctx.get("couts_fixes", {}).items():
             ajoute(cle, v)
         if not valide:
-            cout += 1e9
+            cout += INFAISABLE
         plan = Plan(self.salle_id, fen.id, fen.jour, {it.pid: s for it, s in placement},
                     ajouts=[a.copie(debut=s, debut_initial=s if a.urgence else a.debut_initial)
                             for a in ctx.get("ajouts", []) for it, s in placement if it.pid == a.pid],
@@ -736,26 +831,30 @@ class AgentSalle(AgentSMA):
             elif s != it.debut:
                 d = int(minutes(s - it.debut))
                 morceaux.append(f"P{it.pid} {'+' if d > 0 else ''}{d} min")
-        morceaux += [f"P{it.pid} déprogrammé" for it in retraits]
+        morceaux += [f"P{it.pid} {'(urgence ' + it.gravite + ') ' if it.urgence else ''}reporté" for it in retraits]
         cadre = "plage urgences" if fen.urgence else f"vacation {self.model.nom_chir(fen.chirurgien_id)}"
         return (f"{self.nom_affiche} {jour_txt(fen.jour)} ({cadre} {hm(fen.debut)}-{hm(fen.fin)}) : "
                 + (", ".join(morceaux) or "aucun changement"))
 
     def _avec_deprogrammations(self, fen, items, construire, fenetres, ctx) -> list[Plan]:
-        """Variante sans déprogrammation, puis jusqu'à k déprogrammations gloutonnes."""
+        """Variante sans report, puis jusqu'à k reports gloutons (k = ctx["max_deprog"], None = sans plafond)."""
         plans, courant, retires = [], list(items), []
         base = self._evaluer(fen, construire(courant), retires, fenetres, ctx)
-        if base.cout < 1e9:
+        if base.cout < INFAISABLE:
             plans.append(base)
         meilleur_cout = base.cout
         proteges = {a.pid for a in ctx.get("ajouts", [])}
-        # une urgence déjà insérée n'est jamais déprogrammée... sauf en cas de panne (ctx « urgences_deplacables »)
-        # où elle ne peut physiquement plus monter au bloc : elle sera alors ré-insérée ailleurs par la régulation.
+        # une urgence déjà insérée n'est déprogrammée que (a) en cas de panne (ctx « urgences_deplacables ») où elle
+        # ne peut physiquement plus monter au bloc, ou (b) au niveau 2 de l'escalade, par une urgence STRICTEMENT
+        # plus grave (ctx « rang_nouveau ») ; elle repasse alors par l'appel d'offres urgence avec son propre délai.
         urg_ok = ctx.get("urgences_deplacables", False)
-        for _ in range(self.p.max_deprogrammations):
+        rang = ctx.get("rang_nouveau", 0)
+        k = ctx.get("max_deprog", self.p.max_deprogrammations)
+        for _ in range(len(courant) if k is None else k):
             meilleur = None
             for it in courant:
-                if (it.urgence and not urg_ok) or it.pid in proteges:   # un patient programmé « urgent » reste déprogrammable
+                evincable = urg_ok or (it.gravite in GRAVITES and GRAVITES[it.gravite].rang < rang)
+                if (it.urgence and not evincable) or it.pid in proteges:   # un patient programmé « urgent » reste déprogrammable
                     continue
                 essai = [x for x in courant if x is not it]
                 plan = self._evaluer(fen, construire(essai), retires + [it], fenetres, ctx)
@@ -766,10 +865,52 @@ class AgentSalle(AgentSMA):
             plan, it = meilleur
             courant.remove(it)
             retires.append(it)
-            if plan.cout < 1e9 and plan.cout < meilleur_cout:
+            if plan.cout < INFAISABLE and plan.cout < meilleur_cout:
                 plans.append(plan)
                 meilleur_cout = plan.cout
         return plans
+
+    def _retirables(self, items, ctx) -> set[int]:
+        """Patients que ce plan a le droit de reporter (mêmes règles que _avec_deprogrammations)."""
+        urg_ok, rang = ctx.get("urgences_deplacables", False), ctx.get("rang_nouveau", 0)
+        proteges = {a.pid for a in ctx.get("ajouts", [])}
+        return {it.pid for it in items if it.pid not in proteges and
+                (not it.urgence or urg_ok or (it.gravite in GRAVITES and GRAVITES[it.gravite].rang < rang))}
+
+    def _ameliorer(self, fen, items, construire, fenetres, ctx, plans_fen: list[Plan], appel: str,
+                   evaluations_glouton: int = 0) -> list[Plan]:
+        """CAS B : optimisation locale du créneau (ordre de passage + reports) par une métaheuristique courte,
+        en partant du meilleur plan glouton. Renvoie le plan amélioré, ou rien (on garde alors le glouton)."""
+        meth = self.p.methode_locale
+        if not meth or meth == "glouton" or len(items) < 2:
+            return []
+        from optimisation_sma import ProblemeLocalSalle, optimiser_localement
+        depart = min(plans_fen, key=lambda pl: (pl.hors_delai, pl.cout)) if plans_fen else None
+        pb = ProblemeLocalSalle(self, fen, items, construire, fenetres, ctx, self._retirables(items, ctx),
+                                ctx.get("max_deprog", self.p.max_deprogrammations), depart)
+        pb.evaluations_glouton, pb.appel = evaluations_glouton, appel
+        pb.cout_glouton = depart.cout + (1e7 if depart.hors_delai else 0.0) if depart else float("inf")
+        res = optimiser_localement(self, pb)
+        plan = pb.plan(res.individu)
+        ref = (depart.hors_delai, depart.cout) if depart else (True, INFAISABLE)
+        ameliore = pb.valide(res.individu) and plan.cout < INFAISABLE and (plan.hors_delai, plan.cout + 1e-6) < ref
+        self.model.traces_locales.append({"heure": self.maintenant, "salle": self.salle_id, "appel": appel,
+                                          "methode": meth, "cout_glouton": depart.cout if depart else None,
+                                          "cout_local": plan.cout if plan.cout < INFAISABLE else None,
+                                          "ameliore": ameliore, "evaluations": res.evaluations, "temps_s": res.temps_s,
+                                          "evaluations_glouton": evaluations_glouton})
+        if self.p.capturer_problemes:
+            self.model.problemes_locaux.append(pb)
+        if ameliore:
+            plan.detail["optimisation_locale"] = (depart.cout - plan.cout) if depart else 0.0
+            return [plan]
+        return []
+
+    def sur_etat_programme(self, msg: Message):
+        """Pour l'agent Optimisation : interventions et créneaux de la salle."""
+        return msg.reponse("INFORM", {"interventions": list(self.interventions.values()),
+                                      "creneaux": {(self.salle_id, f.id): f for f in self.creneaux.values()}},
+                           f"{len(self.interventions)} intervention(s)")
 
     def _top(self, plans: list[Plan]) -> list[Plan]:
         vus, res = set(), []
@@ -789,21 +930,28 @@ class AgentSalle(AgentSMA):
                 continue
             # vacation : opérée par SON chirurgien s'il est compétent ; plage d'urgence : tout chirurgien compétent
             chirs = c["chirurgiens"] if fen.urgence else [fen.chirurgien_id] if fen.chirurgien_id in c["chirurgiens"] else []
+            occ = self._occupations(c.get("agendas"), fen)
             for cid in chirs:
                 patient = replace(c["patient"], chirurgien_id=cid)
-                t_min = premier_transfert_possible(max(c["t_min"], fen.debut), fenetres.get("urgences", []),
-                                                   self.p.transfert_min)
-                if t_min + timedelta(minutes=patient.duree_bloc) > fen.fin:
+                duree = timedelta(minutes=patient.duree_bloc)
+                # au plus tôt : brancardage possible ET chirurgien libre (instantané de son agenda)
+                t_min = premier_debut_possible(max(c["t_min"], fen.debut), duree, fenetres.get("urgences", []),
+                                               self.p.transfert_min, occ.get(cid, ()))
+                if t_min + duree > fen.fin:
                     continue
                 libres, t0 = self._etat_creneau(fen, maintenant)
                 nouvelle = Intervention(patient, self.salle_id, t_min, fen.id, urgence=True,
-                                        chirurgien_initial=c["patient"].chirurgien_id)
+                                        chirurgien_initial=c["patient"].chirurgien_id, gravite=c.get("gravite"))
                 ctx = dict(c["ctx"], pid_nouveau=patient.id, ajouts=[nouvelle])
                 minimums = {i.pid: i.debut for i in libres} | {patient.id: t_min}
-                for pos in range(len(libres) + 1):
+                construire = lambda its, m=minimums, t=t0, o=occ: self._sequencer(its, m, t, fenetres, False, o)
+                plans_fc, n0 = [], self.n_evaluations
+                for pos in range(len(libres) + 1):             # glouton : chaque position d'insertion
                     ordre = libres[:pos] + [nouvelle] + libres[pos:]
-                    construire = lambda its, m=minimums, t=t0: self._sequencer(its, m, t, fenetres, False)
-                    plans += self._avec_deprogrammations(fen, ordre, construire, fenetres, ctx)
+                    plans_fc += self._avec_deprogrammations(fen, ordre, construire, fenetres, ctx)
+                # cas B : la salle améliore localement son meilleur plan glouton
+                plans += plans_fc + self._ameliorer(fen, libres + [nouvelle], construire, fenetres, ctx, plans_fc,
+                                                    "urgence", self.n_evaluations - n0)
         top = self._top(plans)
         if not top:
             return msg.reponse("REFUSE", {"motif": "aucun créneau"}, "aucune insertion possible")
@@ -829,10 +977,14 @@ class AgentSalle(AgentSMA):
                 continue
             minimums = {i.pid: max(i.debut - self.p.avance_max_min * MIN, fen.debut, maintenant) for i in libres}
             ctx = {"ajouts": [], "urgences_deplacables": True}
-            avant = len(plans)
+            occ = self._occupations(c.get("agendas"), fen)
+            avant, n0 = len(plans), self.n_evaluations
             for en_liste in (True, False):         # réordonner (ambulatoires d'abord) OU simplement décaler
-                construire = lambda its, m=minimums, t=t0, l=en_liste: self._sequencer(its, m, t, fenetres, l)
+                construire = lambda its, m=minimums, t=t0, l=en_liste, o=occ: self._sequencer(its, m, t, fenetres, l, o)
                 plans += self._avec_deprogrammations(fen, libres, construire, fenetres, ctx)
+            # cas B : optimisation locale de l'ordre (construire respecte l'ordre proposé : en_liste=False)
+            plans += self._ameliorer(fen, libres, construire, fenetres, ctx, plans[avant:], "panne",
+                                     self.n_evaluations - n0)
             if len(plans) == avant:                # impacté mais aucune solution dans ce créneau : on le signale
                 non_resolus.append((fen.id, [i.pid for i in impactees]))
             elif sspi:
@@ -864,7 +1016,8 @@ class AgentSalle(AgentSMA):
                         for i in libres}
             ctx = {"reference_initiale": True, "ajouts": []}
             actuel = self._evaluer(fen, [(i, i.debut) for i in libres], [], fenetres, ctx)
-            plan = self._evaluer(fen, self._sequencer(libres, minimums, t0, fenetres, True), [], fenetres, ctx)
+            plan = self._evaluer(fen, self._sequencer(libres, minimums, t0, fenetres, True,
+                                                      self._occupations(c.get("agendas"), fen)), [], fenetres, ctx)
             plan.placements = {pid: s for pid, s in plan.placements.items() if s != self.interventions[pid].debut}
             if plan.placements and plan.cout < actuel.cout - 1e-6:
                 plan.detail["gain"] = actuel.cout - plan.cout
@@ -905,9 +1058,10 @@ class AgentSalle(AgentSMA):
                 # aujourd'hui : avance limitée (patient convoqué au plus 1 h plus tôt)
                 minimums = {i.pid: fen.debut if futur else max(t0, i.debut - self.p.avance_max_min * MIN)
                             for i in restants} | {p0.id: max(t0, apres)}
-                placement = self._sequencer(restants + [nouvelle], minimums, t0, fenetres, False)
+                placement = self._sequencer(restants + [nouvelle], minimums, t0, fenetres, False,
+                                            self._occupations(c.get("agendas"), fen, {p0.id}))
                 plan = self._evaluer(fen, placement, retires, fenetres, {"ajouts": [nouvelle], "couts_fixes": fixes})
-                if plan.cout < 1e9:
+                if plan.cout < INFAISABLE:
                     plans.append(plan)
         top = sorted(plans, key=lambda x: x.cout)[:self.p.propositions_par_salle]
         if not top:
@@ -945,6 +1099,129 @@ class AgentSalle(AgentSMA):
         its = [i for i in self.interventions.values() if not i.urgence and i.debut.date() == t.date()
                and i.debut > t and i.debut - i.debut_initial >= seuil]
         return msg.reponse("INFORM", {"interventions": its}, f"{len(its)} patient(s) décalé(s)")
+
+    def step(self):
+        t = self.maintenant
+        self.en_cours = next((i.pid for i in self.interventions.values() if i.debut <= t < i.fin), None)
+
+
+# ---------------------------------------------------------------- Garde
+class _SallesAvecGarde(dict):
+    """Salles du programme ; `salles[ID_SALLE_GARDE]` renvoie la salle de garde (pour l'interface, qui lit
+    `modele.salles[decision["salle"]]`). Elle n'apparaît PAS quand on parcourt les salles du programme."""
+
+    def __init__(self, salles, garde):
+        super().__init__(salles)
+        self.garde = garde
+
+    def __missing__(self, cle):
+        if cle == ID_SALLE_GARDE:
+            return self.garde
+        raise KeyError(cle)
+
+
+@dataclass
+class EquipeGarde:
+    """Pseudo-chirurgien de la garde : `modele.chirurgiens[ID_EQUIPE_GARDE]` (mêmes attributs utiles
+    qu'un AgentChirurgien) ; non parcouru avec les vrais chirurgiens."""
+    garde: "AgentGarde"
+    chir_id: int = ID_EQUIPE_GARDE
+    nom_affiche: str = "Équipe de garde"
+    nom: str = "chir_garde"
+
+    @property
+    def agenda(self) -> dict:
+        return {i.pid: (i.debut, i.fin, ID_SALLE_GARDE) for i in self.garde.interventions.values()}
+
+    @property
+    def au_bloc(self):
+        return self.garde.en_cours
+
+    @property
+    def jours_presence(self) -> set:
+        return set()
+
+
+class _ChirurgiensAvecGarde(dict):
+    def __init__(self, chirurgiens, garde):
+        super().__init__(chirurgiens)
+        self.equipe_garde = EquipeGarde(garde)
+
+    def __missing__(self, cle):
+        if cle == ID_EQUIPE_GARDE:
+            return self.equipe_garde
+        raise KeyError(cle)
+
+
+class AgentGarde(AgentSMA):
+    """Planning de garde : une salle et une équipe hors des heures du programme (soirs, nuits, jours sans
+    programme). Prend toute urgence que le programme ne peut pas absorber — il ne refuse jamais — puis
+    prévient le système (INFORM à la régulation, mise à jour de l'hébergement)."""
+    role = "garde"
+
+    def __init__(self, model, jours_programme: set[date]):
+        super().__init__(model, "garde")
+        self.nom_affiche = "Salle de garde"
+        self.salle_id = ID_SALLE_GARDE
+        self.creneaux: dict[int, Fenetre] = {}       # pas de créneaux du programme
+        self.jours_programme = jours_programme
+        self.interventions: dict[int, Intervention] = {}
+        self.en_cours: Optional[int] = None
+
+    def en_garde(self, t: datetime, gravite: Optional[str] = None) -> bool:
+        if self.p.garde_permanente or gravite in self.p.garde_immediate or t.date() not in self.jours_programme:
+            return True
+        return t.time() >= self.p.garde_soir or t.time() < self.p.garde_matin
+
+    def premier_creneau(self, t_min: datetime, duree: timedelta, fenetres, gravite: Optional[str] = None) -> datetime:
+        """Au plus tôt : heures de garde (ou tout de suite pour une gravité `garde_immediate`), brancardage
+        possible, salle de garde libre."""
+        occupe = [(i.debut, i.fin) for i in self.interventions.values()]
+        s = t_min
+        while True:
+            debut = s if self.en_garde(s, gravite) else datetime.combine(s.date(), self.p.garde_soir)
+            debut = premier_debut_possible(debut, duree, fenetres, self.p.transfert_min, occupe)
+            if debut == s:
+                return s
+            s = debut
+
+    def du_jour(self, jour: date) -> list[Intervention]:
+        return sorted((i for i in self.interventions.values() if i.debut.date() == jour), key=lambda i: i.debut)
+
+    def du_creneau(self, fid: int) -> list[Intervention]:
+        return sorted(self.interventions.values(), key=lambda i: i.debut) if fid == ID_FENETRE_GARDE else []
+
+    def sur_etat_programme(self, msg: Message):
+        return msg.reponse("INFORM", {"interventions": list(self.interventions.values()), "creneaux": {}},
+                           f"{len(self.interventions)} urgence(s) en garde")
+
+    def sur_cfp_garde(self, msg: Message):
+        c = msg.contenu
+        patient = replace(c["patient"], chirurgien_id=ID_EQUIPE_GARDE)
+        s = self.premier_creneau(c["t_min"], timedelta(minutes=patient.duree_bloc), c["fenetres"].get("urgences", []),
+                                 c["gravite"])
+        it = Intervention(patient, ID_SALLE_GARDE, s, ID_FENETRE_GARDE, urgence=True,
+                          chirurgien_initial=c["patient"].chirurgien_id, gravite=c["gravite"])
+        ctx = c["ctx"]
+        attente = minutes(s - ctx["arrivee"])
+        plan = Plan(ID_SALLE_GARDE, ID_FENETRE_GARDE, s.date(), {patient.id: s}, ajouts=[it],
+                    cout=attente * ctx["poids_attente"], detail={"attente_urgence": attente * ctx["poids_attente"]},
+                    hors_delai=s > ctx["limite"], debut_urgence=s,
+                    resume=f"Salle de garde {jour_txt(s.date())} : urgence P{patient.id} {hm(s)}-{hm(it.fin)} (équipe de garde)")
+        return msg.reponse("PROPOSE", {"plan": plan}, f"possible à {hm(s)} le {jour_txt(s.date())}")
+
+    def sur_accept_garde(self, msg: Message):
+        plan: Plan = msg.contenu["plan"]
+        it = plan.ajouts[0]
+        self.interventions[it.pid] = it
+        self.envoyer("hebergement", "INFORM", "maj_sejours", {"ajouts": [(it.patient, it.debut.date())], "retraits": []},
+                     msg.conversation, "séjour ajouté (garde)")
+        # le système est prévenu : la régulation trace l'alerte, l'équipe de garde a le patient dans son planning
+        self.envoyer("regulation", "INFORM", "urgence_confiee_garde",
+                     {"patient": it.pid, "gravite": msg.contenu["gravite"], "debut": it.debut,
+                      "arrivee": msg.contenu["arrivee"]}, msg.conversation,
+                     f"P{it.pid} pris en charge par la garde à {hm(it.debut)}")
+        return msg.reponse("INFORM", {"retirees": []}, "urgence inscrite au planning de garde", sujet="plan_applique")
 
     def step(self):
         t = self.maintenant
@@ -1007,7 +1284,15 @@ class AgentRegulation(AgentSMA):
             note = "; ".join(x for x in (note, r.contenu.get("motif", "")) if x)
         return True, extra, note
 
+    def _agendas(self, conv) -> dict[int, list]:
+        """Instantané des agendas des chirurgiens (par messages), transmis aux Salles dans les appels d'offres."""
+        reps = self.diffuser(AgentChirurgien, "REQUEST", "instantane_agenda", {"apres": self.maintenant}, conv,
+                             "agenda ?")
+        return {r.contenu["chirurgien"]: r.contenu["occupe"] for r in reps if r.performatif == "INFORM"}
+
     def _choisir(self, propositions, conv, cle_tri):
+        """Valide les plans auprès des ressources (chirurgiens, hébergement) et retient le meilleur selon
+        `cle_tri` (tuple lexicographique ; son dernier terme, le coût, est complété par le coût des ressources)."""
         valides = []
         for agent, plan in sorted(propositions, key=lambda x: cle_tri(x[1])):
             ok, extra, motif = self._valider(plan, conv)
@@ -1017,7 +1302,7 @@ class AgentRegulation(AgentSMA):
                 self.annoncer(f"    ✗ rejetée ({motif}) : {plan.resume}", 2)
         if not valides:
             return None
-        return min(valides, key=lambda x: (cle_tri(x[1])[0], x[1].cout + x[2]))
+        return min(valides, key=lambda x: (*cle_tri(x[1])[:-1], x[1].cout + x[2]))
 
     def _appliquer(self, agent, plan, propositions, conv) -> list[Intervention]:
         for a in sorted({a for a, pl in propositions if pl is not plan}):
@@ -1031,84 +1316,235 @@ class AgentRegulation(AgentSMA):
         self.urgences_info[c["patient"].id] = (c["patient"], c["arrivee"], c["gravite"], c["chirurgiens"])
         ok, contenu, resume = self._inserer_urgence(c["patient"], c["arrivee"], c["gravite"], c["chirurgiens"],
                                                     msg.conversation)
-        return msg.reponse("AGREE" if ok else "REFUSE", contenu, resume)
+        self.reoptimiser(msg.conversation, f"urgence P{c['patient'].id}")      # cas A, après la réaction immédiate
+        return msg.reponse("AGREE", contenu, resume)        # jamais de refus
 
     def _reinserer_urgence(self, it: Intervention, conv):
-        """Urgence déjà programmée mais rendue impossible (ex. monte-lit en panne) : nouvel appel d'offres,
-        avec le MÊME délai maximal (compté depuis l'arrivée aux urgences)."""
+        """Urgence déjà programmée mais déplacée (monte-lit en panne, ou évincée par une urgence plus grave) :
+        nouvel appel d'offres avec le MÊME délai (compté depuis l'arrivée aux urgences)."""
         p, arrivee, g, chirurgiens = self.urgences_info[it.pid]
-        self.annoncer(f"    ↳ urgence P{it.pid} ne peut plus monter au bloc à {hm(it.debut)} : nouvel appel d'offres")
+        self.annoncer(f"    ↳ urgence P{it.pid} ({g.nom}) ne peut plus être opérée à {hm(it.debut)} : nouvel appel d'offres")
         t_min = max(arrivee + g.preparation_min * MIN, self.maintenant + self.p.transfert_min * MIN)
         self._inserer_urgence(p, arrivee, g, chirurgiens, conv, t_min=t_min, reinsertion=True)
 
+    def _appel_offres_urgence(self, p: Patient, g: Gravite, chirurgiens, t_min, jours, fenetres, ctx, conv, niveau):
+        reponses = self.diffuser(AgentSalle, "CFP", "cfp_urgence",
+                                 {"patient": p, "gravite": g.nom, "chirurgiens": chirurgiens, "t_min": t_min,
+                                  "jours": jours, "maintenant": self.maintenant, "fenetres": fenetres,
+                                  "agendas": self._agendas(conv), "ctx": ctx},
+                                 conv, f"P{p.id} {p.duree_bloc} min, au plus tôt {hm(t_min)} — niveau {niveau} "
+                                       f"({NIVEAUX_ESCALADE[niveau]})")
+        return [(r.emetteur, pl) for r in reponses if r.performatif == "PROPOSE" for pl in r.contenu["plans"]]
+
     def _inserer_urgence(self, p: Patient, arrivee: datetime, g: Gravite, chirurgiens: list[int], conv,
                          t_min: Optional[datetime] = None, reinsertion: bool = False):
-        c = {"arrivee": arrivee, "chirurgiens": chirurgiens}
-        maintenant = self.maintenant
+        """Échelle d'escalade : renvoie TOUJOURS un plan (programme ou planning de garde), jamais de refus."""
         fenetres = self._fenetres(conv)
         t_min = t_min or arrivee + g.preparation_min * MIN
-        limite = arrivee + g.delai_max_min * MIN
+        limite, acceptable = g.limite(arrivee), g.limite_acceptable(arrivee)
         futurs = sorted(j for j in self.model.jours_planning if j >= t_min.date())
-        dans_delai = [j for j in futurs if j <= limite.date()]
-        jours = set(dans_delai + [j for j in futurs if j not in dans_delai][:1])   # + jour suivant en secours
-        ctx = {"arrivee": c["arrivee"], "limite": limite, "poids_attente": g.poids_attente}
-        # 1er appel d'offres : jours dans le délai (+ le jour suivant) ; si rien ne convient et que l'urgence
-        # n'est pas vitale, 2e appel d'offres sur tout l'horizon (elle sera opérée hors délai, avec alerte).
-        # Une urgence vitale sans solution dans le délai est transférée.
-        essais = [jours] + ([set(futurs)] if g.nom != "vitale" and set(futurs) != jours else [])
-        for jours in essais:
-            reponses = self.diffuser(AgentSalle, "CFP", "cfp_urgence",
-                                     {"patient": p, "chirurgiens": c["chirurgiens"], "t_min": t_min, "limite": limite,
-                                      "jours": jours, "maintenant": maintenant, "fenetres": fenetres, "ctx": ctx},
-                                     conv, f"P{p.id} {p.duree_bloc} min, au plus tôt {hm(t_min)}"
-                                     + ("" if jours is essais[0] else " (horizon élargi)"))
-            props = [(r.emetteur, pl) for r in reponses if r.performatif == "PROPOSE" for pl in r.contenu["plans"]]
-            choix = self._choisir(props, conv, lambda pl: (pl.hors_delai, pl.cout))
+        proches = {j for j in futurs if j <= acceptable.date()}
+        ctx0 = {"arrivee": arrivee, "limite": limite, "poids_attente": g.poids_attente}
+        leviers = {0: {"max_deprog": 0},                                     # décaler seulement
+                   1: {"max_deprog": self.p.max_deprogrammations},           # + reporter (plafonné)
+                   2: {"max_deprog": None, "rang_nouveau": g.rang}}          # + sans plafond, évincer moins grave
+        choix = niveau = None
+        props: list = []
+        # niveaux 0 à 2 : le premier niveau qui donne un plan DANS LE DÉLAI est retenu
+        for n in (0, 1, 2) if proches else ():
+            props = self._appel_offres_urgence(p, g, chirurgiens, t_min, proches, fenetres, dict(ctx0, **leviers[n]),
+                                               conv, n)
+            choix = self._choisir([(a, pl) for a, pl in props if not pl.hors_delai], conv, lambda pl: (pl.cout,))
             if choix is not None:
+                niveau = n
                 break
-        if choix is not None and g.nom == "vitale" and choix[1].hors_delai:
-            choix = None                                    # une urgence vitale hors délai est transférée
+        # niveau 3 : l'urgence attend (« quelques heures ») — plan hors délai mais avant délai + tolérance
+        if choix is None and props:
+            choix = self._choisir([(a, pl) for a, pl in props if pl.debut_urgence <= acceptable], conv,
+                                  lambda pl: (pl.cout,))
+            niveau = 3 if choix is not None else None
+        # niveau 4 : planning de garde, sauf si le programme permet d'opérer plus tôt que la garde
+        plan_garde = None
         if choix is None:
-            alerte = (f"URGENCE {g.nom} P{p.id} : aucun créneau du planning dans le délai -> transfert vers un autre établissement"
-                      if g.nom == "vitale" else f"URGENCE P{p.id} : aucun créneau du planning ne convient -> transfert vers un autre établissement")
-            self.alertes.append(alerte)
-            self.annoncer(f"  ⚠ {alerte}")
-            self.decisions = [d for d in self.decisions if not (d["type"] == "urgence" and d["patient"] == p.id)]
-            self.decisions.append({"type": "urgence_refusee", "heure": maintenant, "patient": p.id})
-            return False, {"motif": alerte}, alerte
+            niveau = 4
+            props = self._appel_offres_urgence(p, g, chirurgiens, t_min, set(futurs), fenetres,
+                                               dict(ctx0, **leviers[2]), conv, 4) if futurs else []
+            plan_garde = self.envoyer("garde", "CFP", "cfp_garde",
+                                      {"patient": p, "gravite": g.nom, "t_min": t_min, "fenetres": fenetres,
+                                       "ctx": ctx0}, conv, f"P{p.id} : premier créneau de garde ?")[0].contenu["plan"]
+            choix = self._choisir(props, conv, lambda pl: (pl.debut_urgence, pl.cout))
+            if choix is not None and choix[1].debut_urgence < plan_garde.debut_urgence:
+                plan_garde = None                         # le programme opère plus tôt que la garde
+            else:
+                choix = None
+
+        if plan_garde is not None:
+            return self._confier_garde(p, arrivee, g, plan_garde, props, conv, reinsertion)
+
         agent, plan, extra, note = choix
         retirees = self._appliquer(agent, plan, props, conv)
         nouvelle = plan.ajouts[0]
-        attente = minutes(plan.debut_urgence - c["arrivee"])
-        self.annoncer(f"  ✔ {'Nouvelle décision' if reinsertion else 'Décision'} : P{p.id} opéré(e) par {self.model.nom_chir(nouvelle.chirurgien_id)} en "
-                      f"{self.model.annuaire[agent].nom_affiche} à {hm(plan.debut_urgence)} le {jour_txt(plan.jour)} "
-                      f"(attente {attente:.0f} min, {len(props)} propositions reçues, coût {plan.cout + extra:,.0f})")
+        attente = minutes(plan.debut_urgence - arrivee)
+        self.annoncer(f"  ✔ {'Nouvelle décision' if reinsertion else 'Décision'} (niveau {niveau} : "
+                      f"{NIVEAUX_ESCALADE[niveau]}) : P{p.id} opéré(e) par {self.model.nom_chir(nouvelle.chirurgien_id)} "
+                      f"en {self.model.annuaire[agent].nom_affiche} à {hm(plan.debut_urgence)} le {jour_txt(plan.jour)} "
+                      f"(attente {attente:.0f} min, {len(props)} propositions, coût {plan.cout + extra:,.0f})")
         self.annoncer(f"    {plan.resume}")
+        self._noter_lits(p, note)
+        if plan.hors_delai:
+            self._alerte_delai(p, g, attente, f"{plan.resume} (coût {plan.cout + extra:,.0f})")
+        self._enregistrer_urgence(p, g, niveau, plan.salle_id, nouvelle.chirurgien_id, plan.debut_urgence, attente,
+                                  not plan.hors_delai, plan.cout + extra, plan.resume, len(props), reinsertion,
+                                  garde=False, detail=plan.detail)
+        self._replacer(retirees, conv)
+        return True, {"plan": plan}, plan.resume
+
+    def _confier_garde(self, p: Patient, arrivee: datetime, g: Gravite, plan: Plan, props, conv, reinsertion):
+        """Niveau 4 : le programme n'a plus de place -> l'urgence est confiée au planning de garde."""
+        for a in sorted({a for a, _ in props}):
+            self.envoyer(a, "REJECT_PROPOSAL", "reject_proposal", {}, conv, "")
+        r = self.envoyer("hebergement", "REQUEST", "evaluer_sejours",
+                         {"ajouts": [(plan.ajouts[0].patient, plan.jour)], "retraits": []}, conv, "lits/places ?")[0]
+        note = r.contenu.get("motif", "") if r.performatif == "AGREE" else ""
+        self.envoyer("garde", "ACCEPT_PROPOSAL", "accept_garde", {"plan": plan, "gravite": g.nom, "arrivee": arrivee},
+                     conv, plan.resume)
+        attente = minutes(plan.debut_urgence - arrivee)
+        self.annoncer(f"  ✔ {'Nouvelle décision' if reinsertion else 'Décision'} (niveau 4 : planning de garde) : "
+                      f"P{p.id} opéré(e) par l'équipe de garde le {jour_txt(plan.jour)} à {hm(plan.debut_urgence)} "
+                      f"(attente {attente:.0f} min ; {len(props)} proposition(s) du programme, aucune plus tôt)")
+        self._noter_lits(p, note)
+        if plan.hors_delai:
+            self._alerte_delai(p, g, attente, plan.resume)
+        self._enregistrer_urgence(p, g, 4, ID_SALLE_GARDE, ID_EQUIPE_GARDE, plan.debut_urgence, attente,
+                                  not plan.hors_delai, plan.cout, plan.resume, len(props), reinsertion, garde=True,
+                                  detail=plan.detail)
+        return True, {"plan": plan}, plan.resume
+
+    def sur_urgence_confiee_garde(self, msg: Message):
+        """Message de l'agent Garde : le système est prévenu qu'une urgence est passée au planning de garde."""
+        c = msg.contenu
+        alerte = (f"GARDE : urgence {c['gravite']} P{c['patient']} confiée au planning de garde, "
+                  f"{jour_txt(c['debut'].date())} {hm(c['debut'])} (programme sans place) — équipe de garde prévenue")
+        self.alertes.append(alerte)
+        self.annoncer(f"  ⚠ {alerte}")
+
+    def _noter_lits(self, p: Patient, note: str):
         if note:
             self.annoncer(f"    Contraintes signalées : {note}")
             if "hors capacité" in note:
                 alerte = f"P{p.id} : aucun lit libre ({note}) -> la cellule de gestion des lits doit trouver un lit d'aval"
                 self.alertes.append(alerte)
                 self.annoncer(f"  ⚠ {alerte}")
-        if plan.hors_delai:
-            alerte = (f"URGENCE {g.nom} P{p.id} : délai de {g.delai_max_min} min dépassé ({attente:.0f} min) "
-                      f"-> prévenir le médecin régulateur (transfert vers un autre établissement ?)")
-            self.alertes.append(alerte)
-            self.annoncer(f"  ⚠ {alerte}")
+
+    def _alerte_delai(self, p: Patient, g: Gravite, attente: float, plan_txt: str):
+        alerte = (f"URGENCE {g.nom} P{p.id} : délai de {g.delai_max_min} min dépassé (attente {attente:.0f} min) "
+                  f"— décision humaine requise (médecin régulateur) ; meilleur plan disponible : {plan_txt}")
+        self.alertes.append(alerte)
+        self.annoncer(f"  ⚠ {alerte}")
+
+    def _enregistrer_urgence(self, p, g, niveau, salle, chirurgien, debut, attente, dans_delai, cout, plan_txt,
+                             nb_props, reinsertion, garde, detail):
         # une ré-insertion remplace la décision précédente (le bilan ne compte qu'une urgence)
         self.decisions = [d for d in self.decisions if not (d["type"] == "urgence" and d["patient"] == p.id)]
-        self.decisions.append({"type": "urgence", "heure": maintenant, "patient": p.id, "gravite": g.nom,
-                               "salle": plan.salle_id, "chirurgien": nouvelle.chirurgien_id,
-                               "debut": plan.debut_urgence, "attente_min": attente, "dans_delai": not plan.hors_delai,
-                               "cout": plan.cout + extra, "detail": plan.detail, "plan": plan.resume,
-                               "nb_propositions": len(props), "reprogrammee": reinsertion})
-        self._replacer(retirees, conv)
-        return True, {"plan": plan}, plan.resume
+        self.decisions.append({"type": "urgence", "heure": self.maintenant, "patient": p.id, "gravite": g.nom,
+                               "niveau": niveau, "garde": garde, "salle": salle, "chirurgien": chirurgien,
+                               "debut": debut, "attente_min": attente, "dans_delai": dans_delai, "cout": cout,
+                               "detail": detail, "plan": plan_txt, "nb_propositions": nb_props,
+                               "reprogrammee": reinsertion})
+
+    # ---------- cas A : réoptimisation globale par l'agent Optimisation
+    def _etat_global(self, conv) -> dict:
+        reps = self.diffuser(AgentSalle, "REQUEST", "etat_programme", {}, conv, "état du programme ?")
+        its, creneaux = [], {}
+        for r in reps:
+            its += r.contenu["interventions"]
+            creneaux.update(r.contenu["creneaux"])
+        garde = self.envoyer("garde", "REQUEST", "etat_programme", {}, conv, "planning de garde ?")[0]
+        attente = list(self.liste_attente)
+        return {"maintenant": self.maintenant, "interventions": its, "garde": garde.contenu["interventions"],
+                "liste_attente": attente, "creneaux": creneaux, "fenetres": self._fenetres(conv),
+                "competents": {it.pid: self.competents(it) for it in its + [i for i, _ in attente] if not it.urgence}}
+
+    def _valider_global(self, mvts: list[dict], conv) -> tuple[bool, str]:
+        """Contrôle GROUPÉ : chaque chirurgien vérifie toutes ses modifications d'un coup (patients déplacés
+        retirés d'abord, puis ajoutés à leur nouvel horaire), puis l'hébergement vérifie lits et places."""
+        par_chir: dict[int, dict] = {}
+        for m in mvts:
+            it = m["nouveau"]
+            par_chir.setdefault(it.chirurgien_id, {"intervalles": [], "retraits": []})["intervalles"].append(
+                (it.pid, it.debut, it.fin, it.salle_id))
+            if m["etait_place"]:
+                par_chir.setdefault(m["ancien"].chirurgien_id, {"intervalles": [], "retraits": []})["retraits"].append(it.pid)
+        for cid, contenu in sorted(par_chir.items()):
+            r = self.envoyer(f"chir_{cid}", "REQUEST", "verifier_agenda", contenu, conv,
+                             f"plan global : {len(contenu['intervalles'])} créneau(x)")[0]
+            if r.performatif == "REFUSE":
+                return False, f"{self.model.nom_chir(cid)} : {r.contenu['motif']}"
+        r = self.envoyer("hebergement", "REQUEST", "evaluer_sejours",
+                         {"ajouts": [(m["nouveau"].patient, m["debut"].date()) for m in mvts],
+                          "retraits": [m["pid"] for m in mvts if m["etait_place"]]}, conv, "plan global : lits ?")[0]
+        if r.performatif == "REFUSE":
+            return False, f"hébergement : {r.contenu['motif']}"
+        return True, ""
+
+    def reoptimiser(self, conv, motif: str):
+        """CAS A : demande à l'agent Optimisation un plan global ; l'applique s'il est validé par les ressources."""
+        if not self.p.optimisation_globale:
+            return
+        etat = dict(self._etat_global(conv), motif=motif)
+        r = self.envoyer("optimisation", "REQUEST", "reoptimiser", etat, conv, f"réoptimiser le programme ({motif})")[0]
+        trace = r.contenu.get("trace")
+        if r.performatif != "PROPOSE":
+            if trace is not None:
+                self.annoncer(f"  ◇ Optimisation globale : {r.resume}", 2)
+            return
+        mvts = r.contenu["mouvements"]
+        ok, rejet = self._valider_global(mvts, conv)
+        if not ok:
+            trace.motif_rejet = f"refusé par {rejet}"
+            self.envoyer("optimisation", "REJECT_PROPOSAL", "reject_proposal", {}, conv, trace.motif_rejet)
+            self.annoncer(f"  ◇ Optimisation globale rejetée ({rejet})", 2)
+            return
+        self.envoyer("optimisation", "ACCEPT_PROPOSAL", "accept_proposal", {}, conv, "plan global accepté")
+        jour = self.maintenant.date()
+        # application en deux phases : 1) chaque salle libère les patients qui partent ; 2) elle reçoit les arrivants
+        departs: dict[int, list[int]] = {}
+        for m in mvts:
+            if m["etait_place"]:
+                departs.setdefault(m["de"][0], []).append(m["pid"])
+        for sid, pids in sorted(departs.items()):
+            self.envoyer(f"salle_{sid}", "ACCEPT_PROPOSAL", "accept_proposal",
+                         {"plan": Plan(sid, ID_FENETRE_GARDE, jour, {}, retraits=pids)}, conv,
+                         f"plan global : libérer {', '.join(f'P{p}' for p in pids)}")
+        arrivees: dict[int, list[Intervention]] = {}
+        for m in mvts:
+            arrivees.setdefault(m["vers"][0], []).append(m["nouveau"])
+        for sid, its in sorted(arrivees.items()):
+            self.envoyer(f"salle_{sid}", "ACCEPT_PROPOSAL", "accept_proposal",
+                         {"plan": Plan(sid, ID_FENETRE_GARDE, jour, {it.pid: it.debut for it in its}, ajouts=its)}, conv,
+                         f"plan global : placer {', '.join(f'P{it.pid}' for it in its)}")
+        places = {m["pid"] for m in mvts if not m["etait_place"]}
+        self.liste_attente = [(it, j) for it, j in self.liste_attente if it.pid not in places]
+        trace.applique = True
+        details = []
+        for m in mvts[:6]:
+            a, n = m["ancien"], m["nouveau"]
+            avant = f"{jour_txt(a.debut.date())} {hm(a.debut)} S{a.salle_id}" if m["etait_place"] else "liste d'attente"
+            details.append(f"P{m['pid']} {avant} → {jour_txt(n.debut.date())} {hm(n.debut)} S{n.salle_id}"
+                           + (f" ({self.model.nom_chir(n.chirurgien_id)})" if n.chirurgien_id != a.chirurgien_id else ""))
+        from metaheuristiques_sma import NOMS
+        self.annoncer(f"  ✦ Optimisation globale ({NOMS[trace.methode]}, {trace.temps_s:.2f} s) : score "
+                      f"{trace.cout_actuel:,.0f} → {trace.cout_optimise:,.0f}, {len(mvts)} patient(s) déplacé(s) : "
+                      + "; ".join(details) + (" ..." if len(mvts) > 6 else ""))
+        self.decisions.append({"type": "reoptimisation", "heure": self.maintenant, "motif": motif,
+                               "methode": trace.methode, "gain": trace.cout_actuel - trace.cout_optimise,
+                               "patients_deplaces": len(mvts), "patients_sortis_attente": len(places)})
 
     # ---------- panne
     def sur_transferts_bloques(self, msg: Message):
         conv, fenetres = msg.conversation, msg.contenu["fenetres"]
-        reponses = self.diffuser(AgentSalle, "CFP", "cfp_panne", {"fenetres": fenetres, "maintenant": self.maintenant},
+        reponses = self.diffuser(AgentSalle, "CFP", "cfp_panne", {"fenetres": fenetres, "maintenant": self.maintenant,
+                                                                 "agendas": self._agendas(conv)},
                                  conv, "adapter votre programme à la panne")
         retenus, impact = set(), False
         for r in reponses:
@@ -1146,11 +1582,13 @@ class AgentRegulation(AgentSMA):
                           + ", ".join(f"P{x}" for x in sorted(retenus)))
         if not impact:
             self.annoncer("  ✔ Aucun (nouveau) patient à brancarder pendant la panne : programme inchangé")
+        self.reoptimiser(conv, "panne du monte-lit")
 
     def sur_transferts_retablis(self, msg: Message):
         conv = msg.conversation
         reponses = self.diffuser(AgentSalle, "CFP", "cfp_compacter",
-                                 {"fenetres": msg.contenu["fenetres"], "maintenant": self.maintenant},
+                                 {"fenetres": msg.contenu["fenetres"], "maintenant": self.maintenant,
+                                  "agendas": self._agendas(conv)},
                                  conv, "ré-avancer les patients décalés ?")
         rattrape = False
         for r in reponses:
@@ -1166,6 +1604,7 @@ class AgentRegulation(AgentSMA):
         if not rattrape:
             self.annoncer("  ✔ Transferts rétablis : aucun patient ne peut être avancé")
         self._relancer_attente(conv, self.maintenant + self.p.preparation_rattrapage_min * MIN)
+        self.reoptimiser(conv, "fin de panne")
 
     def _reavancer(self, conv) -> bool:
         """Rattrapage ENTRE créneaux / salles : un patient fortement décalé (ex. déplacé l'après-midi chez un
@@ -1179,6 +1618,7 @@ class AgentRegulation(AgentSMA):
         for it in candidats:
             reponses = self.diffuser(AgentSalle, "CFP", "cfp_replacement",
                                      {"intervention": it, "apres": apres, "fenetres": self._fenetres(conv),
+                                      "agendas": self._agendas(conv),
                                       "chirurgiens": self.competents(it), "jour_reference": it.debut_initial.date()},
                                      conv, f"avancer P{it.pid} (actuellement {hm(it.debut)}) ?")
             # rattrapage accepté seulement s'il n'évince personne et si le gain (minutes x priorité) dépasse son coût
@@ -1223,6 +1663,7 @@ class AgentRegulation(AgentSMA):
             debut = apres or self.maintenant + self.p.preparation_rattrapage_min * MIN
             reponses = self.diffuser(AgentSalle, "CFP", "cfp_replacement",
                                      {"intervention": it, "apres": debut, "fenetres": self._fenetres(conv),
+                                      "agendas": self._agendas(conv),
                                       "chirurgiens": self.competents(it), "jour_reference": jour_ref},
                                      conv, f"replacer P{it.pid} ({it.patient.duree_bloc} min)")
             props = [(r.emetteur, pl) for r in reponses if r.performatif == "PROPOSE" for pl in r.contenu["plans"]]
@@ -1251,7 +1692,9 @@ class AgentRegulation(AgentSMA):
                 and self._dernier_matin != t.date():
             self._dernier_matin = t.date()
             self.annoncer(f"\n[{jour_txt(t.date())} {hm(t)}] Relance matinale de la liste d'attente")
-            self._relancer_attente(self.model.nouvelle_conversation("ATT"), t)
+            conv = self.model.nouvelle_conversation("ATT")
+            self._relancer_attente(conv, t)
+            self.reoptimiser(conv, "relance matinale")
 
 
 # =============================================================================
@@ -1284,6 +1727,8 @@ class BlocOperatoire(mesa.Model):
         if chirurgien_garde not in instance1.chirurgiens:
             chirurgien_garde = None
 
+        self.traces_locales: list[dict] = []          # cas B : une trace par optimisation locale d'une salle
+        self.problemes_locaux: list = []              # problèmes locaux capturés (script de comparaison)
         AgentTriage(self, self.specialites, chirurgien_garde)
         self.regulation = AgentRegulation(self, self.specialites)
         self.logistique = AgentLogistique(self, batiment)
@@ -1308,11 +1753,17 @@ class BlocOperatoire(mesa.Model):
                     fid -= 1
             fenetres[sid] += urg
         self.salles = {sid: AgentSalle(self, sid, s.nom, fenetres[sid]) for sid, s in instance1.salles.items()}
+        self.garde = AgentGarde(self, self.jours_planning)
+        from optimisation_sma import AgentOptimisation          # import tardif (optimisation_sma importe ce module)
+        self.optimisation = AgentOptimisation(self)
+        self.urgences_recues: set[int] = set()          # invariant : chacune doit être programmée
         self.chirurgiens = {}
         for cid, c in instance1.chirurgiens.items():
             dispo = instance1.disponibilites_chirurgiens.get(cid)
             jours = {instance1.creneaux[k].jour for k in dispo} if dispo else set(self.jours_planning)
             self.chirurgiens[cid] = AgentChirurgien(self, cid, c.nom, jours)
+        self.salles = _SallesAvecGarde(self.salles, self.garde)
+        self.chirurgiens = _ChirurgiensAvecGarde(self.chirurgiens, self.garde)
 
         # Ordonnancement initial dans chaque vacation : priorité décroissante puis plus long d'abord
         par_vac: dict[int, list[Patient]] = {}
@@ -1419,6 +1870,8 @@ class BlocOperatoire(mesa.Model):
             print(texte)
 
     def nom_chir(self, cid) -> str:
+        if cid == ID_EQUIPE_GARDE:
+            return "Garde"
         return self.chirurgiens[cid].nom_affiche if cid in self.chirurgiens else f"chir {cid}"
 
     def _declencher(self, evt: Evenement):
@@ -1426,6 +1879,7 @@ class BlocOperatoire(mesa.Model):
         if isinstance(evt, ArriveeUrgence):
             conv = self.nouvelle_conversation("URG")
             p = evt.patient
+            self.urgences_recues.add(p.id)
             self.annoncer(f"\n[{jour_txt(t.date())} {hm(t)}] {conv} — URGENCE : P{p.id} {p.nom} ({p.specialite}, "
                           f"{p.diagnostic or 'diagnostic n.c.'}, {p.duree_bloc} min, "
                           f"{'ambulatoire' if p.ambulatoire else 'hospitalisé'})")
@@ -1465,6 +1919,13 @@ class BlocOperatoire(mesa.Model):
                     print(f"   │ {hm(it.debut)}-{hm(it.fin)}  P{it.pid:<5} {self.nom_chir(it.chirurgien_id):<7} "
                           f"{it.patient.duree_bloc:>3} min  {'amb. ' if it.patient.ambulatoire else 'hosp.'} "
                           f"prio {it.patient.priorite}  {marque}")
+        garde = self.garde.du_jour(jour)
+        if garde:
+            print(f"  Planning de garde (à partir de {hm(self.parametres.garde_soir)} les jours de programme)")
+            for it in garde:
+                d = self.regulation.urgences_info.get(it.pid)
+                print(f"   │ {hm(it.debut)}-{hm(it.fin)}  P{it.pid:<5} {'Garde':<7} {it.patient.duree_bloc:>3} min  "
+                      f"{'amb. ' if it.patient.ambulatoire else 'hosp.'} ★ URGENCE {d[2].nom if d else ''}")
         lits, places = self.hebergement.occupation()
         h = self.instance2.hebergement
         print(f"  Hébergement : {lits.get(jour, 0)}/{h.cap_lits} lits (+{h.reserve_lits} réserve), "
@@ -1478,12 +1939,24 @@ class BlocOperatoire(mesa.Model):
         perf: dict[str, int] = {}
         for m in self.journal:
             perf[m.performatif] = perf.get(m.performatif, 0) + 1
+        niveaux: dict[int, int] = {}
+        for d in urg:
+            niveaux[d["niveau"]] = niveaux.get(d["niveau"], 0) + 1
         return {
             "evenements": len(self.evenements),
+            "urgences_recues": len(self.urgences_recues),
+            "urgences_programmees": len(urg),
+            "urgences_non_programmees": len(self.urgences_non_programmees()),     # invariant : doit valoir 0
+            # anciens noms, conservés pour l'interface (vues/urgences.py) et demo_sma_urgences.py
             "urgences_inserees": len(urg),
+            "urgences_refusees": 0,                                                  # plus aucun refus / transfert
             "urgences_dans_delai": sum(d["dans_delai"] for d in urg),
-            "urgences_refusees": sum(d["type"] == "urgence_refusee" for d in self.regulation.decisions),
+            "urgences_hors_delai": sum(not d["dans_delai"] for d in urg),
+            "urgences_escaladees": sum(d["niveau"] > 0 for d in urg),
+            "urgences_au_planning_de_garde": sum(d["garde"] for d in urg),
+            "urgences_par_niveau": dict(sorted(niveaux.items())),
             "attente_moyenne_urgence_min": round(sum(d["attente_min"] for d in urg) / len(urg), 1) if urg else 0.0,
+            "attente_max_urgence_min": round(max((d["attente_min"] for d in urg), default=0.0)),
             "patients_decales": sum(i.debut > i.debut_initial for i in meme_jour),
             "patients_avances": sum(i.debut < i.debut_initial for i in meme_jour),
             "minutes_de_decalage_cumulees": round(sum(abs(minutes(i.debut - i.debut_initial)) for i in meme_jour)),
@@ -1494,22 +1967,75 @@ class BlocOperatoire(mesa.Model):
             "alertes": list(self.regulation.alertes),
             "messages_echanges": len(self.journal),
             "messages_par_performatif": perf,
+            # --- architecture hybride ---
+            "score_programme": round(self.score_programme()["total"]),
+            "optimisations_locales": len(self.traces_locales),
+            "ameliorations_locales": sum(t["ameliore"] for t in self.traces_locales),
+            "reoptimisations_globales": len(self.optimisation.historique),
+            "reoptimisations_appliquees": sum(t.applique for t in self.optimisation.historique),
+            "gain_optimisation_globale": round(sum(t.cout_actuel - t.cout_optimise for t in self.optimisation.historique
+                                                   if t.applique)),
+            "temps_optimisation_s": round(sum(t.temps_s for t in self.optimisation.historique)
+                                          + sum(t["temps_s"] for t in self.traces_locales), 2),
         }
+
+    def score_programme(self) -> dict[str, float]:
+        """Score GLOBAL du planning (à minimiser), indépendant de l'heure : il compte tous les patients, passés
+        compris, avec les poids du SMA et de la fonction N2 commune. Sert à comparer les configurations."""
+        P, w = self.parametres, POIDS_N2
+        det = {"decalages": 0.0, "reports": 0.0, "changements_chirurgien": 0.0, "liste_attente": 0.0,
+               "attente_urgences": 0.0, "lits_places": 0.0}
+        for it in self.interventions():
+            if it.urgence:
+                continue
+            prio, jours = it.patient.priorite, (it.debut.date() - it.debut_initial.date()).days
+            if jours == 0:
+                d = minutes(it.debut - it.debut_initial)
+                det["decalages"] += max(0.0, d) * prio * P.c_decalage_min + max(0.0, -d) * prio * P.c_avance_min
+            else:
+                det["reports"] += P.c_deprogrammation * prio + P.c_report_jour * prio * abs(jours)
+            if it.chirurgien_id != it.chirurgien_initial:
+                det["changements_chirurgien"] += P.c_changement_chirurgien
+        for it, _ in self.regulation.liste_attente:
+            det["liste_attente"] += P.c_deprogrammation * it.patient.priorite + w.non_place
+        for d in self.regulation.decisions:
+            if d["type"] == "urgence":
+                det["attente_urgences"] += d["attente_min"] * GRAVITES[d["gravite"]].poids_attente
+        lits, places = self.hebergement.occupation()
+        h = self.instance2.hebergement
+        det["lits_places"] = (sum(max(0, o - h.cap_lits) for o in lits.values()) * w.lit
+                              + sum(max(0, o - h.cap_places) for o in places.values()) * w.place)
+        det["total"] = sum(det.values())
+        return det
+
+    def urgences_non_programmees(self) -> list[int]:
+        programmees = {i.pid for i in self.interventions() if i.urgence} | set(self.garde.interventions)
+        return sorted(self.urgences_recues - programmees)
 
     def afficher_bilan(self):
         b = self.bilan()
         print(f"\n  {'═' * 92}\n  BILAN DU SYSTÈME MULTI-AGENT\n  {'═' * 92}")
         print(f"  Événements traités                 : {b['evenements']}")
-        print(f"  Urgences insérées                  : {b['urgences_inserees']} (dont {b['urgences_dans_delai']} dans le "
-              f"délai, {b['urgences_refusees']} refusée(s)), attente moyenne {b['attente_moyenne_urgence_min']} min")
+        print(f"  Urgences reçues / programmées      : {b['urgences_recues']} / {b['urgences_programmees']}"
+              f"  (non programmées : {b['urgences_non_programmees']} — doit valoir 0)")
+        print(f"  ... dans le délai / hors délai     : {b['urgences_dans_delai']} / {b['urgences_hors_delai']}, "
+              f"attente moyenne {b['attente_moyenne_urgence_min']} min (max {b['attente_max_urgence_min']} min)")
+        print(f"  ... escaladées / planning de garde : {b['urgences_escaladees']} / {b['urgences_au_planning_de_garde']}"
+              f"  (par niveau : {b['urgences_par_niveau']})")
         print(f"  Patients décalés / avancés         : {b['patients_decales']} / {b['patients_avances']} "
               f"({b['minutes_de_decalage_cumulees']} min cumulées)")
         print(f"  Patients reportés à un autre jour  : {b['patients_reportes_autre_jour']}")
         print(f"  Patients repris par un confrère    : {b['patients_repris_par_un_confrere']}")
         print(f"  Patients en liste d'attente        : {b['patients_en_liste_attente']}")
         print(f"  Contrôle de cohérence              : {'OK' if not b['erreurs_de_coherence'] else str(b['erreurs_de_coherence']) + ' erreur(s)'}"
-              f" (salles, chirurgiens, heures du planning, agendas, séjours)")
+              f" (salles, chirurgiens, heures du planning, agendas, séjours, urgences programmées)")
         print(f"  Messages échangés                  : {b['messages_echanges']}  {b['messages_par_performatif']}")
+        print(f"  Optimisation locale (Salles, {self.parametres.methode_locale}) : {b['ameliorations_locales']} plan(s) "
+              f"amélioré(s) sur {b['optimisations_locales']}")
+        print(f"  Optimisation globale ({self.parametres.optimisation_globale}) : {b['reoptimisations_appliquees']} plan(s) "
+              f"appliqué(s) sur {b['reoptimisations_globales']}, gain {b['gain_optimisation_globale']:,}")
+        print(f"  Score global du planning           : {b['score_programme']:,} (à minimiser)   "
+              f"temps d'optimisation {b['temps_optimisation_s']} s")
         for a in b["alertes"]:
             print(f"  ⚠ {a}")
 
@@ -1533,8 +2059,17 @@ class BlocOperatoire(mesa.Model):
         for cid, ag in self.chirurgiens.items():
             if {i.pid: (i.debut, i.fin, i.salle_id) for i in its if i.chirurgien_id == cid} != ag.agenda:
                 erreurs.append(f"agenda de {ag.nom_affiche} désynchronisé")
-        if {i.pid: i.debut.date() for i in its} != {pid: j for pid, (_, j) in self.hebergement.sejours.items()}:
+        garde = sorted(self.garde.interventions.values(), key=lambda i: i.debut)
+        for a, b in zip(garde, garde[1:]):
+            if b.debut < a.fin:
+                erreurs.append(f"salle de garde : P{a.pid} et P{b.pid} se chevauchent")
+        for i in garde:
+            if not self.garde.en_garde(i.debut, i.gravite):
+                erreurs.append(f"P{i.pid} programmé en garde hors des heures de garde")
+        if {i.pid: i.debut.date() for i in its + garde} != {pid: j for pid, (_, j) in self.hebergement.sejours.items()}:
             erreurs.append("séjours de l'hébergement désynchronisés")
+        for pid in self.urgences_non_programmees():
+            erreurs.append(f"urgence P{pid} reçue mais NON programmée")
         return erreurs
 
     def exporter_journal(self, chemin: Union[str, Path]) -> Path:
@@ -1564,9 +2099,9 @@ class BlocOperatoire(mesa.Model):
         from matplotlib.patches import Patch
 
         palette = ["#2a78d6", "#1baf7a", "#eb6834", "#8a5cd1", "#c9a227", "#3aa6b9", "#d1497a", "#6b7a8f"]
-        salles = list(self.salles.values())
+        salles = list(self.salles.values()) + ([self.garde] if self.garde.du_jour(jour) else [])
         du_jour = sorted({it.chirurgien_id for s in salles for it in s.du_jour(jour)}
-                         | {f.chirurgien_id for s in salles for f in s.creneaux.values()
+                         | {f.chirurgien_id for s in salles for f in getattr(s, "creneaux", {}).values()
                             if f.jour == jour and not f.urgence})
         couleur = {cid: palette[k % len(palette)] for k, cid in enumerate(du_jour)}   # couleurs des praticiens du jour
         fig, ax = plt.subplots(figsize=(13, 1.1 * len(salles) + 1.6))
@@ -1576,7 +2111,7 @@ class BlocOperatoire(mesa.Model):
             ax.text(x(panne[0]) + 0.05, -0.6, "monte-lit en panne", fontsize=8, color="#555")
         for k, s in enumerate(salles):
             y = len(salles) - 1 - k
-            for f in s.creneaux.values():
+            for f in getattr(s, "creneaux", {}).values():
                 if f.jour == jour:
                     ax.barh(y, minutes(f.fin - f.debut) / 60, left=x(f.debut), height=0.86, color="none",
                             edgecolor="#999" if f.urgence else couleur[f.chirurgien_id], linestyle="--", lw=1)
@@ -1588,16 +2123,18 @@ class BlocOperatoire(mesa.Model):
                         fontsize=7, color="white")
         ax.set_yticks(range(len(salles)))
         ax.set_yticklabels([s.nom_affiche for s in reversed(salles)])
-        ax.set_xlim(7.5, 17.5)
-        ax.set_xticks(range(8, 18))
-        ax.set_xticklabels([f"{h}h" for h in range(8, 18)])
+        fin_h = max([17.5] + [x(it.fin) + 0.25 for it in self.garde.du_jour(jour)])
+        ax.set_xlim(7.5, min(24.0, fin_h))
+        ax.set_xticks(range(8, int(min(24.0, fin_h)) + 1))
+        ax.set_xticklabels([f"{h}h" for h in range(8, int(min(24.0, fin_h)) + 1)])
         for cote in ("top", "right", "left"):
             ax.spines[cote].set_visible(False)
         ax.grid(axis="x", color="#e4e3df")
         ax.set_axisbelow(True)
         ax.set_title(titre or jour_txt(jour), loc="left", fontsize=11)
-        chirs = sorted({it.chirurgien_id for s in salles for it in s.du_jour(jour)}
-                       | {f.chirurgien_id for s in salles for f in s.creneaux.values() if f.jour == jour and not f.urgence})
+        chirs = sorted({it.chirurgien_id for s in salles for it in s.du_jour(jour) if not it.urgence}
+                       | {f.chirurgien_id for s in salles for f in getattr(s, "creneaux", {}).values()
+                          if f.jour == jour and not f.urgence})
         ax.legend(handles=[Patch(color=couleur[c], label=self.nom_chir(c)) for c in chirs]
                   + [Patch(color="#d62728", label="urgence"),
                      Patch(facecolor="white", edgecolor="#555", hatch="//", label="ambulatoire")],

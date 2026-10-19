@@ -135,19 +135,22 @@ def _urgence(sim: S.Simulation) -> None:
                           "Prise en charge dans le délai" if d["dans_delai"] else "Prise en charge HORS DÉLAI",
                           patient=code, heure_metier=maintenant,
                           detail=(f"{sim2.modele.salles[d['salle']].nom_affiche}, {C.jour_long(d['debut'].date())} "
-                                  f"{d['debut']:%H:%M}, Dr {S.code_chirurgien(d['chirurgien'])} · attente "
+                                  f"{d['debut']:%H:%M}, {S.nom_chirurgien(d['chirurgien'])} · attente "
                                   f"{d['attente_min']:.0f} min (délai maximal {delai} min)"),
-                          motif=f"Meilleure des {d['nb_propositions']} propositions des salles (coût minimal)")
+                          motif=("Programme sans place : confiée au planning de garde (équipe de garde prévenue)"
+                                 if d.get("garde") else
+                                 f"Meilleure des {d['nb_propositions']} propositions des salles (coût minimal)"))
         else:
             DB.historiser(C.SYSTEME, "automatique", "Urgence", "Aucun créneau dans le délai", patient=code,
                           heure_metier=maintenant, detail=f"délai maximal {delai} min",
                           motif="Transfert vers un autre établissement à décider par le médecin régulateur")
         if d and d["type"] == "urgence":
             st.session_state["flash_urgence"] = ("ok" if d["dans_delai"] else "attention", (
-                f"URG-{numero:03d} : programmé(e) avec Dr {S.code_chirurgien(d['chirurgien'])} en "
+                f"URG-{numero:03d} : programmé(e) avec {S.nom_chirurgien(d['chirurgien'])} en "
                 f"{sim2.modele.salles[d['salle']].nom_affiche} à {d['debut']:%H:%M} le {C.jour_long(d['debut'].date())} "
-                f"(attente {d['attente_min']:.0f} min, {'dans' if d['dans_delai'] else 'HORS'} délai, "
-                f"{d['nb_propositions']} propositions comparées)."))
+                f"(attente {d['attente_min']:.0f} min, {'dans' if d['dans_delai'] else 'HORS'} délai"
+                + (", programme sans place : planning de garde)." if d.get("garde")
+                   else f", {d['nb_propositions']} propositions comparées).")))
         else:
             st.session_state["flash_urgence"] = ("attention", f"URG-{numero:03d} : aucun créneau du planning ne convient.")
         st.rerun()
@@ -170,6 +173,8 @@ def _suivi() -> None:
             etat = C.badge("aucun créneau dans le délai", "rouge")
         else:
             etat = C.badge("dans le délai" if pec["dans_delai"] else "HORS DÉLAI", "vert" if pec["dans_delai"] else "rouge")
+            if pec.get("garde"):
+                etat += " " + C.badge("planning de garde", "ambre")
         with st.container(border=True):
             st.markdown(f"**{u['code']}** · {S.LIBELLES_GRAVITE.get(u['gravite'], u['gravite'])} · déclarée le "
                         f"{C.jour_long(u['heure'].date()).lower()} à {u['heure']:%H:%M} par {u['auteur']} &nbsp;{etat}",
