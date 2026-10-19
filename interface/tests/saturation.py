@@ -78,7 +78,7 @@ class Resultat:
 
 # ---------------------------------------------------------------------------------------------------- patients
 def _sejours_reels():
-    df = ml._utilisation().charger_et_preparer(str(chemins.CSV_HISTORIQUE))
+    df = ml.PREP.charger_et_preparer(chemins.CSV_HISTORIQUE)
     return df[["duree_bloc_heures", "type_capacite", "duree_avant_operation", "duree_apres_operation"]].to_dict("records")
 
 

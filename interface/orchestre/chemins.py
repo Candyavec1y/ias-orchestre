@@ -17,7 +17,6 @@ from pathlib import Path
 RACINE = Path(__file__).resolve().parents[2]
 DOSSIER_INTERFACE = RACINE / "interface"
 DOSSIER_DONNEES = DOSSIER_INTERFACE / "donnees"          # base locale, clés, caches (ignoré par git)
-DOSSIER_MODELES_ML = RACINE / "machine_learning" / "outputs" / "models_rapide"
 CSV_HISTORIQUE = RACINE / "machine_learning" / "donnees_hospitalieres.csv"
 
 _DOSSIERS = ["commun", "planning_vacations", "metaheuristiques", "sma", "machine_learning"]
@@ -33,17 +32,6 @@ for _nom in reversed(_DOSSIERS):
 import structures_communes  # noqa: E402,F401
 
 DOSSIER_DONNEES.mkdir(parents=True, exist_ok=True)
-
-
-def importer_fichier(nom_module: str, chemin: Path):
-    """Importe un fichier dont le nom n'est pas un identifiant Python (ex. recuit_simulé.py)."""
-    if nom_module in sys.modules:
-        return sys.modules[nom_module]
-    spec = importlib.util.spec_from_file_location(nom_module, chemin)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[nom_module] = module
-    spec.loader.exec_module(module)
-    return module
 
 
 def module(nom: str):

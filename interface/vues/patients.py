@@ -136,7 +136,7 @@ def _detail(f: dict, sim) -> None:
             f"Prise en charge : {'amb.' if p.get('ambulatoire') else 'hospit.'} → **{'ambulatoire' if v.get('ambulatoire') else 'hospitalisation'}**  \n"
             f"Durée : {p.get('duree_bloc_min')} min → **{v.get('duree_bloc_min')} min**  \n"
             f"Nuits avant/après : {p.get('nuits_pre_op')}/{p.get('nuits_post_op')} → **{v.get('nuits_pre_op')}/{v.get('nuits_post_op')}**  \n"
-            f"Urgence : {p.get('score_urgence')}/10 → **priorité {v.get('priorite')}**"
+            f"Règle d'urgence : {p.get('score_urgence')}/10 → **priorité {v.get('priorite')}**"
             + ("  \n" + C.badge("valeurs corrigées par le chirurgien", "ambre") if v.get("modifie_par_chirurgien") else ""),
             unsafe_allow_html=True)
 

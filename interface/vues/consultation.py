@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Onglet CONSULTATION : saisie des données d'entrée du modèle de machine learning, prédictions
-(capacité, durée opératoire, nuits pré/post-opératoires, score d'urgence), validation par le
+Onglet CONSULTATION : saisie des données d'entrée du modèle de machine learning, prédictions (capacité, durée
+opératoire, nuits pré/post-opératoires) et priorité proposée par la règle d'urgence du projet, validation par le
 chirurgien, puis insertion dans le programme par le système multi-agent (propositions de créneaux).
 """
 from __future__ import annotations
@@ -158,7 +158,10 @@ def _etape_validation() -> None:
               f"± {met['duree_bloc_heures']['mae'] * 60:.0f} min (erreur moyenne)" if met else None, delta_color="off", delta_arrow="off")
     c3.metric("Nuits avant / après", "—" if pred.ambulatoire else f"{pred.nuits_pre_op} / {pred.nuits_post_op}",
               f"± {met['nuits_apres']['mae']:.1f} nuit après" if met else None, delta_color="off", delta_arrow="off")
-    c4.metric("Score d'urgence", f"{pred.score_urgence} / 10", ml.LIBELLES_PRIORITE[pred.priorite], delta_color="off", delta_arrow="off")
+    c4.metric("Priorité proposée", ml.LIBELLES_PRIORITE[pred.priorite], f"règle du projet : {pred.score_urgence} / 10",
+              delta_color="off", delta_arrow="off",
+              help="Calculée par une règle du projet à partir des codes CIM-10 et CCAM (traumatologie, infections...) ; "
+                   "ce n'est pas un score d'urgence validé cliniquement. Validez ou corrigez la priorité ci-dessous.")
     if met:
         st.caption(f"Qualité mesurée sur les 20 % de séjours jamais vus à l'entraînement ({met['n_test']:,} séjours) : "
                    f"capacité juste à {met['capacite']['accuracy']:.0%}, durée de bloc R² = "
@@ -166,8 +169,8 @@ def _etape_validation() -> None:
                    f"{met['apres_erreur_le_1j_pct']:.0f} % des cas. Ce sont des **suggestions** : "
                    f"vous gardez la décision.".replace(",", " "))
     if pred.score_urgence >= 8:
-        st.error("Score d'urgence élevé (≥ 8) : si le patient doit être opéré dans les 24 h, déclarez-le "
-                 "plutôt dans l'onglet **Urgences** (gravité, délai d'incision, insertion immédiate).")
+        st.error("La règle d'urgence du projet donne un score élevé (≥ 8) : si le patient doit être opéré dans les "
+                 "24 h, déclarez-le plutôt dans l'onglet **Urgences** (gravité, délai d'incision, insertion immédiate).")
 
     st.markdown("#### Valeurs retenues pour la programmation")
     with st.form("validation"):
@@ -177,7 +180,8 @@ def _etape_validation() -> None:
         duree = c2.number_input("Durée au bloc (min)", 15, 600, pred.duree_bloc_min, step=5)
         pre = c3.number_input("Nuits avant", 0, 10, pred.nuits_pre_op)
         post = c4.number_input("Nuits après", 0, 30, pred.nuits_post_op)
-        prio = c5.selectbox("Priorité clinique", [1, 2, 3, 4], index=pred.priorite - 1, format_func=ml.LIBELLES_PRIORITE.get)
+        prio = c5.selectbox("Priorité clinique", [1, 2, 3, 4], index=pred.priorite - 1, format_func=ml.LIBELLES_PRIORITE.get,
+                            help="Proposée par la règle d'urgence du projet : à valider ou corriger par le médecin.")
         b1, b2 = st.columns(2)
         retour = b1.form_submit_button("Modifier la saisie", width="stretch")
         chercher = b2.form_submit_button("Rechercher des créneaux", type="primary", width="stretch")

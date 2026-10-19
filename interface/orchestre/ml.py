@@ -2,11 +2,12 @@
 """
 Prédictions de consultation (machine_learning/).
 
-Réutilise les modèles de PRODUCTION du dépôt (outputs/models_rapide/*.joblib, HistGradientBoosting
-entraînés par modele_prediction_rapide.py) et la fonction predire_patient() de utilisation_modèle.py.
-La qualité affichée à l'utilisateur provient de la validation 80 % / 20 % (même protocole que
-utilisation_modèle.valider_sur_jeu_de_test) ; seules des MÉTRIQUES AGRÉGÉES sont conservées,
-jamais de ligne individuelle du jeu de données historique.
+Réutilise les modèles de PRODUCTION du dépôt (outputs/models_rapide/*.joblib, HistGradientBoosting entraînés par
+modele_prediction_rapide.py), la fonction predire_patient() de utilisation_modele.py et la préparation commune
+(machine_learning/preparation.py). Le score d'urgence n'est pas prédit : il est calculé par la RÈGLE du projet
+(preparation.regle_urgence) ; ce n'est pas un score validé cliniquement et le médecin valide ou corrige la
+priorité qui en découle. La qualité affichée provient de l'évaluation commune (split unique 80 / 20,
+preparation.evaluer) ; seules des MÉTRIQUES AGRÉGÉES sont conservées, jamais de ligne individuelle.
 """
 from __future__ import annotations
 
@@ -23,11 +24,9 @@ from . import chemins
 
 warnings.filterwarnings("ignore")
 
-CAT_COLS = ["type_intervention", "cim_diag_pr", "ccam_1", "sexe", "praticien", "anesth_type", "anesth_loco_reg"]
-NUM_COLS = ["age_annees", "annee", "mois", "jour_semaine"]
-FICHIERS = {"clf_capacite": "clf_type_capacite.joblib", "reg_bloc": "reg_duree_bloc.joblib",
-            "reg_avant": "reg_duree_avant.joblib", "reg_apres": "reg_duree_apres.joblib",
-            "reg_urgence": "reg_urgence.joblib"}
+import preparation as PREP  # noqa: E402  (machine_learning/ est dans sys.path, voir chemins)
+
+CAT_COLS, NUM_COLS = PREP.CAT_COLS, PREP.NUM_COLS
 CACHE_METRIQUES = chemins.DOSSIER_DONNEES / "metriques_ml.json"
 
 LIBELLES_SEXE = {"1": "Homme (1)", "2": "Femme (2)"}         # convention PMSI du fichier source
@@ -38,14 +37,12 @@ RE_CCAM = re.compile(r"^[A-Z]{4}[0-9]{3}$")
 
 
 def _utilisation():
-    return chemins.importer_fichier("utilisation_modele",
-                                    chemins.RACINE / "machine_learning" / "utilisation_modèle.py")
+    return chemins.module("utilisation_modele")
 
 
 @lru_cache(maxsize=1)
 def modeles() -> dict:
-    import joblib
-    return {k: joblib.load(chemins.DOSSIER_MODELES_ML / f) for k, f in FICHIERS.items()}
+    return _utilisation().charger_modeles_production()
 
 
 @lru_cache(maxsize=1)
@@ -93,7 +90,7 @@ def avec_libelle(code: str, nomenclature: str) -> str:
 
 # ---------------------------------------------------------------- prédiction
 def priorite_depuis_score(score: int) -> int:
-    """Score d'urgence 1-10 du modèle -> priorité clinique 1-4 des structures communes."""
+    """Score d'urgence 1-10 (règle du projet) -> priorité 1-4 proposée au médecin (qui la valide ou la corrige)."""
     return 1 if score <= 2 else 2 if score <= 4 else 3 if score <= 7 else 4
 
 
@@ -149,7 +146,7 @@ def predire(entrees: dict) -> Prediction:
     voc = vocabulaires()
     hors = [c for c in CAT_COLS if entrees[c] != INCONNU and entrees[c] not in voc[c]]
     amb = brut["type_capacite_predit"] == "ambulatoire"
-    score = int(brut["urgence_predite"])
+    score = int(brut["score_urgence"])                       # règle, pas un modèle (D8)
     return Prediction(
         ambulatoire=amb, proba_ambulatoire=proba,
         duree_bloc_min=max(15, int(round(brut["duree_bloc_heures_predit"] * 60 / 5) * 5)),
@@ -160,55 +157,14 @@ def predire(entrees: dict) -> Prediction:
 
 # ---------------------------------------------------------------- validation 80/20
 def metriques(recalculer: bool = False) -> Optional[dict]:
-    """Métriques sur les 20 % de test (jamais vus). Calculées une fois puis mises en cache (agrégats)."""
+    """Métriques du jeu de test (évaluation commune preparation.evaluer). Calculées une fois puis mises en cache
+    (agrégats seulement) ; recalculées si le protocole d'évaluation a changé."""
     if CACHE_METRIQUES.exists() and not recalculer:
-        return json.loads(CACHE_METRIQUES.read_text(encoding="utf-8"))
+        m = json.loads(CACHE_METRIQUES.read_text(encoding="utf-8"))
+        if m.get("version") == PREP.VERSION_EVALUATION:
+            return m
     if not chemins.CSV_HISTORIQUE.exists():
         return None
-    import numpy as np
-    from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
-    from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, mean_absolute_error, r2_score
-    from sklearn.model_selection import train_test_split
-
-    U = _utilisation()
-    df = U.charger_et_preparer(str(chemins.CSV_HISTORIQUE))
-    i_tr, i_te = train_test_split(df.index, test_size=0.2, random_state=42, stratify=df["type_capacite"])
-    tr, te = df.loc[i_tr], df.loc[i_te]
-    Xtr = U._to_category(tr[CAT_COLS + NUM_COLS])
-    Xte = U._to_category(te[CAT_COLS + NUM_COLS], reference=Xtr)
-    cat = [c in CAT_COLS for c in CAT_COLS + NUM_COLS]
-    hp = dict(max_depth=6, learning_rate=0.08, max_iter=200, categorical_features=cat, early_stopping=True,
-              random_state=42)
-
-    clf = HistGradientBoostingClassifier(**hp).fit(Xtr, tr["type_capacite"])
-    cap = clf.predict(Xte)
-
-    def reg(Xa, y):
-        return HistGradientBoostingRegressor(**hp).fit(Xa, y)
-
-    bloc = np.clip(reg(Xtr, tr["duree_bloc_heures"]).predict(Xte), 0, None)
-    urg = np.clip(np.round(reg(Xtr, tr["urgence"]).predict(Xte)), 1, 10)
-    lit = tr[tr["type_capacite"] == "lit_classique"]
-    Xlit = U._to_category(lit[CAT_COLS + NUM_COLS])
-    avant = np.where(cap == "lit_classique", np.clip(reg(Xlit, lit["duree_avant_operation"]).predict(Xte), 0, None), 0)
-    apres = np.where(cap == "lit_classique", np.clip(reg(Xlit, lit["duree_apres_operation"]).predict(Xte), 0, None), 0)
-
-    def r(y, p):
-        return {"mae": float(mean_absolute_error(y, p)), "r2": float(r2_score(y, p))}
-
-    err_apres = np.abs(te["duree_apres_operation"].values - apres)
-    res = {
-        "n_total": int(len(df)), "n_train": int(len(tr)), "n_test": int(len(te)),
-        "capacite": {"accuracy": float(accuracy_score(te["type_capacite"], cap)),
-                     "f1_lit": float(f1_score(te["type_capacite"], cap, pos_label="lit_classique")),
-                     "confusion": confusion_matrix(te["type_capacite"], cap,
-                                                   labels=["ambulatoire", "lit_classique"]).tolist()},
-        "duree_bloc_heures": r(te["duree_bloc_heures"], bloc),
-        "nuits_avant": r(te["duree_avant_operation"], avant),
-        "nuits_apres": r(te["duree_apres_operation"], apres),
-        "urgence": r(te["urgence"], urg) | {"exact_pct": float((np.abs(te["urgence"].values - urg) == 0).mean() * 100)},
-        "apres_erreur_le_1j_pct": float((err_apres <= 1).mean() * 100),
-        "apres_erreur_le_2j_pct": float((err_apres <= 2).mean() * 100),
-    }
-    CACHE_METRIQUES.write_text(json.dumps(res, indent=2), encoding="utf-8")
-    return res
+    m = PREP.evaluer(PREP.charger_et_preparer(chemins.CSV_HISTORIQUE))
+    CACHE_METRIQUES.write_text(json.dumps(m, indent=2), encoding="utf-8")
+    return m
