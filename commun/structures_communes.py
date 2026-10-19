@@ -45,8 +45,9 @@ Choix d'uniformisation (v2)
   * Créneaux de 120 min et marge de 10 % sur chaque vacation. Les capacités d'hébergement par défaut
     (14 lits dont 2 de réserve, 10 places ambulatoires / jour) ne concernent QUE l'instance d'étude
     du niveau 1 ; l'application et le planning v28 ont leurs propres capacités (voir PARAMÈTRES).
-  * Occupation d'un lit : du jour (opération - nuits_pre_op) au jour
-    (opération + nuits_post_op) INCLUS (convention Tabou).
+  * Occupation d'un lit : NUITS du jour (opération - nuits_pre_op) à la veille de la sortie, à midi le jour
+    (opération + nuits_post_op) ; lit réutilisable le jour même après remise en état (jours_occupation,
+    intervalle_lit). Place ambulatoire : le jour de l'opération.
   * Horizon de plusieurs semaines (instance d'étude : une semaine + semaines de report ; interface :
     4 semaines optimisées, 52 connues du SMA). Le planning du bloc dépend de la PARITÉ de la
     semaine : cycle de 4 semaines  impaire_1 -> paire -> impaire_2 -> paire
@@ -72,7 +73,8 @@ if str(Path(__file__).resolve().parent) not in sys.path:      # commun/parametre
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from parametres import (  # noqa: E402  (valeurs partagées : définies une seule fois dans commun/parametres.py)
-    CHARGE_GENERATEUR, COUT_LIT_EN_TROP, DECALAGE_GRAINE_PRIORITES, GRAINE_ETUDE, GRAINE_PATIENTS,
+    CHARGE_GENERATEUR, COUT_LIT_EN_TROP, DECALAGE_GRAINE_PRIORITES, DUREE_REMISE_EN_ETAT_LIT_MIN, GRAINE_ETUDE,
+    GRAINE_PATIENTS, HEURE_SORTIE_HOSPITALISATION,
     LITS_INSTANCE_ETUDE_N1, LITS_SITE,
     PLACES_AMBULATOIRES_INSTANCE_ETUDE_N1, PLACES_AMBULATOIRES_SITE, RESERVE_LITS_INSTANCE_ETUDE_N1,
     RESERVE_LITS_SITE, TAUX_MARGE_VACATION,
@@ -652,16 +654,37 @@ def penalite_priorite_patient(patient: Patient, vacation_id: int, vacations: dic
     ) * retard_normalise
 
 
+def intervalle_lit(patient: Patient, jour_operation: date) -> tuple[datetime, datetime]:
+    """
+    CONVENTION D'OCCUPATION D'UN LIT (Q13), pour un patient hospitalisé :
+      * sortie conventionnelle à midi (HEURE_SORTIE_HOSPITALISATION) le dernier jour du séjour, J + nuits après ;
+      * un lit n'est attribué qu'après la sortie du patient précédent et la remise en état
+        (DUREE_REMISE_EN_ETAT_LIT_MIN) : l'admission compte à partir de midi + remise en état le premier jour
+        (J - nuits avant ; un patient opéré le matin de son admission attend son lit en salle de réveil).
+    Deux patients peuvent donc occuper SUCCESSIVEMENT le même lit le jour d'une sortie, jamais simultanément.
+    """
+    admission = datetime.combine(jour_operation - timedelta(days=patient.nuits_pre_op),
+                                 time(HEURE_SORTIE_HOSPITALISATION)) + timedelta(minutes=DUREE_REMISE_EN_ETAT_LIT_MIN)
+    sortie = datetime.combine(jour_operation + timedelta(days=patient.nuits_post_op), time(HEURE_SORTIE_HOSPITALISATION))
+    return admission, max(sortie, admission)
+
+
 def jours_occupation(patient: Patient, jour_operation: date) -> list[date]:
     """
-    Jours où le patient occupe une ressource :
-      ambulatoire -> [jour opératoire]            (place ambulatoire)
-      hospitalisé -> [op - pré ; op + post] inclus (lit)
+    Jours où le patient occupe une ressource, avec la convention commune (fonction UNIQUE utilisée par le niveau 2,
+    le SMA, les indicateurs, l'étude de saturation et le validateur) :
+      * hospitalisé -> NUITS passées dans un lit : du jour d'admission (J - nuits avant) à la veille de la sortie
+        (J + nuits après - 1). Le jour de sa sortie (midi), le patient n'est plus compté : avec les admissions après
+        midi + remise en état (intervalle_lit), compter les nuits suffit à garantir qu'un lit n'est jamais occupé par
+        deux patients à la fois. Un hospitalisé sans nuitée occupe un lit le jour de l'opération.
+      * ambulatoire -> [jour opératoire] : une place la journée entière (l'intervalle horaire de la journée attend
+        la validation des heures d'arrivée et de sortie par l'équipe, voir NETTOYAGE.md).
     """
     if patient.ambulatoire:
         return [jour_operation]
     debut = jour_operation - timedelta(days=patient.nuits_pre_op)
-    return [debut + timedelta(days=k) for k in range(patient.nuits_pre_op + patient.nuits_post_op + 1)]
+    nuits = patient.nuits_pre_op + patient.nuits_post_op
+    return [debut + timedelta(days=k) for k in range(max(1, nuits))]
 
 
 def calculer_occupation_par_jour(instance2: InstanceNiveau2, solution: SolutionPatients

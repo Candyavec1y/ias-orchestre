@@ -638,7 +638,7 @@ def afficher_affectation_patients(instance2: InstanceNiveau2, solution: Solution
             for pid in pids:
                 p = instance2.patients[pid]
                 sejour = ("ambulatoire" if p.ambulatoire else
-                          f"hospit. {p.nuits_pre_op + p.nuits_post_op + 1} j (veille: {'oui' if p.nuits_pre_op else 'non'})")
+                          f"hospit. {p.nuits_pre_op + p.nuits_post_op} nuit(s) (veille: {'oui' if p.nuits_pre_op else 'non'})")
                 print(f"        · P{p.id:03d} {p.nom:8s} | {p.duree_bloc:3d} min | prio {p.priorite} | {sejour}")
 
     non_places = solution.non_places()

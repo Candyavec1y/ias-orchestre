@@ -66,6 +66,12 @@ CHARGES_PAR_SEMAINE = ((0.85, 1.00), (0.60, 0.75), (0.35, 0.50), (0.10, 0.25))
 CHARGE_GENERATEUR = (0.90, 1.10)  # charge par défaut de generer_patients_etude (instance d'étude, scénarios du SMA)
 
 # =============================================================================
+# Convention d'occupation des lits (Q13)
+# =============================================================================
+HEURE_SORTIE_HOSPITALISATION = 12          # sortie conventionnelle à midi le dernier jour du séjour
+DUREE_REMISE_EN_ETAT_LIT_MIN = 60          # HYPOTHÈSE (aucune valeur fournie) : nettoyage avant une nouvelle admission
+
+# =============================================================================
 # Bloc et coûts partagés
 # =============================================================================
 TAUX_MARGE_VACATION = 0.10        # part de chaque vacation réservée aux aléas (capacité utile = 90 %)
