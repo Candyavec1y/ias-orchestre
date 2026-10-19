@@ -122,7 +122,7 @@ def gantt_jour(sim: S.Simulation, jour: date, noms: dict[int, str], moi: Optiona
 
 
 def occupation_hebergement(sim: S.Simulation) -> go.Figure:
-    lits, places = sim.modele.hebergement.occupation()
+    lits, places = sim.modele.hebergement.occupation_par_jour()
     h = sim.modele.instance2.hebergement
     jours = sim.jours_tendances()
     fig = go.Figure()

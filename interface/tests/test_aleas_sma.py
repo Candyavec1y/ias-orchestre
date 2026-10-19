@@ -11,7 +11,7 @@ from aide import MARDI, MATIN, coherent, indisponibilite_lits, panne, prolongati
 from orchestre import sma_service as S
 
 import sma_urgences as SMA
-from structures_communes import jours_occupation
+from structures_communes import periodes_occupation
 
 NEUF_HEURES = datetime.combine(MARDI, time(9))
 
@@ -66,7 +66,7 @@ JOUR = MARDI + timedelta(days=1)                                                
 
 def _hospitalises_du_jour(sim, jour):
     return {it.pid: it for it in sim.modele.interventions() if not it.urgence and not it.patient.ambulatoire
-            and jour in jours_occupation(it.patient, it.debut.date())}
+            and jour in periodes_occupation(it.patient, it.debut.date(), it.debut.time())}
 
 
 def test_la_capacite_reduite_n_est_jamais_depassee_par_la_programmation(prog):

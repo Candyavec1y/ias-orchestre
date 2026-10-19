@@ -46,8 +46,9 @@ Choix d'uniformisation (v2)
     (14 lits dont 2 de réserve, 10 places ambulatoires / jour) ne concernent QUE l'instance d'étude
     du niveau 1 ; l'application et le planning v28 ont leurs propres capacités (voir PARAMÈTRES).
   * Occupation d'un lit : NUITS du jour (opération - nuits_pre_op) à la veille de la sortie, à midi le jour
-    (opération + nuits_post_op) ; lit réutilisable le jour même après remise en état (jours_occupation,
-    intervalle_lit). Place ambulatoire : le jour de l'opération.
+    (opération + nuits_post_op) ; lit réutilisable le jour même après remise en état (periodes_occupation,
+    intervalle_lit). Place ambulatoire : la DEMI-JOURNÉE de l'opération (matin / après-midi), réutilisable
+    l'après-midi après remise en état (intervalle_place).
   * Horizon de plusieurs semaines (instance d'étude : une semaine + semaines de report ; interface :
     4 semaines optimisées, 52 connues du SMA). Le planning du bloc dépend de la PARITÉ de la
     semaine : cycle de 4 semaines  impaire_1 -> paire -> impaire_2 -> paire
@@ -67,14 +68,15 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal, NamedTuple, Optional
 
 if str(Path(__file__).resolve().parent) not in sys.path:      # commun/parametres.py
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from parametres import (  # noqa: E402  (valeurs partagées : définies une seule fois dans commun/parametres.py)
-    CHARGE_GENERATEUR, COUT_LIT_EN_TROP, DECALAGE_GRAINE_PRIORITES, DUREE_REMISE_EN_ETAT_LIT_MIN, GRAINE_ETUDE,
-    GRAINE_PATIENTS, HEURE_SORTIE_HOSPITALISATION,
+    CHARGE_GENERATEUR, COUT_LIT_EN_TROP, DECALAGE_GRAINE_PRIORITES, DUREE_REMISE_EN_ETAT_LIT_MIN,
+    DUREE_REMISE_EN_ETAT_PLACE_MIN, GRAINE_ETUDE, GRAINE_PATIENTS, HEURE_DEBUT_APRES_MIDI_AMBULATOIRE,
+    HEURE_SORTIE_HOSPITALISATION,
     LITS_INSTANCE_ETUDE_N1, LITS_SITE,
     PLACES_AMBULATOIRES_INSTANCE_ETUDE_N1, PLACES_AMBULATOIRES_SITE, RESERVE_LITS_INSTANCE_ETUDE_N1,
     RESERVE_LITS_SITE, TAUX_MARGE_VACATION,
@@ -669,37 +671,88 @@ def intervalle_lit(patient: Patient, jour_operation: date) -> tuple[datetime, da
     return admission, max(sortie, admission)
 
 
-def jours_occupation(patient: Patient, jour_operation: date) -> list[date]:
+class DemiJournee(NamedTuple):
+    """Période d'occupation d'une place ambulatoire : le matin ou l'après-midi d'un jour."""
+    jour: date
+    apres_midi: bool
+
+    def __format__(self, spec: str) -> str:
+        return f"{format(self.jour, spec)} {'après-midi' if self.apres_midi else 'matin'}"
+
+    def __str__(self) -> str:
+        return format(self, "%Y-%m-%d")
+
+
+def demi_journee(jour: date, heure: time) -> DemiJournee:
+    """Matin si l'intervention (ou la vacation) commence avant HEURE_DEBUT_APRES_MIDI_AMBULATOIRE, sinon après-midi."""
+    return DemiJournee(jour, heure >= time(HEURE_DEBUT_APRES_MIDI_AMBULATOIRE))
+
+
+def jour_de(periode) -> date:
+    """Jour d'une période d'occupation (nuit d'un lit ou demi-journée d'une place)."""
+    return periode.jour if isinstance(periode, DemiJournee) else periode
+
+
+def intervalle_place(periode: DemiJournee) -> tuple[datetime, datetime]:
     """
-    Jours où le patient occupe une ressource, avec la convention commune (fonction UNIQUE utilisée par le niveau 2,
-    le SMA, les indicateurs, l'étude de saturation et le validateur) :
-      * hospitalisé -> NUITS passées dans un lit : du jour d'admission (J - nuits avant) à la veille de la sortie
-        (J + nuits après - 1). Le jour de sa sortie (midi), le patient n'est plus compté : avec les admissions après
-        midi + remise en état (intervalle_lit), compter les nuits suffit à garantir qu'un lit n'est jamais occupé par
-        deux patients à la fois. Un hospitalisé sans nuitée occupe un lit le jour de l'opération.
-      * ambulatoire -> [jour opératoire] : une place la journée entière (l'intervalle horaire de la journée attend
-        la validation des heures d'arrivée et de sortie par l'équipe, voir NETTOYAGE.md).
+    CONVENTION D'OCCUPATION D'UNE PLACE AMBULATOIRE (Q13) : le patient du matin libère sa place à
+    HEURE_DEBUT_APRES_MIDI_AMBULATOIRE ; après la remise en état (DUREE_REMISE_EN_ETAT_PLACE_MIN), elle accueille le
+    patient de l'après-midi jusqu'au soir. Une place sert donc à deux patients par jour, jamais simultanément.
+    """
+    pivot = datetime.combine(periode.jour, time(HEURE_DEBUT_APRES_MIDI_AMBULATOIRE))
+    if periode.apres_midi:
+        return pivot + timedelta(minutes=DUREE_REMISE_EN_ETAT_PLACE_MIN), datetime.combine(
+            periode.jour + timedelta(days=1), time(0))
+    return datetime.combine(periode.jour, time(0)), pivot
+
+
+def periodes_occupation(patient: Patient, jour_operation: date, heure_debut: time) -> list:
+    """
+    Périodes où le patient occupe une ressource, avec la convention commune (fonction UNIQUE utilisée par le
+    niveau 2, le SMA, les indicateurs, l'étude de saturation et le validateur) :
+      * hospitalisé -> NUITS passées dans un lit (dates) : du jour d'admission (J - nuits avant) à la veille de la
+        sortie (J + nuits après - 1). Le jour de sa sortie (midi), le patient n'est plus compté : avec les admissions
+        après midi + remise en état (intervalle_lit), compter les nuits suffit à garantir qu'un lit n'est jamais
+        occupé par deux patients à la fois. Un hospitalisé sans nuitée occupe un lit le jour de l'opération.
+      * ambulatoire -> [DemiJournee] : une place le matin OU l'après-midi de l'opération, selon `heure_debut`
+        (début de l'intervention dans le SMA, début de la vacation au niveau 2 ; intervalle_place).
     """
     if patient.ambulatoire:
-        return [jour_operation]
+        return [demi_journee(jour_operation, heure_debut)]
     debut = jour_operation - timedelta(days=patient.nuits_pre_op)
     nuits = patient.nuits_pre_op + patient.nuits_post_op
     return [debut + timedelta(days=k) for k in range(max(1, nuits))]
 
 
-def calculer_occupation_par_jour(instance2: InstanceNiveau2, solution: SolutionPatients
-                                 ) -> tuple[dict[date, int], dict[date, int]]:
-    """Occupation (lits, places) jour par jour."""
-    lits: dict[date, int] = {}
-    places: dict[date, int] = {}
+def par_jour(occupation: dict) -> dict[date, int]:
+    """Occupation ramenée au jour pour l'affichage : pic de la journée (le maximum des deux demi-journées pour les
+    places ; inchangée pour les lits). Les capacités se vérifient sur les périodes elles-mêmes."""
+    jours: dict[date, int] = {}
+    for periode, n in occupation.items():
+        j = jour_de(periode)
+        jours[j] = max(jours.get(j, 0), n)
+    return jours
+
+
+def calculer_occupation(instance2: InstanceNiveau2, solution: SolutionPatients) -> tuple[dict, dict]:
+    """Occupation par période : lits par nuit (date), places par demi-journée (DemiJournee)."""
+    lits: dict = {}
+    places: dict = {}
     for pid, vid in solution.affectations.items():
         if vid is None:
             continue
-        p = instance2.patients[pid]
+        p, v = instance2.patients[pid], instance2.vacations[vid]
         cible = places if p.ambulatoire else lits
-        for j in jours_occupation(p, instance2.vacations[vid].jour):
+        for j in periodes_occupation(p, v.jour, v.heure_debut):
             cible[j] = cible.get(j, 0) + 1
     return lits, places
+
+
+def calculer_occupation_par_jour(instance2: InstanceNiveau2, solution: SolutionPatients
+                                 ) -> tuple[dict[date, int], dict[date, int]]:
+    """Occupation (lits, places) jour par jour, pour l'affichage et les sorties (places : pic de la journée)."""
+    lits, places = calculer_occupation(instance2, solution)
+    return par_jour(lits), par_jour(places)
 
 
 def variance(valeurs: list[float]) -> float:
@@ -741,7 +794,7 @@ def evaluer_niveau2(instance2: InstanceNiveau2, solution: SolutionPatients,
         utile += min(ch, cap)
         inoccupe += max(0.0, cap - ch)
 
-    lits, places = calculer_occupation_par_jour(instance2, solution)
+    lits, places = calculer_occupation(instance2, solution)       # places : par demi-journée
     h = instance2.hebergement
     d_lits = sum(max(0, o - h.cap_lits) for o in lits.values())
     d_places = sum(max(0, o - h.cap_places) for o in places.values())
@@ -768,9 +821,9 @@ def evaluer_niveau2(instance2: InstanceNiveau2, solution: SolutionPatients,
 
 class SuiviOccupation:
     """
-    Occupation jour par jour d'une ressource (lits OU places) avec dépassement de
-    capacité et variance tenus à jour en O(1) par jour modifié. La variance porte
-    sur les jours où l'occupation est > 0 (comme evaluer_niveau2).
+    Occupation période par période d'une ressource (lits par nuit OU places par demi-journée) avec dépassement de
+    capacité et variance tenus à jour en O(1) par période modifiée. La variance porte sur les périodes où
+    l'occupation est > 0 (comme evaluer_niveau2).
     """
     __slots__ = ("cap", "occ", "violation", "n", "s1", "s2")
 
@@ -843,7 +896,8 @@ class EtatNiveau2:
         cle = (pid, vid)
         j = self._jours.get(cle)
         if j is None:
-            j = self._jours[cle] = tuple(jours_occupation(self.patients[pid], self.vacations[vid].jour))
+            v = self.vacations[vid]
+            j = self._jours[cle] = tuple(periodes_occupation(self.patients[pid], v.jour, v.heure_debut))
         return j
 
     def _charge(self, vid, delta):

@@ -1,7 +1,7 @@
 # Nettoyage du code — compte rendu
 
 Branche `nettoyage`, partie de `main` (72d3c26). Un commit par lot (`nettoyage: lot N — …`). Au départ :
-93 tests rapides, tous verts. À la fin : 136 tests rapides et 2 tests lents, tous verts (voir « Vérification
+93 tests rapides, tous verts. À la fin : 138 tests rapides et 2 tests lents, tous verts (voir « Vérification
 finale »).
 
 Les points qui demandent une décision de l'équipe sont repris à la fin, dans « Points à trancher ».
@@ -123,13 +123,13 @@ d'hybridation, hors périmètre.
 
 ## Lot 6 — Convention d'occupation des lits (Q13)
 
-**Fait** : une seule fonction de décompte, `jours_occupation`, et l'intervalle daté `intervalle_lit`
+**Fait** : une seule fonction de décompte (aujourd'hui `periodes_occupation`) et l'intervalle daté `intervalle_lit`
 (`commun/structures_communes.py`). Les utilisent : le niveau 2, `EtatNiveau2`, l'agent Hébergement du SMA,
 l'optimisation globale du SMA, les indicateurs, l'étude de saturation et le validateur.
 - Hospitalisé : décompte par **nuitée**, de l'admission (jour J moins les nuits avant) à la veille de la sortie
   (J plus les nuits après, à midi, `HEURE_SORTIE_HOSPITALISATION` = 12). Le jour de sa sortie, le patient n'est plus
   compté. Un lit n'est réattribué qu'après midi plus la remise en état (`DUREE_REMISE_EN_ETAT_LIT_MIN` = 60 min,
-  **hypothèse**) : jamais deux patients à la fois dans un lit. Hospitalisé sans nuitée : un lit le jour de
+  confirmée ensuite par l'équipe) : jamais deux patients à la fois dans un lit. Hospitalisé sans nuitée : un lit le jour de
   l'intervention.
 - Poids de la fonction objectif inchangés.
 
@@ -140,8 +140,8 @@ l'optimisation globale du SMA, les indicateurs, l'étude de saturation et le val
 - étude de saturation (4 semaines) : capacité 438 → 431 patients ; les lits ne sont plus jamais pleins ; la
   ressource limitante reste le temps opératoire.
 
-**Non fait — places ambulatoires** : elles restent occupées toute la journée. Un découpage horaire demande des
-hypothèses absentes des données (voir « Points à trancher »).
+**Places ambulatoires** : laissées à la journée entière pendant le lot, puis découpées en demi-journées sur
+décision de l'équipe (voir « Décisions prises après le nettoyage »).
 
 **Test ajouté** : `test_occupation.py`.
 
@@ -249,11 +249,41 @@ Le rapport n'est pas dans le dépôt et n'a pas été modifié. À reprendre :
    valide.
 4. **D8, métriques** : les métriques des nuits après (MAE 0,54, ±1 nuit 85,1 %, sur les hospitalisés), qui
    remplacent les anciennes (0,32 / 90,5 %).
-5. **Q13, occupation** : toute définition de l'occupation d'un lit « par jour calendaire ». Le décompte se fait par
-   nuitée, avec sortie à midi et remise en état de 60 min (hypothèse). Les chiffres d'occupation changent (pics,
-   taux, capacité de saturation 438 → 431 patients, voir lot 6).
+5. **Q13, occupation** : toute définition de l'occupation d'un lit ou d'une place « par jour calendaire ». Les lits
+   se comptent par nuitée (sortie à midi, remise en état de 60 min) ; les places par demi-journée (matin /
+   après-midi, remise en état de 60 min). Les chiffres d'occupation changent (pics, taux, capacité de saturation
+   438 → 432 patients, voir lot 6 et « Décisions prises après le nettoyage »).
 6. **Lot 5** : les résultats du mode mémétique obtenus avant la correction des échanges (patients placés avant
    leur date au plus tôt) sont à recalculer.
+
+---
+
+## Décisions prises après le nettoyage
+
+- **Budget** : 10 s pour le site, confirmé.
+- **Remise en état d'un lit** : 1 h par le service de nettoyage, confirmé. Ce n'est plus une hypothèse.
+- **Spécialités des scénarios du SMA** : l'alignement sur le service est validé.
+- **Places ambulatoires par demi-journée** (avec 1 h de remise en état entre deux patients) :
+  - une seule fonction, `periodes_occupation` (qui remplace `jours_occupation`) : nuits (dates) pour les lits,
+    `DemiJournee(jour, apres_midi)` pour les places ;
+  - un patient est du matin si son intervention commence avant 13 h, de l'après-midi sinon
+    (`HEURE_DEBUT_APRES_MIDI_AMBULATOIRE`). Le niveau 2 classe selon le début de la vacation, le SMA selon le début
+    de l'intervention ; sur v28 les deux coïncident (matinées jusqu'à 13 h, après-midi dès 13 h 30) et un test le
+    vérifie ;
+  - `intervalle_place` : le patient du matin libère sa place à 13 h ; elle est prête pour l'après-midi à 14 h
+    (`DUREE_REMISE_EN_ETAT_PLACE_MIN` = 60). Une place sert donc à deux patients par jour, jamais en même temps ;
+  - les capacités se vérifient par demi-journée : fonction objectif (dépassement, variance, taux), état incrémental,
+    agent Hébergement, optimisation globale du SMA, validateur (violation « places ambulatoires » datée
+    « AAAA-MM-JJ matin / après-midi »). À l'affichage et dans les sorties JSON, l'occupation des places par jour est
+    le **pic de la journée** (`par_jour`). Poids inchangés.
+  - valeurs qui changent (avant → après) : programme de démonstration (glouton) score 13 910 → 13 820, pic de
+    places 10 → 6, taux d'occupation des places 30,5 % → 19,7 % (calculé maintenant par demi-journée occupée) ;
+    instance d'étude (glouton) 113 030 → 113 004, pic de places 10 → 6 ; saturation sur 4 semaines : capacité
+    431 → 432 patients, pic de places 15 / 20 ; la ressource limitante reste le temps opératoire. Scénarios du SMA :
+    cohérence OK partout.
+  - tests ajoutés dans `test_occupation.py` : une place sert le matin puis l'après-midi après remise en état ; deux
+    patients sur une place la même demi-journée sont refusés ; même décompte par demi-journée au niveau 2 et dans le
+    SMA.
 
 ---
 
@@ -261,8 +291,8 @@ Le rapport n'est pas dans le dépôt et n'a pas été modifié. À reprendre :
 
 | Contrôle | Résultat |
 |---|---|
-| `python -m pytest interface/tests -m "not lent" -q` | 136 réussis (2 lents exclus) |
-| `python -m pytest interface/tests -q` | 138 réussis |
+| `python -m pytest interface/tests -m "not lent" -q` | 138 réussis (2 lents exclus) |
+| `python -m pytest interface/tests -q` | 140 réussis |
 | `grep` du lot 2 | aucune ligne |
 | `python sma/scenarios_sma.py --liste` / `insertion_simple` | sans erreur |
 | `python metaheuristiques/hybridation.py --help` | sans erreur |
@@ -275,23 +305,22 @@ Le rapport n'est pas dans le dépôt et n'a pas été modifié. À reprendre :
 
 ## Points à trancher par l'équipe
 
-1. **Budget des campagnes** : le budget unique est de 10 s (celui du site) ; les campagnes utilisaient 20 s.
-   Passer `--temps 20`, ou changer `BUDGET_OPTIMISATION_S` ?
+1. **Budget des campagnes** : 10 s est confirmé pour le site. Les campagnes utilisaient 20 s : les lancer avec
+   `--temps 20`, ou garder 10 s ? Le budget est à indiquer dans le rapport.
 2. **R1, pénalité de report pour W > 1** : sur un horizon de plusieurs semaines, la pénalité compte les semaines
    **après la fin de l'horizon** (`semaine_decalage`), pas le décalage depuis la semaine du patient. Fonction
    objectif non modifiée.
-3. **Places ambulatoires (Q13)** : garder la journée entière, ou découper la journée ? Il faudrait alors :
-   l'heure d'arrivée, la durée de surveillance après l'intervention, l'heure limite de sortie, la remise en état
-   d'une place, et une heure d'intervention (le niveau 2 n'affecte qu'une vacation, pas une heure).
-4. **Remise en état d'un lit** : 60 min, hypothèse à confirmer.
-5. **Programme du site** : le recalculer (Administration → Lits et places → Recalculer) ; celui de la base date
+3. **Horaires des demi-journées** : avec 1 h de remise en état, une place est prête à 14 h, alors que les
+   vacations de l'après-midi commencent à 13 h 30. Le premier patient ambulatoire de l'après-midi doit donc être
+   accueilli ailleurs (ou la place du matin libérée à 12 h 30). La bascule à 13 h est réglable dans
+   `commun/parametres.py`.
+4. **Programme du site** : le recalculer (Administration → Lits et places → Recalculer) ; celui de la base date
    d'avant la correction des échanges et n'est pas valide.
-6. **Scénarios du SMA** : leurs capacités passent à 30 / 3 / 20 (D4) et leurs spécialités sont alignées sur le
-   service, sauf « Vasculaire » (lot 8). Est-ce acceptable ?
-7. **Transfert** : quand un plan interne existe, il est appliqué en attendant la décision du régulateur.
+5. **Scénarios du SMA** : leurs capacités passent à 30 / 3 / 20 (D4). Est-ce acceptable ?
+6. **Transfert** : quand un plan interne existe, il est appliqué en attendant la décision du régulateur.
    Faut-il plutôt laisser l'urgence non programmée jusqu'à cette décision ?
-8. **Sélection dans les recherches** : l'AGS et la recherche locale peuvent toujours garder en interne une
+7. **Sélection dans les recherches** : l'AGS et la recherche locale peuvent toujours garder en interne une
    solution non faisable comme meilleure (seule la sélection finale préfère les solutions faisables). Modifier
    cela touche les stratégies d'hybridation, hors périmètre.
-9. **Capacités réelles** du site, **spécialités réelles** des chirurgiens et spécialités couvertes par l'équipe
+8. **Capacités réelles** du site, **spécialités réelles** des chirurgiens et spécialités couvertes par l'équipe
    de garde (questions ouvertes de `CHOIX.md`).

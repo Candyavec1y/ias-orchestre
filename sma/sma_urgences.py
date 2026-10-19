@@ -103,7 +103,7 @@ from structures_communes import (
     GRAINE_PATIENTS, HEBERGEMENT_SITE, JOURS_FR, POIDS_N2, Chirurgien, InstanceNiveau2, InstanceProbleme,
     ParametresHebergement, Patient,
     PlageBloc, SolutionPatients, construire_meilleure_affectation_initiale, generer_patients_etude,
-    jours_occupation, type_semaine,
+    par_jour, periodes_occupation, type_semaine,
 )
 
 MIN = timedelta(minutes=1)
@@ -695,7 +695,7 @@ class AgentHebergement(AgentSMA):
     def __init__(self, model, hebergement):
         super().__init__(model, "hebergement")
         self.h = hebergement
-        self.sejours: dict[int, tuple[Patient, date]] = {}
+        self.sejours: dict[int, tuple[Patient, datetime]] = {}     # pid -> (patient, début de l'intervention)
         self.indisponibilites: list[tuple[date, date, int]] = []     # (du, au, nb de lits)
 
     def lits_indisponibles(self, d: date) -> int:
@@ -711,20 +711,26 @@ class AgentHebergement(AgentSMA):
         return max(0, self.lits_total(d) - self.h.reserve_lits)
 
     def occupation(self, sejours=None):
+        """Lits par nuit, places par demi-journée (convention commune periodes_occupation)."""
         lits, places = {}, {}
-        for p, j in (self.sejours if sejours is None else sejours).values():
+        for p, t in (self.sejours if sejours is None else sejours).values():
             cible = places if p.ambulatoire else lits
-            for d in jours_occupation(p, j):
+            for d in periodes_occupation(p, t.date(), t.time()):
                 cible[d] = cible.get(d, 0) + 1
         return lits, places
+
+    def occupation_par_jour(self):
+        """Pour l'affichage : lits par jour, places au pic de la journée."""
+        lits, places = self.occupation()
+        return lits, par_jour(places)
 
     def sur_evaluer_sejours(self, msg: Message):
         apres = dict(self.sejours)
         for pid in msg.contenu.get("retraits", []):
             apres.pop(pid, None)
         urgents = False
-        for p, j in msg.contenu.get("ajouts", []):
-            apres[p.id] = (p, j)
+        for p, t in msg.contenu.get("ajouts", []):
+            apres[p.id] = (p, t)
             urgents |= p.urgence
         l0, p0 = self.occupation()
         l1, p1 = self.occupation(apres)
@@ -752,8 +758,8 @@ class AgentHebergement(AgentSMA):
     def sur_maj_sejours(self, msg: Message):
         for pid in msg.contenu.get("retraits", []):
             self.sejours.pop(pid, None)
-        for p, j in msg.contenu.get("ajouts", []):
-            self.sejours[p.id] = (p, j)
+        for p, t in msg.contenu.get("ajouts", []):
+            self.sejours[p.id] = (p, t)
 
 
 # ---------------------------------------------------------------- Chirurgien
@@ -1195,7 +1201,7 @@ class AgentSalle(AgentSMA):
         for cid, contenu in sorted(par_chir.items()):
             self.envoyer(f"chir_{cid}", "INFORM", "maj_agenda", contenu, msg.conversation, "agenda mis à jour")
         self.envoyer("hebergement", "INFORM", "maj_sejours",
-                     {"ajouts": [(it.patient, it.debut.date()) for it in plan.ajouts],
+                     {"ajouts": [(it.patient, it.debut) for it in plan.ajouts],
                       "retraits": [it.pid for it in retirees]}, msg.conversation, "séjours mis à jour")
         return msg.reponse("INFORM", {"retirees": retirees}, "plan appliqué", sujet="plan_applique")
 
@@ -1323,7 +1329,7 @@ class AgentGarde(AgentSMA):
         plan: Plan = msg.contenu["plan"]
         it = plan.ajouts[0]
         self.interventions[it.pid] = it
-        self.envoyer("hebergement", "INFORM", "maj_sejours", {"ajouts": [(it.patient, it.debut.date())], "retraits": []},
+        self.envoyer("hebergement", "INFORM", "maj_sejours", {"ajouts": [(it.patient, it.debut)], "retraits": []},
                      msg.conversation, "séjour ajouté (garde)")
         # le système est prévenu : la régulation trace l'alerte, l'équipe de garde a le patient dans son planning
         self.envoyer("regulation", "INFORM", "urgence_confiee_garde",
@@ -1384,7 +1390,7 @@ class AgentRegulation(AgentSMA):
             extra += r.contenu["cout"]
             if r.contenu["cout"]:
                 note = f"{self.model.nom_chir(cid)} rappelé d'astreinte"
-        changements = [(it.patient, it.debut.date()) for it in plan.ajouts]
+        changements = [(it.patient, it.debut) for it in plan.ajouts]
         if changements or plan.retraits:
             r = self.envoyer("hebergement", "REQUEST", "evaluer_sejours",
                              {"ajouts": changements, "retraits": plan.retraits}, conv, "lits/places ?")[0]
@@ -1552,7 +1558,7 @@ class AgentRegulation(AgentSMA):
         for a in sorted({a for a, _ in props}):
             self.envoyer(a, "REJECT_PROPOSAL", "reject_proposal", {}, conv, "")
         r = self.envoyer("hebergement", "REQUEST", "evaluer_sejours",
-                         {"ajouts": [(plan.ajouts[0].patient, plan.jour)], "retraits": []}, conv, "lits/places ?")[0]
+                         {"ajouts": [(plan.ajouts[0].patient, plan.ajouts[0].debut)], "retraits": []}, conv, "lits/places ?")[0]
         note = r.contenu.get("motif", "") if r.performatif == "AGREE" else ""
         self.envoyer("garde", "ACCEPT_PROPOSAL", "accept_garde", {"plan": plan, "gravite": g.nom, "arrivee": arrivee},
                      conv, plan.resume)
@@ -1629,7 +1635,7 @@ class AgentRegulation(AgentSMA):
             if r.performatif == "REFUSE":
                 return False, f"{self.model.nom_chir(cid)} : {r.contenu['motif']}"
         r = self.envoyer("hebergement", "REQUEST", "evaluer_sejours",
-                         {"ajouts": [(m["nouveau"].patient, m["debut"].date()) for m in mvts],
+                         {"ajouts": [(m["nouveau"].patient, m["debut"]) for m in mvts],
                           "retraits": [m["pid"] for m in mvts if m["etait_place"]]}, conv, "plan global : lits ?")[0]
         if r.performatif == "REFUSE":
             return False, f"hébergement : {r.contenu['motif']}"
@@ -1815,7 +1821,7 @@ class AgentRegulation(AgentSMA):
             while lits.get(jour, 0) > heb.cap_lits_jour(jour):
                 candidats = [(s, it) for pid, (s, it) in par_pid.items() if not it.urgence and not it.patient.ambulatoire
                              and it.debut > self.maintenant and pid in heb.sejours
-                             and jour in jours_occupation(it.patient, it.debut.date())]
+                             and jour in periodes_occupation(it.patient, it.debut.date(), it.debut.time())]
                 if not candidats:
                     self._alerter(f"Lits indisponibles : {lits.get(jour, 0)} patient(s) le {jour:%d/%m} pour "
                                   f"{heb.cap_lits_jour(jour)} lit(s) programmable(s), aucun patient déplaçable")
@@ -2101,7 +2107,7 @@ class BlocOperatoire(mesa.Model):
                 it = Intervention(pat, v.salle_id, t, vid)
                 self.salles[v.salle_id].interventions[pat.id] = it
                 self.chirurgiens[pat.chirurgien_id].agenda[pat.id] = (it.debut, it.fin, v.salle_id)
-                self.hebergement.sejours[pat.id] = (pat, v.jour)
+                self.hebergement.sejours[pat.id] = (pat, it.debut)
                 t = it.fin
         self.non_places_initiaux = [pid for pid, v in solution.affectations.items() if v is None]
 
@@ -2276,7 +2282,7 @@ class BlocOperatoire(mesa.Model):
                 d = self.regulation.urgences_info.get(it.pid)
                 print(f"   │ {hm(it.debut)}-{hm(it.fin)}  P{it.pid:<5} {'Garde':<7} {it.patient.duree_bloc:>3} min  "
                       f"{'amb. ' if it.patient.ambulatoire else 'hosp.'} ★ URGENCE {d[2].nom if d else ''}")
-        lits, places = self.hebergement.occupation()
+        lits, places = self.hebergement.occupation_par_jour()
         h = self.instance2.hebergement
         print(f"  Hébergement : {lits.get(jour, 0)}/{self.hebergement.cap_lits_jour(jour)} lits (+{h.reserve_lits} réserve), "
               f"{places.get(jour, 0)}/{h.cap_places} places ambulatoires")
@@ -2418,7 +2424,10 @@ class BlocOperatoire(mesa.Model):
         for i in garde:
             if not self.garde.en_garde(i.debut, i.gravite):
                 erreurs.append(f"P{i.pid} programmé en garde hors des heures de garde")
-        if {i.pid: i.debut.date() for i in its + garde} != {pid: j for pid, (_, j) in self.hebergement.sejours.items()}:
+        def periodes(p, t):
+            return tuple(periodes_occupation(p, t.date(), t.time()))
+        if ({i.pid: periodes(i.patient, i.debut) for i in its + garde}
+                != {pid: periodes(p, t) for pid, (p, t) in self.hebergement.sejours.items()}):
             erreurs.append("séjours de l'hébergement désynchronisés")
         for pid in self.urgences_non_programmees():
             erreurs.append(f"urgence P{pid} reçue mais NON programmée")

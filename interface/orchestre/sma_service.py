@@ -158,7 +158,7 @@ class Simulation:
                       key=lambda f: (f.salle_id, f.debut))
 
     def occupation(self, jour: date) -> dict:
-        lits, places = self.modele.hebergement.occupation()
+        lits, places = self.modele.hebergement.occupation_par_jour()
         h = self.modele.instance2.hebergement
         return {"lits": lits.get(jour, 0), "cap_lits": self.modele.hebergement.cap_lits_jour(jour),
                 "indisponibles": self.modele.hebergement.lits_indisponibles(jour), "reserve": h.reserve_lits,

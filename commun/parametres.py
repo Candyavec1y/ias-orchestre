@@ -68,10 +68,14 @@ CHARGES_PAR_SEMAINE = ((0.85, 1.00), (0.60, 0.75), (0.35, 0.50), (0.10, 0.25))
 CHARGE_GENERATEUR = (0.90, 1.10)  # charge par défaut de generer_patients_etude (instance d'étude, scénarios du SMA)
 
 # =============================================================================
-# Convention d'occupation des lits (Q13)
+# Convention d'occupation des lits et des places ambulatoires (Q13)
 # =============================================================================
 HEURE_SORTIE_HOSPITALISATION = 12          # sortie conventionnelle à midi le dernier jour du séjour
-DUREE_REMISE_EN_ETAT_LIT_MIN = 60          # HYPOTHÈSE (aucune valeur fournie) : nettoyage avant une nouvelle admission
+DUREE_REMISE_EN_ETAT_LIT_MIN = 60          # remise en état d'un lit par le service de nettoyage avant une admission
+HEURE_DEBUT_APRES_MIDI_AMBULATOIRE = 13    # place ambulatoire comptée par DEMI-JOURNÉE : intervention (ou vacation)
+                                           # commençant avant 13 h -> matin, à partir de 13 h -> après-midi
+DUREE_REMISE_EN_ETAT_PLACE_MIN = 60        # remise en état d'une place entre le patient du matin et celui de
+                                           # l'après-midi (même durée que pour un lit)
 
 # =============================================================================
 # Bloc et coûts partagés

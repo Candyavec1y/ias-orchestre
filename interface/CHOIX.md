@@ -86,15 +86,17 @@ leur validation ; la meilleure solution retenue est une solution faisable, et un
 signalée « NON VALIDE ». Dans l'onglet Planning, la régulation et l'administrateur voient un bandeau rouge et la
 liste des contraintes violées.
 
-**Occupation des lits et des places (Q13).** Une seule fonction de décompte (`jours_occupation`) sert au niveau 2,
+**Occupation des lits et des places (Q13).** Une seule fonction de décompte (`periodes_occupation`) sert au niveau 2,
 au SMA, aux indicateurs, à l'étude de saturation et au validateur :
 
 * un patient hospitalisé occupe un lit par **nuitée**, de son admission (jour de l'intervention moins les nuits
   avant) à la veille de sa sortie ; il sort à **midi** (`HEURE_SORTIE_HOSPITALISATION`) et son lit est réutilisable
-  le même jour après **remise en état** (`DUREE_REMISE_EN_ETAT_LIT_MIN` = 60 min, hypothèse) ; jamais deux patients
-  à la fois dans un lit ; un hospitalisé sans nuitée occupe un lit le jour de son intervention ;
-* un patient ambulatoire occupe une place **toute la journée** de son intervention (un découpage de la journée
-  demanderait des heures d'arrivée, de surveillance et de sortie qui ne sont pas dans les données).
+  le même jour après **remise en état** par le service de nettoyage (`DUREE_REMISE_EN_ETAT_LIT_MIN` = 60 min) ;
+  jamais deux patients à la fois dans un lit ; un hospitalisé sans nuitée occupe un lit le jour de son intervention ;
+* un patient ambulatoire occupe une place une **demi-journée** : le matin si son intervention commence avant 13 h
+  (`HEURE_DEBUT_APRES_MIDI_AMBULATOIRE` ; au niveau 2, début de la vacation), l'après-midi sinon. Le patient du matin
+  libère sa place à 13 h ; après 1 h de remise en état (`DUREE_REMISE_EN_ETAT_PLACE_MIN`), elle accueille un patient
+  de l'après-midi. La capacité se vérifie par demi-journée ; l'affichage par jour montre le pic de la journée.
 
 ## 4. Onglet Consultation (machine learning)
 

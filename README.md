@@ -156,7 +156,8 @@ Toutes les commandes acceptent `--graine` ; capacités, budget, graines et horiz
   vacations) et **SMA** : sur le planning réel v28.
 * **Capacités du site** : 30 lits dont 3 de réserve pour les urgences, 20 places ambulatoires (modifiables par
   l'administrateur) ; l'instance d'étude du niveau 1 a ses propres capacités (14 / 2 / 10).
-* **Lits** comptés par nuitée, sortie à midi ; **places ambulatoires** occupées la journée de l'intervention.
+* **Lits** comptés par nuitée, sortie à midi ; **places ambulatoires** comptées par demi-journée (matin /
+  après-midi) ; 1 h de remise en état entre deux patients d'un lit ou d'une place.
 * **Priorité proposée** en consultation : règle du projet (CIM-10 / CCAM), non validée cliniquement, que le
   médecin valide ou corrige ; les durées et nuits sont prédites par les modèles.
 * Chaque programme est contrôlé par un **validateur de faisabilité** indépendant ; les contraintes violées sont

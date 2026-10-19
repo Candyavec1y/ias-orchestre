@@ -6,7 +6,7 @@ commun/validation.py — VALIDATEUR DE FAISABILITÉ indépendant (D9)
 Vérifie qu'une solution respecte les contraintes, en les recalculant UNE PAR UNE à partir de la solution et de
 l'instance. Il n'utilise NI les fonctions objectif (evaluer_planning, evaluer_niveau2, EtatNiveau2), NI les fonctions
 de pénalité, NI le code des algorithmes : une erreur dans le score ou dans une métaheuristique ne peut donc pas
-masquer une violation. Seule la CONVENTION d'occupation des lits et places (jours_occupation) est partagée : c'est
+masquer une violation. Seule la CONVENTION d'occupation des lits et places (periodes_occupation) est partagée : c'est
 une définition métier, pas un calcul de score.
 
     valider_niveau1(instance1, solution1)  -> Validation
@@ -31,7 +31,7 @@ from datetime import datetime
 from typing import Any, Union
 
 from structures_communes import (InstanceNiveau2, InstanceProbleme, SolutionPatients, SolutionPlanning,
-                                 jours_occupation)
+                                 periodes_occupation)
 
 Valeur = Union[int, float, str]
 
@@ -153,8 +153,8 @@ def valider_niveau2(instance: InstanceNiveau2, solution: SolutionPatients) -> Va
                                           f">= {patient.date_min.isoformat()}"))
         charge[vid] += patient.duree_bloc
         compteur = places if patient.ambulatoire else lits
-        for jour in jours_occupation(patient, vac.jour):
-            compteur[jour] += 1
+        for periode in periodes_occupation(patient, vac.jour, vac.heure_debut):
+            compteur[periode] += 1
 
     for vid, minutes in sorted(charge.items()):
         vac = instance.vacations.get(vid)
@@ -165,7 +165,7 @@ def valider_niveau2(instance: InstanceNiveau2, solution: SolutionPatients) -> Va
     for jour, n in sorted(lits.items()):
         if n > h.cap_lits:
             v.violations.append(Violation("lits", jour.isoformat(), n, h.cap_lits))
-    for jour, n in sorted(places.items()):
+    for periode, n in sorted(places.items()):                          # par demi-journée
         if n > h.cap_places:
-            v.violations.append(Violation("places ambulatoires", jour.isoformat(), n, h.cap_places))
+            v.violations.append(Violation("places ambulatoires", str(periode), n, h.cap_places))
     return v

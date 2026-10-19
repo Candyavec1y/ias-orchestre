@@ -35,7 +35,7 @@ from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from structures_communes import POIDS_N2, PoidsNiveau2, SuiviOccupation, jours_occupation
+from structures_communes import POIDS_N2, PoidsNiveau2, SuiviOccupation, jour_de, periodes_occupation
 
 from metaheuristiques_sma import AGS_GLOBAL, AGS_LOCAL, NOMS, RL_GLOBAL, RL_LOCAL, H, optimiser
 from sma_urgences import (MIN, AgentSMA, Fenetre, Intervention, Message, ParametresSMA, Plan, minutes,
@@ -252,7 +252,7 @@ class _EtatResiduel:
             self.deplacer(p, v)
 
     def _jours_de(self, pid, v):
-        return self.pb._jours(pid, self.pb.creneaux[self.pb.cles[v]].jour)
+        return self.pb._jours(pid, self.pb.creneaux[self.pb.cles[v]].debut)
 
     def _invalide(self, pid, v) -> bool:
         pb = self.pb
@@ -335,11 +335,12 @@ class ProblemeResiduel(_ProblemeMoteur):
                                  + par_chir[creneaux[k].chirurgien_id]) for k in self.cles}
         self.jours_fixes_lits, self.jours_fixes_places = [], []
         for it in fixes:
-            jours = [d for d in jours_occupation(it.patient, it.debut.date()) if d >= self.aujourdhui]
+            jours = [d for d in periodes_occupation(it.patient, it.debut.date(), it.debut.time())
+                     if jour_de(d) >= self.aujourdhui]
             (self.jours_fixes_places if it.patient.ambulatoire else self.jours_fixes_lits).append(jours)
         self._cache_creneau: dict = {}
         self._cache_jours: dict = {}
-        # plafonds de l'agent Hébergement : occupation actuelle (programme courant) jour par jour
+        # plafonds de l'agent Hébergement : occupation actuelle (programme courant) période par période
         self.plafond_lits, self.plafond_places = {}, {}
         etat = _EtatResiduel(self, dict(zip(self.pids, self.individu_courant())))
         self.plafond_lits, self.plafond_places = dict(etat.lits.occ), dict(etat.places.occ)
@@ -392,12 +393,14 @@ class ProblemeResiduel(_ProblemeMoteur):
         return _EtatResiduel(self, dict(zip(self.pids, individu)))
 
     # ------------------------------------------------------------------ coûts élémentaires
-    def _jours(self, pid: int, jour: date):
-        cle = (pid, jour)
+    def _jours(self, pid: int, debut: datetime):
+        """Périodes d'occupation (nuits ou demi-journée) d'un patient placé dans le créneau qui commence à `debut`."""
+        cle = (pid, debut)
         j = self._cache_jours.get(cle)
         if j is None:
-            j = self._cache_jours[cle] = tuple(d for d in jours_occupation(self.mobiles[pid].it.patient, jour)
-                                               if d >= self.aujourdhui)
+            j = self._cache_jours[cle] = tuple(
+                d for d in periodes_occupation(self.mobiles[pid].it.patient, debut.date(), debut.time())
+                if jour_de(d) >= self.aujourdhui)
         return j
 
     def _cout_patient(self, m: Mobile, f: Fenetre, s: datetime, fin: datetime) -> float:
@@ -471,7 +474,7 @@ class ProblemeResiduel(_ProblemeMoteur):
             f = self.creneaux[k]
             cout += self._cout_patient(m, f, m.it.debut, m.it.fin)
             charges[k] += m.it.patient.duree_bloc
-            (places if m.it.patient.ambulatoire else lits).modifier(self._jours(m.pid, f.jour), +1)
+            (places if m.it.patient.ambulatoire else lits).modifier(self._jours(m.pid, f.debut), +1)
         for k, ch in charges.items():
             f, tot = self.creneaux[k], ch + self.charge_fixe.get(k, 0.0)
             if f.jour > self.aujourdhui and tot > f.capacite_utile_min:

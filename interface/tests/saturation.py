@@ -165,7 +165,7 @@ def etudier(semaines: int = 4, n_patients: Optional[int] = None, *, lundi: date 
         if k % pas_courbe == 0 or k == n_patients:
             courbe.append((k, 100 * cumul / minutes_vacation))
 
-    lits, plcs = sim.modele.hebergement.occupation()
+    lits, plcs = sim.modele.hebergement.occupation_par_jour()             # places : pic de la journée
     jours = sorted({v.jour for v in fenetres})
     h = hebergement
     pic_lits, pic_places = max((lits.get(j, 0) for j in jours), default=0), max((plcs.get(j, 0) for j in jours), default=0)
