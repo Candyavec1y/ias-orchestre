@@ -225,8 +225,8 @@ def _etape_creneaux() -> None:
     noms = C.noms_patients(sim)
 
     if not props:
-        st.warning("Aucun créneau compatible sur l'horizon du programme. Vous pouvez inscrire le patient : "
-                   "le système le placera en liste d'attente et le replacera dès qu'une place se libère.")
+        st.warning("Aucun créneau compatible n'a été trouvé (chirurgien sans vacation ou durée supérieure à ses "
+                   "vacations ?). Vérifiez les valeurs, ou inscrivez le patient : le système retentera de le placer.")
     cols = st.columns(max(1, min(4, len(props))))
     for i, (col, p) in enumerate(zip(cols, props)):
         with col, st.container(border=True):
@@ -256,8 +256,10 @@ def _etape_creneaux() -> None:
     if c1.button("Modifier les valeurs", width="stretch"):
         e["etape"] = 2
         st.rerun()
-    if c2.button("Inscrire en liste d'attente", width="stretch",
-                 help="Aucun créneau n'est réservé : le SMA retente chaque matin à 7 h et à chaque libération."):
+    # le planning des vacations est fixe sur toutes les semaines à venir : un créneau existe toujours, plus de
+    # « liste d'attente » au choix ; ce bouton ne sert qu'en l'absence totale de proposition
+    if not props and c2.button("Inscrire quand même", width="stretch",
+                               help="Le système cherchera lui-même un créneau, et retentera s'il n'en trouve pas."):
         _inscrire(e, None)
     if c3.button("Abandonner (rien n'est enregistré)", width="stretch"):
         _reinitialiser()

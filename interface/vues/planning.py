@@ -20,13 +20,18 @@ from vues import graphiques as G
 
 def afficher() -> None:
     C.entete("Planning")
-    t1, t2, t3 = st.tabs(["Vacations des chirurgiens", "Programme opératoire", "Bloc"])
+    if C.est("admin"):                  # l'administrateur voit déjà tout le programme : pas d'onglet « Bloc »
+        t1, t2 = st.tabs(["Vacations des chirurgiens", "Programme opératoire"])
+        t3 = None
+    else:
+        t1, t2, t3 = st.tabs(["Vacations des chirurgiens", "Programme opératoire", "Bloc"])
     with t1:
         _vacations()
     with t2:
         _programme()
-    with t3:
-        _bloc()
+    if t3 is not None:
+        with t3:
+            _bloc()
 
 
 # =============================================================================
@@ -37,6 +42,7 @@ def grille_html(cases: list[P.CaseVacation], lundi: date, moi: str = "",
                 operations: dict[int, str] | None = None) -> str:
     """`operations` : vacation_id -> détail HTML ; ces cases deviennent cliquables et déplient leurs opérations."""
     operations = operations or {}
+    absents = C.absences()
     jours = [lundi + timedelta(days=k) for k in range(5)]
     salles = sorted({(c.salle_id, c.salle) for c in cases})
     h = "<table class='grille'><tr><th></th>" + "".join(f"<th>{C.jour_long(j)}</th>" for j in jours) + "</tr>"
@@ -48,6 +54,9 @@ def grille_html(cases: list[P.CaseVacation], lundi: date, moi: str = "",
                 cls = c.type + (" moi" if c.code == moi else "")
                 lib = {"urgence": "Plage URGENCES", "libre": "Plage libre"}.get(
                     c.type, escape(c.code) if c.code.startswith("Dr") else f"Dr {escape(c.code)}")
+                if c.type == "vacation" and C.est_absent(c.code, c.jour, absents):
+                    cls += " absent"
+                    lib += " <span class='loupe'>absent</span>"
                 if c.vacation_id in operations:
                     cell += (f"<details class='vac {cls} cliquable'><summary>{lib} <span class='loupe'>détail</span>"
                              f"<small>{c.debut} – {c.fin}</small></summary>{operations[c.vacation_id]}</details>")
@@ -212,9 +221,6 @@ def _programme() -> None:
                                         "Durée (min)": i.patient.duree_bloc, "Priorité": i.patient.priorite,
                                         "Depuis le": j.strftime("%d/%m")} for i, j in attente]),
                          hide_index=True, width="stretch")
-    if not cadre:
-        st.caption("Programme initial fictif (patients DEMO-xxxx générés par le générateur commun de l'étude) "
-                   "+ patients inscrits en consultation (PAT-…) + urgences (URG-…).")
 
 
 # =============================================================================

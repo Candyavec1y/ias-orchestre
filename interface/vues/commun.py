@@ -2,6 +2,8 @@
 """Outils partagés par les pages : session, rôles, horloge, caches, mise en forme."""
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import threading
 from datetime import date, datetime, timedelta
@@ -104,6 +106,8 @@ section[data-testid="stSidebar"] .logo-ias path[fill="#2626F5"] { fill:#fff; }
 .vac.urgence { border-left-color: var(--rouge); background:#FDF1F0; }
 .vac.libre { border-left-color:#9AA5B1; background:#F5F5F5; color:#5B6770; font-style: italic; }
 .vac small { color:var(--discret); display:block; font-weight:400; }
+.vac.absent { border-left-color:#9AA5B1; color:#7A8590; text-decoration: line-through;
+  background: repeating-linear-gradient(135deg, #F5F5F5, #F5F5F5 6px, #ECECEC 6px, #ECECEC 12px); }
 details.vac.cliquable summary { cursor:pointer; list-style:none; }
 details.vac.cliquable summary::-webkit-details-marker { display:none; }
 details.vac.cliquable:hover { box-shadow:0 0 0 2px #AEBDFC; }
@@ -226,13 +230,44 @@ def hebergement() -> SC.ParametresHebergement:
     return SC.ParametresHebergement(**d) if d else P.HEBERGEMENT_V28
 
 
+def absences() -> list[dict]:
+    """Absences de chirurgiens déjà déclarées (événements « absence » jusqu'à l'heure courante)."""
+    now = maintenant()
+    return [{"id": e["id"], "heure": e["heure"], "auteur": e["auteur"], **e["contenu"],
+             "du_d": date.fromisoformat(e["contenu"]["du"]), "au_d": date.fromisoformat(e["contenu"]["au"])}
+            for e in DB.lister_evenements() if e["type"] == "absence" and e["heure"] <= now]
+
+
+def est_absent(code: str, jour: date, liste: Optional[list[dict]] = None) -> bool:
+    return any(a["praticien"] == code and a["du_d"] <= jour <= a["au_d"] for a in (absences() if liste is None else liste))
+
+
+def planning_vacations() -> dict:
+    """Versions du planning des vacations décidées par l'administrateur (base : planning v28)."""
+    return DB.lire_parametre("planning_vacations") or {"versions": [], "praticiens": {}}
+
+
+def charger_planning_vacations() -> str:
+    """Applique au module du planning les versions enregistrées (seulement si elles ont changé) ; renvoie leur
+    empreinte, qui entre dans les clés de cache du programme et de la simulation."""
+    d = planning_vacations()
+    empreinte = hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
+    if getattr(P.V28, "_empreinte_site", None) != empreinte:
+        P.V28.definir_versions([(date.fromisoformat(v["effet"]), v["blocs"]) for v in d["versions"]],
+                               d.get("praticiens"))
+        P.V28._empreinte_site = empreinte
+    return empreinte
+
+
 def _cle_programme(cfg: dict) -> str:
     h = hebergement()
-    return f"{cfg['lundi']}|{cfg['calcule_le']}|{h.lits_disponibles_par_jour}/{h.reserve_lits}/{h.places_ambulatoires_par_jour}"
+    return (f"{cfg['lundi']}|{cfg['calcule_le']}|{h.lits_disponibles_par_jour}/{h.reserve_lits}/"
+            f"{h.places_ambulatoires_par_jour}|{charger_planning_vacations()}")
 
 
 @st.cache_resource(max_entries=2, show_spinner=False)
-def _programme(lundi: str, nb_semaines: int, solution_items: tuple, capacites: tuple) -> P.Programme:
+def _programme(lundi: str, nb_semaines: int, solution_items: tuple, capacites: tuple,
+               planning: str = "") -> P.Programme:
     i1, i2 = P.construire_instances(date.fromisoformat(lundi), nb_semaines,
                                     hebergement=SC.ParametresHebergement(*capacites))
     sol = SC.SolutionPatients({int(k): v for k, v in solution_items})
@@ -245,7 +280,8 @@ def programme() -> Optional[P.Programme]:
         return None
     h = hebergement()
     prog = _programme(cfg["lundi"], cfg["nb_semaines"], tuple(sorted((int(k), v) for k, v in cfg["solution"].items())),
-                      (h.lits_disponibles_par_jour, h.places_ambulatoires_par_jour, h.reserve_lits))
+                      (h.lits_disponibles_par_jour, h.places_ambulatoires_par_jour, h.reserve_lits),
+                      charger_planning_vacations())
     prog.mode, prog.temps_s = cfg["mode"], cfg["temps_s"]
     return prog
 

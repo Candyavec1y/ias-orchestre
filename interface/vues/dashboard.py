@@ -105,7 +105,7 @@ def afficher() -> None:
 
     # ---------------------------------------------------------------- tendances
     st.markdown("#### Tendances sur l'horizon du programme")
-    jours = [j for j in sim.jours() if j.weekday() < 5]
+    jours = [j for j in sim.jours_tendances() if j.weekday() < 5]
     taux = {}
     for j in jours:
         ob = occupation_bloc(sim, j).values()

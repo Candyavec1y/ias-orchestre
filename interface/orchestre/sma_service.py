@@ -23,6 +23,7 @@ from datetime import date, datetime, time, timedelta
 from typing import Optional
 
 from . import chemins  # noqa: F401  (sys.path)
+from . import programme as P
 
 import structures_communes as SC  # noqa: E402
 import planning_vacations_v28 as V28  # noqa: E402
@@ -34,7 +35,7 @@ GRAVITES = SMA.GRAVITES
 LIBELLES_GRAVITE = {"vitale": "Vitale — incision < 1 h", "urgente": "Urgente — incision < 6 h",
                     "differable": "Différable — incision < 24 h"}
 ASCENSEURS = {a.id: a.nom for a in SMA.Batiment().ascenseurs}
-SPECIALITES = SMA.SPECIALITES_V28
+SPECIALITES = SMA.SPECIALITES_V28          # (compatibilité) ; utiliser SMA.specialite_de(code)
 
 
 def pid_consultation(patient_db_id: int) -> int:
@@ -74,6 +75,9 @@ def patient_vers_dict(p: SC.Patient) -> dict:
 
 def patient_depuis_dict(d: dict) -> SC.Patient:
     d = dict(d)
+    # la spécialité vient TOUJOURS du chirurgien (les événements anciens portent d'anciennes valeurs : « Orthopédie »,
+    # « Main »...) : tous les praticiens du planning sont du même service
+    d["specialite"] = SMA.specialite_de(V28.NOM_PAR_ID.get(d.get("chirurgien_id"), ""))
     if d.get("date_min"):
         d["date_min"] = date.fromisoformat(d["date_min"])
     return SC.Patient(**d)
@@ -90,7 +94,7 @@ def patient_consultation(fiche: dict, valide: dict) -> SC.Patient:
         priorite=int(valide["priorite"]), urgence=False,
         date_min=date.fromisoformat(str(valide["date_min"])), nom=fiche["pseudo"],
         age=int(e.get("age_annees", 0)), sexe={"1": "M", "2": "F"}.get(str(e.get("sexe")), "ND"),
-        specialite=SPECIALITES.get(fiche["praticien"], ""), type_intervention=e.get("type_intervention", ""),
+        specialite=SMA.specialite_de(fiche["praticien"]), type_intervention=e.get("type_intervention", ""),
         diagnostic=e.get("cim_diag_pr", ""))
 
 
@@ -132,8 +136,22 @@ class Simulation:
     def alertes(self) -> list[str]:
         return list(self.modele.regulation.alertes)
 
+    def alertes_horodatees(self) -> list[tuple[datetime, str]]:
+        a = self.modele.regulation.alertes
+        return list(zip(getattr(a, "heures", [self.maintenant] * len(a)), a))
+
     def jours(self) -> list[date]:
         return sorted(self.modele.jours_planning)
+
+    def jours_tendances(self, semaines: int = 4) -> list[date]:
+        """Jours des graphiques de tendance : les semaines du programme optimisé, prolongées jusqu'à `semaines`
+        semaines après aujourd'hui (le SMA, lui, connaît toute l'année)."""
+        jours = self.jours()
+        if not jours:
+            return []
+        fin = max(jours[0] + timedelta(weeks=P.NB_SEMAINES_HORIZON) - timedelta(days=1),
+                  self.maintenant.date() + timedelta(weeks=semaines))
+        return [j for j in jours if j <= fin]
 
     def fenetres_du_jour(self, jour: date) -> list[SMA.Fenetre]:
         return sorted((f for s in self.modele.salles.values() for f in s.creneaux.values() if f.jour == jour),
@@ -149,12 +167,28 @@ class Simulation:
         return dict(self.modele.logistique.pannes)
 
 
+class AlertesHorodatees(list):
+    """Liste d'alertes du SMA (chaînes, comme avant) qui retient aussi l'heure du modèle à laquelle chacune est levée."""
+
+    def __init__(self, modele: SMA.BlocOperatoire):
+        super().__init__()
+        self.modele, self.heures = modele, []
+
+    def append(self, alerte: str) -> None:
+        super().append(alerte)
+        self.heures.append(self.modele.maintenant)
+
+
 def construire_modele(programme) -> SMA.BlocOperatoire:
-    # Site : optimisation locale des salles conservée, réoptimisation globale désactivée (le site rejoue tous les
-    # événements à chaque affichage : ~3 s au lieu de ~18 s, sans perte de score mesurée sur les événements réels).
-    return SMA.BlocOperatoire(programme.instance1, programme.instance2, programme.solution,
+    # Site : optimisations locale ET globale désactivées. Le site rejoue tous les événements à chaque affichage ; depuis
+    # que tous les praticiens sont du même service, l'optimisation locale coûtait ~17 s par rejeu sans gain de score
+    # mesuré (19,5 s -> 2,6 s, score identique). L'optimisation globale reste disponible à la demande (Administration).
+    i1, i2 = P.instances_sma(programme)          # planning des vacations fixe sur toutes les semaines à venir
+    m = SMA.BlocOperatoire(i1, i2, programme.solution,
                               specialites=SMA.specialites_par_id(), chirurgien_garde=SMA.ID_CHIR_URGENCE,
-                              parametres=SMA.ParametresSMA(optimisation_globale=None), verbeux=1)
+                              parametres=SMA.ParametresSMA(optimisation_globale=None, methode_locale=None), verbeux=1)
+    m.regulation.alertes = AlertesHorodatees(m)
+    return m
 
 
 def simuler(programme, evenements: list[dict], maintenant: datetime) -> Simulation:
@@ -218,6 +252,8 @@ def _planifier(m: SMA.BlocOperatoire, e: dict) -> None:
         m.planifier_action(t, functools.partial(_annuler, m, c))
     elif e["type"] == "reoptimisation":
         m.planifier_action(t, functools.partial(_reoptimisation_rejouee, m, c))
+    elif e["type"] == "absence":
+        m.planifier_action(t, functools.partial(_absence, m, c))
 
 
 def etat_programme(m: SMA.BlocOperatoire) -> dict[int, tuple]:
@@ -341,6 +377,88 @@ def _reoptimisation_rejouee(m: SMA.BlocOperatoire, c: dict) -> None:
                           "gain": c.get("score_avant", 0) - c.get("score_apres", 0)})
 
 
+# =============================================================================
+# Absence d'un chirurgien (vacances, congrès, maladie...)
+# =============================================================================
+# Les vacations du chirurgien sont fermées sur la période (les salles ne les proposent plus, son agent refuse tout
+# créneau) ; ses patients non commencés sont replacés aussitôt : chez un confrère SEULEMENT s'il l'a accepté à la
+# consultation, sinon dans les vacations de son chirurgien après son retour (priorité puis ordre de passage).
+
+SEUIL_ALERTE_REPORT_JOURS = 3          # patient prioritaire (3-4) repoussé de plus de 3 jours : alerte au cadre
+PREVENANCE_JOURS = 2                   # un patient replacé l'est au plus tôt 2 jours après la déclaration (le prévenir)
+
+
+def periode_absence(c: dict) -> tuple[datetime, datetime]:
+    """[premier jour 0 h, lendemain du dernier jour 0 h[."""
+    return (datetime.combine(date.fromisoformat(c["du"]), time(0)),
+            datetime.combine(date.fromisoformat(c["au"]) + timedelta(days=1), time(0)))
+
+
+def _absence(m: SMA.BlocOperatoire, c: dict) -> None:
+    reg = m.regulation
+    cid = id_chirurgien(c["praticien"])
+    debut, fin = periode_absence(c)
+    conv = m.nouvelle_conversation("ABS")
+    m.absences.setdefault(cid, []).append((debut, fin))
+    m.annoncer(f"\n[{SMA.jour_txt(m.maintenant.date())} {SMA.hm(m.maintenant)}] {conv} — ABSENCE : Dr {c['praticien']} "
+               f"du {debut:%d/%m} au {fin - timedelta(days=1):%d/%m} ({c.get('motif', 'motif non précisé')}) : "
+               f"ses vacations sur la période sont fermées")
+    apres = m.maintenant + m.parametres.preparation_rattrapage_min * SMA.MIN
+    au_plus_tot = datetime.combine(m.maintenant.date() + timedelta(days=PREVENANCE_JOURS), time(0))
+    touches = sorted((it for s in m.salles.values() for it in s.interventions.values()
+                      if it.chirurgien_id == cid and debut <= it.debut < fin and it.debut > m.maintenant),
+                     key=lambda i: (-i.patient.priorite, i.debut))
+    for it in touches:
+        if it.debut < apres:
+            alerte = (f"Absence du Dr {c['praticien']} : P{it.pid} prévu à {SMA.hm(it.debut)} ne peut plus être "
+                      f"opéré par lui et est peut-être déjà convoqué -> prévenir le patient")
+            reg.alertes.append(alerte)
+            m.annoncer(f"  ⚠ {alerte}")
+    for it in touches:                        # libérer les créneaux (agendas et séjours mis à jour par la salle)
+        reg.envoyer(f"salle_{it.salle_id}", "ACCEPT_PROPOSAL", "accept_proposal",
+                    {"plan": SMA.Plan(it.salle_id, it.fenetre_id, it.debut.date(), {}, retraits=[it.pid])}, conv,
+                    f"absence : libérer P{it.pid}")
+    reg.decisions.append({"type": "absence", "heure": m.maintenant, "chirurgien": cid, "du": debut, "au": fin,
+                          "patients_touches": len(touches)})
+    if not touches:
+        m.annoncer("  ✔ Aucun patient programmé sur la période")
+        return
+    m.annoncer(f"  {len(touches)} patient(s) à replacer")
+    urgences = [it for it in touches if it.urgence and it.pid in reg.urgences_info]
+    if urgences:
+        reg._replacer(urgences, conv)           # une urgence garde son délai : nouvel appel d'offres urgence
+    for it in [i for i in touches if i not in urgences]:
+        autorises = reg.chirurgiens_autorises.get(it.pid, [it.chirurgien_initial])
+        reponses = reg.diffuser(SMA.AgentSalle, "CFP", "cfp_replacement",
+                                {"intervention": it, "apres": au_plus_tot, "fenetres": reg._fenetres(conv),
+                                 "agendas": reg._agendas(conv), "chirurgiens": autorises,
+                                 "jour_reference": it.debut.date()},
+                                conv, f"replacer P{it.pid} (absence du Dr {c['praticien']})")
+        props = [(r.emetteur, pl) for r in reponses if r.performatif == "PROPOSE" for pl in r.contenu["plans"]]
+        choix = reg._choisir(props, conv, lambda pl: (False, pl.cout))
+        if choix is None:
+            reg.liste_attente.append((it, it.debut.date()))
+            m.annoncer(f"    ↳ P{it.pid} : aucune vacation compatible -> liste d'attente")
+            reg.decisions.append({"type": "attente", "heure": m.maintenant, "patient": it.pid})
+            continue
+        agent, plan, extra, _ = choix
+        evinces = reg._appliquer(agent, plan, props, conv)
+        nouvelle = plan.ajouts[0]
+        m.annoncer(f"    ↳ {plan.resume}")
+        reg.decisions.append({"type": "replacement", "heure": m.maintenant, "patient": it.pid, "debut": nouvelle.debut,
+                              "salle": plan.salle_id, "chirurgien": nouvelle.chirurgien_id,
+                              "changement_chirurgien": nouvelle.chirurgien_id != nouvelle.chirurgien_initial,
+                              "cout": plan.cout + extra, "motif": "absence"})
+        report = (nouvelle.debut.date() - it.debut.date()).days
+        if it.patient.priorite >= 3 and report > SEUIL_ALERTE_REPORT_JOURS:
+            alerte = (f"Absence du Dr {c['praticien']} : P{it.pid} (priorité {it.patient.priorite}) repoussé de "
+                      f"{report} jours, au {SMA.jour_txt(nouvelle.debut.date())} -> à valider par le cadre de bloc")
+            reg.alertes.append(alerte)
+            m.annoncer(f"  ⚠ {alerte}")
+        if evinces:
+            reg._replacer(evinces, conv)
+
+
 def _urgence_tracee(m: SMA.BlocOperatoire, evt) -> None:
     """Traite l'urgence et garde l'état du programme juste avant / juste après (patients qu'elle a déplacés),
     sans rejouer la simulation une seconde fois."""
@@ -441,12 +559,9 @@ def _inscrire(m: SMA.BlocOperatoire, c: dict) -> None:
     m.annoncer(f"\n[{SMA.jour_txt(m.maintenant.date())} {SMA.hm(m.maintenant)}] {conv} — CONSULTATION : {p.nom} "
                f"({nom_chirurgien(p.chirurgien_id)}, {p.duree_bloc} min, priorité {p.priorite}, "
                f"{'ambulatoire' if p.ambulatoire else 'hospitalisé'}, au plus tôt le {jour_min:%d/%m})")
-    if c.get("attente"):
-        apres = max(m.maintenant, datetime.combine(jour_min, time(0)))
-        reg.liste_attente.append((SMA.Intervention(p, 0, apres, 0), jour_min))
-        m.annoncer(f"  {p.nom} inscrit(e) en liste d'attente (relance chaque matin et à chaque créneau libéré)")
-        reg.decisions.append({"type": "consultation_attente", "heure": m.maintenant, "patient": p.id})
-        return
+    # Planning des vacations fixe sur toutes les semaines à venir : le patient est toujours placé tout de suite (une
+    # ancienne inscription « en liste d'attente », c["attente"], est traitée comme les autres). La liste d'attente ne
+    # reste qu'un filet de sécurité, si aucune vacation compatible n'existe.
     it, props, valides = _appel_offres(m, p, jour_min, reg.chirurgiens_autorises[p.id], conv)
     choix = None
     voulu = (c.get("salle_id"), c.get("fenetre_id"))
@@ -511,6 +626,6 @@ def _annuler(m: SMA.BlocOperatoire, c: dict) -> None:
 def patient_urgent(numero: int, code_praticien: str, duree: int, *, ambulatoire: bool, nuits_post_op: int,
                    diagnostic: str = "", type_intervention: str = "", age: int = 40) -> SC.Patient:
     return SMA.patient_urgent(pid_urgence(numero), id_chirurgien(code_praticien), duree,
-                              specialite=SPECIALITES.get(code_praticien, ""), ambulatoire=ambulatoire,
+                              specialite=SMA.specialite_de(code_praticien), ambulatoire=ambulatoire,
                               nuits_post_op=nuits_post_op, nom=f"URG-{numero:03d}", diagnostic=diagnostic,
                               age=age, type_intervention=type_intervention)

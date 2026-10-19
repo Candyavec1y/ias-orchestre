@@ -157,10 +157,10 @@ ID_PAR_NOM = _ids_praticiens()
 NOM_PAR_ID = {i: n for n, i in ID_PAR_NOM.items()}
 
 
-def _construire_modele() -> tuple[dict[int, Creneau], dict[int, Vacation]]:
+def _construire_modele(blocs: Optional[list] = None) -> tuple[dict[int, Creneau], dict[int, Vacation]]:
     """Modèle : une Vacation par plage (pause repas coupée), avec ses types de semaine."""
     groupes: dict[tuple, set] = {}
-    for jour, salle, nom, deb, fin, semaines in BLOCS:
+    for jour, salle, nom, deb, fin, semaines in (BLOCS if blocs is None else blocs):
         for d, f in _decouper(_t(deb), _t(fin)):
             groupes.setdefault((jour, salle, d, f, ID_PAR_NOM[nom]), set()).update(semaines)
     creneaux, vacations = {}, {}
@@ -176,11 +176,11 @@ def _construire_modele() -> tuple[dict[int, Creneau], dict[int, Vacation]]:
 CRENEAUX_MODELE, VACATIONS_MODELE = _construire_modele()
 
 
-def _salles_et_preference() -> dict[int, tuple[tuple[int, ...], Optional[int]]]:
+def _salles_et_preference(modeles: Optional[list] = None) -> dict[int, tuple[tuple[int, ...], Optional[int]]]:
     """Par praticien : (salles autorisées, salle préférée = la plus fréquente, tous types de semaine)."""
     freq: dict[int, Counter] = defaultdict(Counter)
     minutes: dict[int, Counter] = defaultdict(Counter)
-    for v in VACATIONS_MODELE.values():
+    for v in (v for vm in (modeles or [VACATIONS_MODELE]) for v in vm.values()):
         freq[v.chirurgien_id][v.salle_id] += len(v.semaines)
         minutes[v.chirurgien_id][v.salle_id] += v.duree_minutes * len(v.semaines)
     res = {}
@@ -203,9 +203,119 @@ def chirurgiens_de(vacations: dict[int, Vacation]) -> dict[int, Chirurgien]:
 
 
 def construire_semaine(lundi: date) -> tuple[dict[int, Creneau], dict[int, Vacation], dict[int, Chirurgien]]:
-    """Planning d'une semaine réelle : le type (paire / impaire_1 / impaire_2) est déduit de la date."""
-    creneaux, vacations = planning_pour_semaine(CRENEAUX_MODELE, VACATIONS_MODELE, lundi)
+    """Planning d'une semaine réelle : le type (paire / impaire_1 / impaire_2) est déduit de la date, le modèle
+    est la version du planning en vigueur cette semaine-là (voir definir_versions)."""
+    creneaux_modele, vacations_modele = modele_pour(lundi)
+    creneaux, vacations = planning_pour_semaine(creneaux_modele, vacations_modele, lundi)
     return creneaux, vacations, chirurgiens_de(vacations)
+
+
+# =============================================================================
+# VERSIONS DU PLANNING (modifications décidées par l'administrateur)
+# =============================================================================
+# Le planning est FIXE : il se répète à l'identique de semaine en semaine (cycle paire / impaire A / impaire B).
+# Une modification crée une VERSION qui s'applique à partir d'un lundi (date d'effet) ; les semaines antérieures
+# gardent la version précédente, le passé n'est donc jamais réécrit. Les ids des praticiens existants ne changent
+# jamais (un nouveau praticien reçoit le premier id libre) ; les ids de vacation restent < 100 (le SMA décale les
+# ids de 100 par semaine).
+
+MAX_VACATIONS_MODELE = 99
+_VERSIONS: list[tuple[date, list, dict[int, Creneau], dict[int, Vacation]]] = []   # triées par date d'effet
+
+
+def ajouter_praticiens(noms, ids_connus: Optional[dict[str, int]] = None) -> dict[str, int]:
+    """Enregistre les praticiens inconnus : id déjà attribué (`ids_connus`, à conserver par l'appelant) ou premier
+    id libre après les existants. Renvoie les ids des praticiens ajoutés."""
+    ajoutes = {}
+    for nom in sorted(set(noms) - set(ID_PAR_NOM)):
+        nouvel_id = (ids_connus or {}).get(nom) or max(i for i in ID_PAR_NOM.values() if i < ID_URGENCE) + 1
+        if nouvel_id >= ID_URGENCE or nouvel_id in NOM_PAR_ID:
+            raise ValueError(f"id de praticien indisponible pour {nom}")
+        ID_PAR_NOM[nom] = nouvel_id
+        NOM_PAR_ID[nouvel_id] = nom
+        ajoutes[nom] = nouvel_id
+    return ajoutes
+
+
+def verifier_blocs(blocs: list) -> list[str]:
+    """Erreurs bloquantes d'une version : horaires, jour, salle, types de semaine, conflits salle / praticien."""
+    erreurs = []
+    for k, (jour, salle, nom, deb, fin, semaines) in enumerate(blocs, start=1):
+        try:
+            d, f = _t(deb), _t(fin)
+        except (ValueError, AttributeError):
+            erreurs.append(f"ligne {k} : horaire invalide ({deb} – {fin}), format attendu 8:00")
+            continue
+        if not d < f:
+            erreurs.append(f"ligne {k} : l'heure de fin doit suivre l'heure de début")
+        if jour not in range(5) or salle not in SALLES:
+            erreurs.append(f"ligne {k} : jour ou salle invalide")
+        if not nom:
+            erreurs.append(f"ligne {k} : praticien manquant")
+        if not semaines:
+            erreurs.append(f"ligne {k} : aucun type de semaine coché")
+    if erreurs:
+        return erreurs
+    ids, noms = dict(ID_PAR_NOM), dict(NOM_PAR_ID)          # vérification sans effet sur les praticiens connus
+    try:
+        ajouter_praticiens(b[2] for b in blocs)
+        _, vacations = _construire_modele(blocs)
+        if len(vacations) > MAX_VACATIONS_MODELE:
+            return [f"{len(vacations)} vacations : {MAX_VACATIONS_MODELE} au maximum"]
+        return _conflits(vacations)
+    finally:
+        ID_PAR_NOM.clear(); ID_PAR_NOM.update(ids)
+        NOM_PAR_ID.clear(); NOM_PAR_ID.update(noms)
+
+
+def _conflits(vacations: dict[int, Vacation]) -> list[str]:
+    erreurs = []
+    jours = ("lundi", "mardi", "mercredi", "jeudi", "vendredi")
+    for ts in TYPES_SEMAINE:
+        liste = [v for v in vacations.values() if ts in v.semaines]
+        for i, a in enumerate(liste):
+            for b in liste[i + 1:]:
+                if a.jour != b.jour or not (a.heure_debut < b.heure_fin and b.heure_debut < a.heure_fin):
+                    continue
+                quand = f"{jours[a.jour.weekday()]} ({ts.replace('_1', ' A').replace('_2', ' B')})"
+                if a.salle_id == b.salle_id:
+                    erreurs.append(f"Salle {a.salle_id} {quand} : {NOM_PAR_ID[a.chirurgien_id]} et "
+                                   f"{NOM_PAR_ID[b.chirurgien_id]} se chevauchent")
+                if a.chirurgien_id == b.chirurgien_id and a.chirurgien_id not in (ID_URGENCE, ID_LIBRE):
+                    erreurs.append(f"{NOM_PAR_ID[a.chirurgien_id]} dans deux salles en même temps {quand}")
+    return erreurs
+
+
+def definir_versions(versions: list[tuple[date, list]], ids_praticiens: Optional[dict[str, int]] = None) -> dict[str, int]:
+    """Remplace les versions du planning : [(lundi d'effet, blocs au format BLOCS), ...]. `ids_praticiens` : ids déjà
+    attribués aux praticiens ajoutés (stables d'un lancement à l'autre). Renvoie tous les ids attribués."""
+    global _VERSIONS, _SALLES_PREF
+    res, attribues = [], dict(ids_praticiens or {})
+    for effet, blocs in sorted(versions, key=lambda x: x[0]):
+        blocs = [tuple(b[:5]) + (tuple(b[5]),) for b in blocs]
+        attribues.update(ajouter_praticiens((b[2] for b in blocs), attribues))
+        creneaux, vacations = _construire_modele(blocs)
+        res.append((effet - timedelta(days=effet.weekday()), blocs, creneaux, vacations))
+    _VERSIONS = res
+    _SALLES_PREF = _salles_et_preference([VACATIONS_MODELE] + [v[3] for v in res])
+    return attribues
+
+
+def modele_pour(lundi: date) -> tuple[dict[int, Creneau], dict[int, Vacation]]:
+    lundi = lundi - timedelta(days=lundi.weekday())
+    for effet, _, creneaux, vacations in reversed(_VERSIONS):
+        if effet <= lundi:
+            return creneaux, vacations
+    return CRENEAUX_MODELE, VACATIONS_MODELE
+
+
+def blocs_pour(lundi: date) -> list:
+    """Blocs (format BLOCS) de la version en vigueur la semaine du `lundi`."""
+    lundi = lundi - timedelta(days=lundi.weekday())
+    for effet, blocs, _, _ in reversed(_VERSIONS):
+        if effet <= lundi:
+            return list(blocs)
+    return list(BLOCS)
 
 
 def verifier_semaine(lundi: date) -> list[str]:

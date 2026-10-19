@@ -27,6 +27,10 @@ import sma_urgences as SMA  # noqa: E402
 # l'approche de la date). Bornes (min, max) en fraction des heures de vacation du chirurgien.
 CHARGES_PAR_SEMAINE = ((0.85, 1.00), (0.60, 0.75), (0.35, 0.50), (0.10, 0.25))
 NB_SEMAINES_HORIZON = 4
+# Le planning des vacations (v28, cycle fixe de 4 semaines) est supposé IDENTIQUE sur toutes les semaines à venir :
+# le SMA connaît ses vacations sur NB_SEMAINES_SMA semaines (au-delà des 4 semaines optimisées, semaines ouvertes
+# sans patient de démonstration). Une inscription ou un report trouve donc toujours un créneau, plus tard au besoin.
+NB_SEMAINES_SMA = 52
 # Hébergement : les valeurs de l'étude (14 lits / 10 places) ont été calibrées pour 8 chirurgiens ;
 # le planning v28 en compte une vingtaine sur 4 salles -> capacités relevées (voir CHOIX.md).
 HEBERGEMENT_V28 = SC.ParametresHebergement(lits_disponibles_par_jour=30, places_ambulatoires_par_jour=20,
@@ -150,6 +154,18 @@ def construire_instances(lundi: date, nb_semaines: int = NB_SEMAINES_HORIZON, gr
                                     specialite=spe.get(p.chirurgien_id, ""))
             pid += 1
     return SMA.construire_instances_v28(lundi, nb_semaines, patients=patients, hebergement=hebergement)
+
+
+def instances_sma(programme: "Programme", nb_semaines: int = NB_SEMAINES_SMA):
+    """Instances du SMA : mêmes patients et mêmes identifiants de vacations que le programme optimisé (4 semaines),
+    plus les vacations des semaines suivantes du planning fixe."""
+    cle = ("_instances_sma", nb_semaines)
+    if getattr(programme, "_cache_sma", (None,))[0] != cle:
+        i1, i2 = SMA.construire_instances_v28(programme.lundi, max(nb_semaines, programme.nb_semaines),
+                                              patients=programme.instance2.patients,
+                                              hebergement=programme.instance2.hebergement)
+        programme._cache_sma = (cle, i1, i2)
+    return programme._cache_sma[1], programme._cache_sma[2]
 
 
 @dataclass

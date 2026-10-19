@@ -110,6 +110,7 @@ if not st.session_state.get("purge_faite"):          # conservation limitée (RG
     if supprimes:
         C.tracer("purge automatique RGPD", f"{len(supprimes)} patient(s)")
     st.session_state["purge_faite"] = True
+C.charger_planning_vacations()      # versions du planning des vacations (onglet Administration)
 C.garantir_programme()
 
 if u["role"] == "admin":

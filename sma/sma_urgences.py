@@ -121,11 +121,23 @@ ID_PAR_NOM = V28.ID_PAR_NOM                # code praticien -> id (ex. ID_PAR_NO
 DECALAGE_ID_SEMAINE = 100
 
 # HYPOTHÈSE (jeu de test) — à compléter dès que les spécialités réelles sont connues
-SPECIALITES_V28 = {"CT": "Orthopédie", "MO": "Orthopédie", "LZ": "Main", "HA": "Vasculaire", "JE": "Rachis"}
+# Tous les praticiens du planning appartiennent au MÊME service (orthopédie-traumatologie) : ils sont tous compétents
+# pour les patients du service (urgences, replacements, confrères). Calculé à la volée : un praticien ajouté au
+# planning des vacations par l'administrateur fait aussi partie du service.
+SPECIALITE_SERVICE = "Orthopédie-traumatologie"
+
+
+def specialite_de(nom: str) -> str:
+    """Spécialité d'un praticien (code du planning) ; "" pour URGENCE / LIBRE ou un code inconnu."""
+    pid = V28.ID_PAR_NOM.get(nom)
+    return SPECIALITE_SERVICE if pid is not None and pid not in (V28.ID_URGENCE, V28.ID_LIBRE) else ""
 
 
 def specialites_par_id() -> dict[int, str]:
-    return {V28.ID_PAR_NOM[n]: s for n, s in SPECIALITES_V28.items()}
+    return {pid: SPECIALITE_SERVICE for nom, pid in V28.ID_PAR_NOM.items() if specialite_de(nom)}
+
+
+SPECIALITES_V28 = {nom: specialite_de(nom) for nom in V28.ID_PAR_NOM if specialite_de(nom)}   # (compatibilité)
 
 
 def construire_instances_v28(lundi: date, nb_semaines: int = 2, patients: Optional[dict] = None,
@@ -692,6 +704,9 @@ class AgentChirurgien(AgentSMA):
         tous = [(d, f, s, pid) for pid, (d, f, s) in self.agenda.items() if pid not in ignores] + \
                [(d, f, s, pid) for pid, d, f, s in proposes]
         for pid, d, f, s in proposes:
+            if self.model.chirurgien_absent(self.chir_id, d, f):
+                motif = f"absent le {jour_txt(d.date())}"
+                return msg.reponse("REFUSE", {"motif": motif}, motif)
             for d2, f2, s2, pid2 in tous:
                 if pid2 != pid and chevauche(d, f, d2, f2):
                     motif = f"déjà au bloc (salle {s2}) de {hm(d2)} à {hm(f2)}"
@@ -909,7 +924,8 @@ class AgentSalle(AgentSMA):
     def sur_etat_programme(self, msg: Message):
         """Pour l'agent Optimisation : interventions et créneaux de la salle."""
         return msg.reponse("INFORM", {"interventions": list(self.interventions.values()),
-                                      "creneaux": {(self.salle_id, f.id): f for f in self.creneaux.values()}},
+                                      "creneaux": {(self.salle_id, f.id): f for f in self.creneaux.values()
+                                                   if not self.model.fenetre_fermee(f)}},
                            f"{len(self.interventions)} intervention(s)")
 
     def _top(self, plans: list[Plan]) -> list[Plan]:
@@ -926,10 +942,11 @@ class AgentSalle(AgentSMA):
         maintenant, fenetres = c["maintenant"], c["fenetres"]
         plans = []
         for fen in self.creneaux.values():
-            if fen.jour not in c["jours"] or fen.fin <= c["t_min"]:
+            if fen.jour not in c["jours"] or fen.fin <= c["t_min"] or self.model.fenetre_fermee(fen):
                 continue
             # vacation : opérée par SON chirurgien s'il est compétent ; plage d'urgence : tout chirurgien compétent
             chirs = c["chirurgiens"] if fen.urgence else [fen.chirurgien_id] if fen.chirurgien_id in c["chirurgiens"] else []
+            chirs = [cid for cid in chirs if not self.model.chirurgien_absent(cid, fen.debut, fen.fin)]
             occ = self._occupations(c.get("agendas"), fen)
             for cid in chirs:
                 patient = replace(c["patient"], chirurgien_id=cid)
@@ -964,7 +981,7 @@ class AgentSalle(AgentSMA):
         jours = {d.date() for f in fenetres.values() for a, b in f for d in (a, b) if d not in (datetime.min, datetime.max)}
         plans, non_resolus = [], []
         for fen in self.creneaux.values():
-            if fen.jour not in jours or fen.fin <= maintenant:
+            if fen.jour not in jours or fen.fin <= maintenant or self.model.fenetre_fermee(fen):
                 continue
             libres, t0 = self._etat_creneau(fen, maintenant)
             impactees = [i for i in libres if premier_transfert_possible(
@@ -1006,7 +1023,7 @@ class AgentSalle(AgentSMA):
         pret = maintenant + self.p.preparation_rattrapage_min * MIN
         plans = []
         for fen in self.creneaux.values():
-            if fen.jour != maintenant.date() or fen.fin <= maintenant:
+            if fen.jour != maintenant.date() or fen.fin <= maintenant or self.model.fenetre_fermee(fen):
                 continue
             libres, t0 = self._etat_creneau(fen, maintenant)
             if not any(i.debut > i.debut_initial or i.urgence for i in libres):
@@ -1035,6 +1052,8 @@ class AgentSalle(AgentSMA):
         plans = []
         for fen in self.creneaux.values():
             if fen.urgence or fen.chirurgien_id not in competents or fen.fin <= apres or fen.jour < apres.date():
+                continue
+            if self.model.fenetre_fermee(fen):
                 continue
             if p0.date_min is not None and fen.jour < p0.date_min:
                 continue
@@ -1757,6 +1776,7 @@ class BlocOperatoire(mesa.Model):
         from optimisation_sma import AgentOptimisation          # import tardif (optimisation_sma importe ce module)
         self.optimisation = AgentOptimisation(self)
         self.urgences_recues: set[int] = set()          # invariant : chacune doit être programmée
+        self.absences: dict[int, list[tuple[datetime, datetime]]] = {}   # chirurgien -> périodes [début, fin[
         self.chirurgiens = {}
         for cid, c in instance1.chirurgiens.items():
             dispo = instance1.disponibilites_chirurgiens.get(cid)
@@ -1811,6 +1831,15 @@ class BlocOperatoire(mesa.Model):
         kw.setdefault("specialites", specialites_par_id())
         kw.setdefault("chirurgien_garde", ID_CHIR_URGENCE)
         return cls(i1, i2, solution or construire_meilleure_affectation_initiale(i2), **kw)
+
+    # ------------------------------------------------------------------ absences des chirurgiens
+    def chirurgien_absent(self, cid: int, debut: datetime, fin: datetime) -> bool:
+        """Le chirurgien est-il absent à un moment de [debut, fin[ ?"""
+        return any(chevauche(debut, fin, a, b) for a, b in self.absences.get(cid, ()))
+
+    def fenetre_fermee(self, fen: "Fenetre") -> bool:
+        """Vacation fermée : son chirurgien est absent (les plages d'urgence restent ouvertes)."""
+        return fen.chirurgien_id is not None and self.chirurgien_absent(fen.chirurgien_id, fen.debut, fen.fin)
 
     # ------------------------------------------------------------------ temps
     @property

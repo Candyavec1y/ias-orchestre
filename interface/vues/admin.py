@@ -21,9 +21,12 @@ def afficher() -> None:
         st.error("Accès réservé à l'administrateur.")
         return
     C.entete("Administration")
-    t1, t_cap, t_opt, t2 = st.tabs(["Comptes", "Lits et places", "Optimisation globale", "Horloge"])
+    t1, t_vac, t_cap, t_opt, t2 = st.tabs(["Comptes", "Planning des vacations", "Lits et places",
+                                           "Optimisation globale", "Horloge"])
     with t1:
         _comptes()
+    with t_vac:
+        _planning_vacations()
     with t_cap:
         _capacites()
     with t_opt:
@@ -92,6 +95,154 @@ def _capacites() -> None:
         C.appliquer(modifier, categorie="Programme", action="Modification des capacités d'hébergement",
                     detail=detail, motif=motif.strip())
     st.session_state["flash_capacites"] = f"Capacités enregistrées : {detail}."
+    st.rerun()
+
+
+JOURS_SEMAINE = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+TYPES = {"paire": "Paire", "impaire_1": "Impaire A", "impaire_2": "Impaire B"}
+
+
+def _blocs_vers_lignes(blocs: list) -> pd.DataFrame:
+    lignes = [{"Jour": JOURS_SEMAINE[j], "Salle": sal, "Praticien": nom, "Début": deb, "Fin": fin,
+               **{lib: t in sem for t, lib in TYPES.items()}} for j, sal, nom, deb, fin, sem in blocs]
+    def cle(c: pd.Series) -> pd.Series:
+        if c.name == "Jour":
+            return c.map({j: k for k, j in enumerate(JOURS_SEMAINE)})
+        if c.name == "Début":                                # « 7:45 » avant « 10:00 »
+            return c.map(lambda x: tuple(int(v) for v in str(x).split(":")))
+        return c
+
+    return pd.DataFrame(lignes).sort_values(["Jour", "Salle", "Début"], key=cle).reset_index(drop=True)
+
+
+def _lignes_vers_blocs(df: pd.DataFrame) -> list:
+    blocs = []
+    for _, r in df.iterrows():
+        if not str(r.get("Praticien") or "").strip() and not str(r.get("Début") or "").strip():
+            continue                                         # ligne vide ajoutée par erreur
+        blocs.append([JOURS_SEMAINE.index(r["Jour"]) if r["Jour"] in JOURS_SEMAINE else -1,
+                      int(r["Salle"]) if pd.notna(r["Salle"]) else -1, str(r["Praticien"] or "").strip().upper(),
+                      str(r["Début"] or "").strip().replace("h", ":"), str(r["Fin"] or "").strip().replace("h", ":"),
+                      [t for t, lib in TYPES.items() if bool(r.get(lib))]])
+    return blocs
+
+
+def _planning_vacations() -> None:
+    V28 = P.V28
+    if msg := st.session_state.pop("flash_vacations", None):
+        st.success(msg)
+    d = C.planning_vacations()
+    cfg = C.config_programme() or {}
+    aujourd = C.maintenant().date()
+    prochain_lundi = P.lundi_de(aujourd) + timedelta(weeks=1)
+    fin_optimise = (date.fromisoformat(cfg["lundi"]) + timedelta(weeks=cfg.get("nb_semaines", P.NB_SEMAINES_HORIZON))
+                    if cfg else prochain_lundi)
+    st.markdown("Le planning des vacations est **fixe** : il se répète à l'identique toutes les semaines (cycle "
+                "semaine paire / impaire A / impaire B). Une modification s'applique **à partir d'un lundi à venir** ; "
+                "les semaines précédentes gardent l'ancien planning. Le système multi-agent replace aussitôt les "
+                "patients concernés selon le nouveau planning.")
+    if d["versions"]:
+        st.markdown("**Versions enregistrées**")
+        st.dataframe(pd.DataFrame([{"En vigueur à partir du": C.jour_long(date.fromisoformat(v["effet"])),
+                                    "Vacations": len(v["blocs"]), "Par": v.get("auteur", ""),
+                                    "Motif": v.get("motif", "")} for v in d["versions"]]),
+                     hide_index=True, width="stretch")
+    else:
+        st.caption("Aucune modification : planning d'origine (version 28) sur toutes les semaines.")
+
+    c1, c2 = st.columns([1, 2])
+    effet = c1.date_input("À partir du lundi", value=prochain_lundi, min_value=prochain_lundi, format="DD/MM/YYYY",
+                          key="effet_vacations")
+    effet = P.lundi_de(effet)
+    if effet < prochain_lundi:
+        effet = prochain_lundi
+    c2.markdown(f"<div class='petit'>Modification appliquée à partir du <b>{C.jour_long(effet)}</b>. "
+                + ("Cette date tombe dans les semaines déjà optimisées : le programme opératoire sera <b>recalculé</b> "
+                   "(environ 10 s)." if effet < fin_optimise else
+                   "Les semaines optimisées ne changent pas : seul le système multi-agent utilise le nouveau planning.")
+                + "</div>", unsafe_allow_html=True)
+    actuels = V28.blocs_pour(effet)
+    suivantes = [v for v in d["versions"] if date.fromisoformat(v["effet"]) > effet]
+    if suivantes:
+        st.warning(f"Une version plus récente existe déjà (à partir du "
+                   f"{C.jour_long(date.fromisoformat(suivantes[0]['effet']))}) : cette modification ne s'appliquera "
+                   f"que jusqu'à cette date. Chaque version est un planning complet, en vigueur jusqu'à la suivante.")
+    st.caption("Une ligne par plage : jour, salle, code du praticien (ou URGENCE / LIBRE), horaires (ex. 8:00 – 13:00) "
+               "et types de semaine où elle a lieu. Une plage qui enjambe 13 h – 13 h 30 est coupée en deux "
+               "automatiquement. Ajoutez une ligne en bas du tableau, supprimez-en une en la sélectionnant.")
+    with st.form("form_vacations"):
+        edite = st.data_editor(
+            _blocs_vers_lignes(actuels), num_rows="dynamic", hide_index=True, width="stretch",
+            key=f"editeur_vacations_{effet}",
+            column_config={
+                "Jour": st.column_config.SelectboxColumn(options=JOURS_SEMAINE, required=True),
+                "Salle": st.column_config.SelectboxColumn(options=sorted(V28.SALLES), required=True),
+                "Praticien": st.column_config.TextColumn(required=True, help="Code du praticien, URGENCE ou LIBRE"),
+                "Début": st.column_config.TextColumn(required=True, help="ex. 8:00"),
+                "Fin": st.column_config.TextColumn(required=True, help="ex. 13:00"),
+                **{lib: st.column_config.CheckboxColumn(default=True) for lib in TYPES.values()}})
+        motif = st.text_input("Motif (obligatoire, tracé)", placeholder="ex. nouvelle vacation du Dr XX le jeudi")
+        ok = st.form_submit_button("Enregistrer le nouveau planning", type="primary")
+    a_supprimer = [v for v in d["versions"] if date.fromisoformat(v["effet"]) >= prochain_lundi]
+    if a_supprimer:
+        with st.popover("Annuler une version à venir"):
+            choix = st.selectbox("Version", a_supprimer,
+                                 format_func=lambda v: f"à partir du {C.jour_long(date.fromisoformat(v['effet']))}")
+            motif_s = st.text_input("Motif de l'annulation (obligatoire)", key="motif_annul_vac")
+            if st.button("Annuler cette version", type="primary"):
+                if not motif_s.strip():
+                    st.error("Indiquez le motif.")
+                else:
+                    reste = [v for v in d["versions"] if v is not choix and v["effet"] != choix["effet"]]
+                    _appliquer_planning({**d, "versions": reste}, date.fromisoformat(choix["effet"]), fin_optimise,
+                                        "Annulation d'une version du planning des vacations",
+                                        f"version du {choix['effet']} annulée", motif_s.strip())
+    if not ok:
+        return
+    if not motif.strip():
+        st.error("Indiquez le motif de la modification.")
+        return
+    blocs = _lignes_vers_blocs(edite)
+    erreurs = V28.verifier_blocs(blocs) if blocs else ["le planning est vide"]
+    if erreurs:
+        st.error("Planning non enregistré :\n\n" + "\n".join(f"- {e}" for e in erreurs[:12]))
+        return
+    if sorted(map(tuple, (b[:5] + [tuple(b[5])] for b in blocs))) == sorted(map(tuple, (list(b[:5]) + [tuple(b[5])] for b in actuels))):
+        st.info("Aucune modification par rapport au planning en vigueur à cette date.")
+        return
+    avant = {b[2] for b in actuels} - {V28.NOM_URGENCE, V28.NOM_LIBRE}
+    apres = {b[2] for b in blocs} - {V28.NOM_URGENCE, V28.NOM_LIBRE}
+    u = C.utilisateur()
+    version = {"effet": effet.isoformat(), "blocs": blocs, "auteur": u["login"], "motif": motif.strip(),
+               "cree_le": DB.horodatage()}
+    versions = [v for v in d["versions"] if v["effet"] != version["effet"]] + [version]
+    detail = (f"à partir du {effet:%d/%m/%Y} : {len(actuels)} → {len(blocs)} plage(s)"
+              + (f", praticien(s) ajouté(s) : {', '.join(sorted(apres - avant))}" if apres - avant else "")
+              + (f", praticien(s) sans vacation : {', '.join(sorted(avant - apres))}" if avant - apres else ""))
+    _appliquer_planning({**d, "versions": sorted(versions, key=lambda v: v["effet"])}, effet, fin_optimise,
+                        "Modification du planning des vacations", detail, motif.strip())
+
+
+def _appliquer_planning(nouveau: dict, effet: date, fin_optimise: date, action: str, detail: str, motif: str) -> None:
+    """Enregistre les versions (ids des nouveaux praticiens compris) et recalcule le programme si la date d'effet
+    tombe dans les semaines optimisées ; les déplacements de patients qui en découlent sont tracés."""
+    V28 = P.V28
+    recalcul = effet < fin_optimise
+
+    def modifier():
+        ids = V28.definir_versions([(date.fromisoformat(v["effet"]), v["blocs"]) for v in nouveau["versions"]],
+                                   nouveau.get("praticiens"))
+        DB.ecrire_parametre("planning_vacations", {**nouveau, "praticiens": ids})
+        if recalcul:
+            cfg = C.config_programme()
+            prog = P.calculer_programme(date.fromisoformat(cfg["lundi"]) if cfg else C.maintenant().date(),
+                                        (cfg or {}).get("mode") or "memetique", 10.0, hebergement=C.hebergement())
+            C.enregistrer_programme(prog, C.utilisateur()["login"])
+
+    with st.spinner("Recalcul du programme opératoire…" if recalcul else "Enregistrement…"):
+        C.appliquer(modifier, categorie="Programme", action=action,
+                    detail=detail + (" · programme recalculé" if recalcul else ""), motif=motif)
+    st.session_state["flash_vacations"] = f"{action} : {detail}" + (" · programme recalculé." if recalcul else ".")
     st.rerun()
 
 

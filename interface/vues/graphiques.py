@@ -49,11 +49,15 @@ def gantt_jour(sim: S.Simulation, jour: date, noms: dict[int, str], moi: Optiona
     # créneaux du planning (vacations / plages d'urgence) ; le libellé est posé AU-DESSUS du cadre
     for f in fenetres:
         nom = m.salles[f.salle_id].nom_affiche
-        lib = "Plage URGENCES" if f.urgence else f"Vacation {S.code_chirurgien(f.chirurgien_id)}"
+        ferme = m.fenetre_fermee(f)
+        lib = ("Plage URGENCES" if f.urgence else f"Vacation {S.code_chirurgien(f.chirurgien_id)}"
+               + (" — absent" if ferme else ""))
         fig.add_trace(go.Bar(
             y=[nom], x=[_ms(f.fin - f.debut)], base=[f.debut], orientation="h", width=0.66,
-            marker=dict(color="rgba(198,40,40,0.06)" if f.urgence else "rgba(38,38,245,0.05)",
-                        line=dict(color=ROUGE if f.urgence else couleur.get(f.chirurgien_id, "#888"), width=1.2)),
+            marker=dict(color="rgba(198,40,40,0.06)" if f.urgence else "rgba(120,120,120,0.12)" if ferme
+                        else "rgba(38,38,245,0.05)",
+                        line=dict(color=ROUGE if f.urgence else "#9AA5B1" if ferme else couleur.get(f.chirurgien_id, "#888"),
+                                  width=1.2)),
             hovertemplate=f"{lib}<br>{f.debut:%H:%M}–{f.fin:%H:%M}<extra></extra>", showlegend=False))
         fig.add_annotation(x=f.debut, y=nom, text=lib, showarrow=False, xanchor="left", yanchor="bottom",
                            yshift=bande * 0.33 + 4, font=dict(size=10, color="#4A5591"))
@@ -120,7 +124,7 @@ def gantt_jour(sim: S.Simulation, jour: date, noms: dict[int, str], moi: Optiona
 def occupation_hebergement(sim: S.Simulation) -> go.Figure:
     lits, places = sim.modele.hebergement.occupation()
     h = sim.modele.instance2.hebergement
-    jours = sim.jours()
+    jours = sim.jours_tendances()
     fig = go.Figure()
     fig.add_trace(go.Bar(x=jours, y=[lits.get(j, 0) for j in jours], name="Lits occupés", marker_color=BLEU))
     fig.add_trace(go.Bar(x=jours, y=[places.get(j, 0) for j in jours], name="Places ambulatoires", marker_color=MENTHE))

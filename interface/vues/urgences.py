@@ -27,18 +27,28 @@ def afficher() -> None:
         return
     noms = C.noms_patients(sim)
     _bandeau(sim, noms)
+    t_abs = None
     if C.est("admin"):                  # traces internes du système multi-agent : administrateur uniquement
-        t1, t_suivi, t2, t3, t4 = st.tabs(["Déclarer une urgence", "Suivi des urgences", "Incident logistique",
-                                           "Fil des décisions", "Messages entre agents"])
+        t1, t_suivi, t2, t_abs, t3, t4 = st.tabs(["Déclarer une urgence", "Suivi des urgences", "Incident logistique",
+                                                  "Absence d'un chirurgien", "Fil des décisions",
+                                                  "Messages entre agents"])
         with t3:
             _fil(sim, noms)
         with t4:
             _messages(sim, noms)
     elif C.est("regulation"):
-        t1, t_suivi, t2 = st.tabs(["Déclarer une urgence", "Suivi des urgences", "Incident logistique"])
+        t1, t_suivi, t2, t_abs = st.tabs(["Déclarer une urgence", "Suivi des urgences", "Incident logistique",
+                                          "Absence d'un chirurgien"])
     else:
-        t1, t2 = st.tabs(["Déclarer une urgence", "Incident logistique"])
+        t1, t2, t_abs = st.tabs(["Déclarer une urgence", "Incident logistique", "Mes absences"])
         t_suivi = None
+    if t_abs is not None:
+        with t_abs:
+            u = C.utilisateur()
+            if u["role"] == "chirurgien" and u.get("praticien") not in P.praticiens_v28():
+                st.info("Aucun praticien n'est associé à ce compte : contactez l'administrateur.")
+            else:
+                _absences(sim, noms, u["praticien"] if u["role"] == "chirurgien" else None)
     if t_suivi is not None:
         with t_suivi:
             _suivi()
@@ -48,12 +58,22 @@ def afficher() -> None:
         _logistique(sim)
 
 
+DUREE_ALERTE_MIN = 10           # une alerte reste encadrée en rouge 10 minutes, puis passe dans « Alertes du jour »
+
+
 def _bandeau(sim: S.Simulation, noms) -> None:
     if msg := st.session_state.pop("flash_urgence", None):
         {"ok": st.success, "attention": st.warning}.get(msg[0], st.error)(msg[1])
-    alertes = [a for a in sim.alertes() if "transfert vers un autre établissement" not in a]
-    for a in alertes[-5:]:
-        st.error(C.lisible(a, noms))
+    now = C.maintenant()
+    alertes = [(h, a) for h, a in sim.alertes_horodatees() if "transfert vers un autre établissement" not in a]
+    recentes = [(h, a) for h, a in alertes if now - timedelta(minutes=DUREE_ALERTE_MIN) <= h <= now]
+    for h, a in recentes[-5:]:
+        st.error(f"{h:%H:%M} — {C.lisible(a, noms)}")
+    du_jour = [(h, a) for h, a in alertes if h.date() == now.date() and (h, a) not in recentes]
+    if du_jour:
+        with st.expander(f"Alertes du jour ({len(du_jour)})"):
+            for h, a in reversed(du_jour):
+                st.markdown(f"<div class='petit'><b>{h:%H:%M}</b> — {C.lisible(a, noms)}</div>", unsafe_allow_html=True)
     for asc, (deb, fin) in sim.pannes().items():
         st.warning(f"{S.ASCENSEURS.get(asc, asc)} en panne depuis {deb:%H:%M}, retour estimé {fin:%H:%M} : "
                    "les patients hospitalisés ne peuvent pas monter au bloc ni en redescendre.")
@@ -233,6 +253,103 @@ def _logistique(sim: S.Simulation) -> None:
                 st.session_state["flash_urgence"] = ("ok", f"{asc_id} remis en service : le SMA tente de ré-avancer "
                                                            "les patients décalés.")
                 st.rerun()
+
+
+# =============================================================================
+# Absence d'un chirurgien
+# =============================================================================
+
+MOTIFS_ABSENCE = ["Vacances", "Congrès / formation", "Maladie", "Autre"]
+
+
+def _absences(sim: S.Simulation, noms, praticien: str | None = None) -> None:
+    """`praticien` : compte chirurgien -> il ne voit, ne déclare et ne modifie que SES absences."""
+    u = C.utilisateur()
+    maintenant = C.maintenant()
+    aujourd = maintenant.date()
+    if msg := st.session_state.pop("flash_absence", None):
+        st.success(msg)
+    st.markdown("Pendant l'absence, les vacations du chirurgien sont **fermées**. Ses patients sont replacés aussitôt "
+                "(au plus tôt dans 2 jours, pour pouvoir les prévenir) : chez un **confrère** seulement s'ils l'ont "
+                "accepté en consultation, sinon dans les **vacations de leur chirurgien après son retour**. Les urgences "
+                "repassent par l'appel d'offres avec leur délai. Une alerte signale tout patient prioritaire repoussé "
+                "de plus de 3 jours. Déclarez les absences prévues le plus tôt possible.")
+    liste = sorted(C.absences(), key=lambda a: a["du_d"])
+    if praticien:
+        liste = [a for a in liste if a["praticien"] == praticien]
+    actives = [a for a in liste if a["au_d"] >= aujourd]
+    decisions = [d for d in sim.decisions() if d["type"] == "absence"]
+    if actives:
+        st.markdown("**Mes absences en cours et à venir**" if praticien else "**Absences en cours et à venir**")
+        st.dataframe(pd.DataFrame([{
+            "Chirurgien": f"Dr {a['praticien']}", "Du": C.jour_long(a["du_d"]), "Au": C.jour_long(a["au_d"]),
+            "Motif": a.get("motif", "") + (f" — {a['precision']}" if a.get("precision") else ""),
+            "Patients replacés": next((d["patients_touches"] for d in decisions
+                                       if d["heure"] == a["heure"] and S.code_chirurgien(d["chirurgien"]) == a["praticien"]), "—"),
+            "Déclarée par": f"{a['auteur']} le {a['heure']:%d/%m %H:%M}"} for a in actives]),
+            hide_index=True, width="stretch")
+    else:
+        st.caption("Aucune absence en cours ou à venir.")
+
+    with st.form("absence"):
+        st.markdown("**Déclarer une absence**")
+        c1, c2, c3, c4 = st.columns(4)
+        if praticien:
+            c1.text_input("Chirurgien", value=f"Dr {praticien}", disabled=True)
+            prat = praticien
+        else:
+            prat = c1.selectbox("Chirurgien", P.praticiens_v28(), format_func=lambda x: f"Dr {x}")
+        du = c2.date_input("Du", value=aujourd + timedelta(days=7), min_value=aujourd, format="DD/MM/YYYY")
+        au = c3.date_input("Au (inclus)", value=aujourd + timedelta(days=11), min_value=aujourd, format="DD/MM/YYYY")
+        motif = c4.selectbox("Motif", MOTIFS_ABSENCE)
+        precision = st.text_input("Précision (facultatif)", placeholder="ex. congrès SOFCOT")
+        ok = st.form_submit_button("Déclarer l'absence", type="primary")
+    if ok:
+        if au < du:
+            st.error("La date de fin doit suivre la date de début.")
+        elif any(a["praticien"] == prat and a["du_d"] <= au and du <= a["au_d"] for a in liste):
+            st.error(f"Le Dr {prat} a déjà une absence déclarée qui chevauche cette période : modifiez-la plutôt.")
+        else:
+            contenu = {"praticien": prat, "du": du.isoformat(), "au": au.isoformat(), "motif": motif,
+                       "precision": precision.strip()}
+            _enregistrer_absence(lambda: DB.ajouter_evenement(maintenant, "absence", contenu, u["login"]),
+                                 "Déclaration d'absence", prat, du, au, motif)
+
+    if actives:
+        with st.expander("Modifier ou annuler une absence (retour anticipé, prolongation, erreur de saisie)"):
+            a = st.selectbox("Absence", actives, format_func=lambda a: f"Dr {a['praticien']} du {a['du_d']:%d/%m} "
+                                                                        f"au {a['au_d']:%d/%m} ({a.get('motif', '')})")
+            with st.form("modif_absence", border=False):
+                nouvel_au = st.date_input("Nouvelle date de retour (dernier jour d'absence)", value=a["au_d"],
+                                          min_value=a["du_d"], format="DD/MM/YYYY")
+                justif = st.text_input("Motif de la modification (obligatoire, tracé)")
+                c1, c2 = st.columns(2)
+                modifier = c1.form_submit_button("Modifier la date de retour")
+                annuler = c2.form_submit_button("Annuler cette absence")
+            if (modifier or annuler) and not justif.strip():
+                st.error("Indiquez le motif de la modification.")
+            elif modifier or annuler:
+                contenu = {k: a[k] for k in ("praticien", "du", "au", "motif", "precision") if k in a}
+
+                def changer():
+                    DB.supprimer_evenement(a["id"])
+                    if modifier:            # même heure de déclaration : la période est simplement corrigée
+                        DB.ajouter_evenement(a["heure"], "absence", {**contenu, "au": nouvel_au.isoformat()}, a["auteur"])
+
+                _enregistrer_absence(changer, "Modification d'absence" if modifier else "Annulation d'absence",
+                                     a["praticien"], a["du_d"], nouvel_au if modifier else a["au_d"], justif.strip())
+
+
+def _enregistrer_absence(modification, action: str, prat: str, du, au, motif: str) -> None:
+    sim2 = C.appliquer(modification, categorie="Programme", action=action, detail=f"Dr {prat} du {du:%d/%m/%Y} au {au:%d/%m/%Y}",
+                       motif=motif)
+    d = next((x for x in reversed(sim2.decisions()) if x["type"] == "absence"
+              and S.code_chirurgien(x["chirurgien"]) == prat), None) if sim2 else None
+    alertes = [a for a in (sim2.alertes() if sim2 else []) if f"Absence du Dr {prat}" in a]
+    st.session_state["flash_absence"] = (f"{action} : Dr {prat} du {du:%d/%m} au {au:%d/%m}"
+                                         + (f" — {d['patients_touches']} patient(s) replacé(s)" if d and action.startswith("Déclaration") else "")
+                                         + (f", {len(alertes)} alerte(s) à traiter (bandeau en haut de page)" if alertes else "") + ".")
+    st.rerun()
 
 
 # =============================================================================
