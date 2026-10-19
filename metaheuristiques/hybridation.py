@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-hybride_ags_rs_tabou.py
-=======================
+hybridation.py
+==============
 
 Hybridation des TROIS métaheuristiques du projet : ALGORITHME GÉNÉTIQUE SIMPLE (AGS)
 + RECUIT SIMULÉ (RS) + RECHERCHE TABOUE (TABOU), niveaux 1 et 2.
@@ -12,11 +12,12 @@ Rôle de chacune :
     RS     exploration : accepte des dégradations pour franchir les paliers du score ;
     TABOU  intensification : meilleur voisin + mémoire taboue pour vider un bassin.
 
-S'appuie UNIQUEMENT sur structures_communes.py et sorties.py (même fonction objectif
-que RS / Tabou / AGS seuls ; JSON lisibles par comparer_algorithmes.py).
+S'appuie UNIQUEMENT sur structures_communes.py et sorties.py : même fonction objectif pour les modes
+hybrides et pour les références RS / Tabou / AGS seuls, résultats au format commun de sorties.py.
+C'est la SEULE implémentation de chaque algorithme dans le dépôt (le SMA l'utilise aussi).
 
-Organisation (identique à hybride_ags_rs.py et hybride_ags_tabou.py)
-------------------------------------------------------------------
+Organisation
+------------
     0. PARAMÈTRES             ParametresHybride, ParametresRechercheLocale (RS + Tabou)
     1. OUTILS COMMUNS         Journal (suivi de convergence)
     2. RECHERCHE LOCALE       2.1 recuit simulé, 2.2 recherche taboue,
@@ -38,9 +39,9 @@ Résultat principal : resultats/<jeu>/AGS+RS+TABOU_n<k>.json ; le reste dans var
 
 Utilisation
 -----------
-    python hybride_ags_rs_tabou.py                         # instance d'étude, 20 s par mode et par niveau
-    python hybride_ags_rs_tabou.py --temps 10 --afficher
-    from hybride_ags_rs_tabou import executer_campagne     # dans un notebook
+    python metaheuristiques/hybridation.py                 # instance d'étude, 20 s par mode et par niveau
+    python metaheuristiques/hybridation.py --temps 10
+    from hybridation import executer_campagne              # depuis un autre script
 """
 from __future__ import annotations
 
@@ -1038,15 +1039,13 @@ def _controler_capacite() -> None:
 
 
 def charger_instances(jeu: str) -> tuple[InstanceProbleme, InstanceNiveau2, Callable]:
-    """(instance N1, instance N2 de RÉFÉRENCE commune, fabrique d'instance N2 chaînée)."""
-    if jeu == "etude":
-        _controler_capacite()                # échoue vite si l'instance est impossible
-        inst1, inst2 = instance_niveau2_reference()
-        return inst1, inst2, lambda sol1: construire_instance_niveau2(inst1, sol1, nom="n2_chaine")
-    from jeux_de_donnees import charger_jeu
-    j = charger_jeu(jeu)
-    inst1, inst2 = j.instances_reference()
-    return inst1, inst2, lambda sol1: j.instance_niveau2(sol1, inst1, nom=f"{jeu}_n2_chaine")
+    """(instance N1, instance N2 de RÉFÉRENCE commune, fabrique d'instance N2 chaînée). Seule l'instance
+    d'étude existe ("etude")."""
+    if jeu != "etude":
+        raise ValueError(f"instance inconnue : {jeu!r} (seule l'instance d'étude « etude » existe)")
+    _controler_capacite()                    # échoue vite si l'instance est impossible
+    inst1, inst2 = instance_niveau2_reference()
+    return inst1, inst2, lambda sol1: construire_instance_niveau2(inst1, sol1, nom="n2_chaine")
 
 
 def _executer_niveau(niveau: int, instance, modes, temps: float, graine: int,
@@ -1237,7 +1236,7 @@ def executer_campagne(jeu: str = "etude", temps_n1: float = 20.0, temps_n2: floa
           f"{len(inst1.blocs_a_placer)} blocs de 2 h, {temps_n1:.0f} s par mode)\n" + "=" * 110)
     res1 = _executer_niveau(1, inst1, tous, temps_n1, graine, rl_params)
     best1 = _meilleur_hybride(res1)
-    print("\n  BENCHMARK NIVEAU 1 (score commun, à minimiser ; optimum connu de l'étude : 900)")
+    print("\n  BENCHMARK NIVEAU 1 (score commun, à minimiser)")
     afficher_benchmark(res1)
 
     print("\n" + "=" * 110 + f"\n  {NOM_ALGO} — NIVEAU 2 : affectation des patients ({len(inst2.patients)} patients, "
@@ -1292,7 +1291,7 @@ def executer_campagne(jeu: str = "etude", temps_n1: float = 20.0, temps_n2: floa
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=f"Hybridation {NOM_ALGO} (niveaux 1 et 2).")
-    ap.add_argument("--jeu", default="etude", help="'etude' ou un jeu de jeux_de_donnees.json (ex. moyenne_pi)")
+    ap.add_argument("--jeu", default="etude", choices=["etude"], help="instance d'étude (niveau 1 et niveau 2)")
     ap.add_argument("--temps", type=float, default=20.0, help="secondes par mode et par niveau")
     ap.add_argument("--modes", nargs="+", default=list(MODES), choices=list(MODES))
     ap.add_argument("--sans-references", action="store_true", help="ne pas lancer AGS seul / RL seule")

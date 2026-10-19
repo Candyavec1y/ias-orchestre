@@ -129,7 +129,7 @@ Détail des tests et de l'étude de saturation : [interface/tests/README.md](int
 |---|---|
 | `interface/` | l'application web (`app.py`), ses pages (`vues/`), sa logique (`orchestre/`) et ses tests |
 | `machine_learning/` | données historiques, entraînement et modèles de prédiction (`outputs/models_rapide/`) |
-| `metaheuristiques/` | recuit simulé, recherche taboue, algorithme génétique et leur hybridation (`hybridage2.py`) |
+| `metaheuristiques/` | hybridation AGS + recuit simulé + recherche taboue (`hybridation.py`, seule implémentation de chaque algorithme) et format des résultats (`sorties.py`) |
 | `planning_vacations/` | planning de référence des vacations des chirurgiens |
 | `SMA/` | système multi-agent de gestion des urgences et des aléas (Mesa) |
 | `commun/` | `structures_communes.py`, structures de données partagées par tous les modules |

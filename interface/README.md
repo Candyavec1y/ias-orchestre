@@ -10,7 +10,7 @@ Installation et lancement : voir le [README à la racine du dépôt](../README.m
 | **Historique** | admin | — | journal horodaté, en ajout seul et scellé, de toutes les actions et des déplacements de patients |
 | **Accueil** | chirurgien, cadre de bloc | `metaheuristiques/`, `SMA/` | chirurgien : son planning et ses patients du jour ; cadre de bloc : programme de toutes les salles |
 | **Consultation** | tous | `machine_learning/` (HistGradientBoosting) | saisie de la consultation, prédictions (capacité, durée, nuits, urgence), validation, choix du créneau |
-| **Planning** | tous | `planning_vacations/planning_vacations_v28.py`, `metaheuristiques/hybridage2.py` | vacations de la semaine, programme opératoire du jour (Gantt), occupation anonyme des salles |
+| **Planning** | tous | `planning_vacations/planning_vacations_v28.py`, `metaheuristiques/hybridation.py` | vacations de la semaine, programme opératoire du jour (Gantt), occupation anonyme des salles |
 | **Urgences** | tous | `SMA/sma_urgences.py` (Mesa) | déclarer une urgence ou une panne du monte-lit ; fil des décisions et messages entre agents (admin) |
 | **Patients** | tous (chirurgien : ses patients) | — | statut, annulation, export et effacement (RGPD) |
 | **Administration** | admin | — | comptes, horloge de démonstration |

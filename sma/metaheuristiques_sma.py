@@ -4,7 +4,7 @@ sma/metaheuristiques_sma.py — Pont entre les agents du SMA et VOS métaheurist
 ===================================================================================
 
 Les agents n'ont pas de métaheuristique à eux : ils appellent le moteur du projet,
-metaheuristiques/hybride_ags_rs_tabou.py (AGS + RS + TABOU), SANS le modifier :
+metaheuristiques/hybridation.py (AGS + RS + TABOU), SANS le modifier :
 
     "RS seul"        recuit_niveau2              (exploration)
     "TABOU seul"     tabou_niveau2               (intensification)
@@ -35,10 +35,7 @@ for _d in (_RACINE / "planning_vacations", _RACINE / "metaheuristiques"):
     if _d.is_dir() and str(_d) not in sys.path:
         sys.path.append(str(_d))
 
-try:
-    import hybride_ags_rs_tabou as H                 # nom du fichier dans le dépôt
-except ImportError:                                  # pragma: no cover
-    import hybridage2 as H                           # nom du fichier transmis
+import hybridation as H  # noqa: E402
 
 from structures_communes import ParametresAGS
 from sorties import SuiviExecution

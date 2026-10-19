@@ -3,7 +3,7 @@
 sma/optimisation_sma.py — Architecture HYBRIDE du SMA : optimisation locale (cas B) + globale (cas A)
 =====================================================================================================
 
-Les deux niveaux utilisent VOS métaheuristiques (metaheuristiques/hybride_ags_rs_tabou.py, via
+Les deux niveaux utilisent VOS métaheuristiques (metaheuristiques/hybridation.py, via
 metaheuristiques_sma.optimiser) : RS, Tabou, AGS et les trois modes d'hybridation.
 
 Cas B — ProblemeLocalSalle (dans chaque AgentSalle)

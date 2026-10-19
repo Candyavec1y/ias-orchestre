@@ -12,12 +12,9 @@
 structures_communes.py  (v2)
 ============================
 
-Structures de données et fonctions PARTAGÉES par les trois métaheuristiques
-du projet : Recuit simulé (RS), Recherche taboue (TABOU), Algorithme
-génétique simple (AGS).
-
-Sources croisées : optim_bloc_lits.py (Tabou), Ingrid_RECUIT_SIMULE.ipynb (RS),
-Candy_AGs.ipynb (AGS niveau 1), Tanguy_AGS.ipynb (AGS niveau 2).
+Structures de données et fonctions PARTAGÉES par tout le dépôt : les métaheuristiques
+(hybridation AGS + RS + Tabou, metaheuristiques/hybridation.py), le planning v28, le système
+multi-agent et l'interface.
 
 Organisation
 ------------
@@ -44,14 +41,14 @@ Choix d'uniformisation (v2)
            8000*non_placés + 100*dépassement_bloc(min) + 1*bloc_inoccupé(min)
          + 5000*lits_en_trop + 20*variance_lits
          + 5000*places_en_trop + 20*variance_places
-    -> les `score_final` des trois algorithmes sont directement comparables.
-       La fonction normalisée du RS et le score multi-semaines de l'AGS de
-       Tanguy sont abandonnés.
-  * Créneaux de 120 min, marge de 10 % sur chaque vacation, hébergement
-    (14 lits dont 2 de réserve, 10 places ambulatoires / jour) : valeurs du Tabou.
+    -> les `score_final` de toutes les méthodes sont directement comparables.
+  * Créneaux de 120 min et marge de 10 % sur chaque vacation. Les capacités d'hébergement par défaut
+    (14 lits dont 2 de réserve, 10 places ambulatoires / jour) ne concernent QUE l'instance d'étude
+    du niveau 1 ; l'application et le planning v28 ont leurs propres capacités (voir PARAMÈTRES).
   * Occupation d'un lit : du jour (opération - nuits_pre_op) au jour
     (opération + nuits_post_op) INCLUS (convention Tabou).
-  * Horizon d'UNE semaine, mais le planning du bloc dépend de la PARITÉ de la
+  * Horizon de plusieurs semaines (instance d'étude : une semaine + semaines de report ; interface :
+    4 semaines optimisées, 52 connues du SMA). Le planning du bloc dépend de la PARITÉ de la
     semaine : cycle de 4 semaines  impaire_1 -> paire -> impaire_2 -> paire
     (« une semaine impaire sur 2 » = impaire_1 / impaire_2). Chaque `Vacation`
     porte `semaines` (types de semaine où elle a lieu). Un planning MODÈLE

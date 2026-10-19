@@ -37,13 +37,13 @@ Le dépôt contenait **deux copies divergentes** de `structures_communes.py` :
 | Copie | Contient en plus |
 |---|---|
 | `planning_vacations/` (utilisée par le SMA et le planning v28) | parité des semaines : `type_semaine`, `planning_pour_semaine`, `Vacation.semaines` |
-| `metaheuristiques/` (utilisée par RS, Tabou, AGS, hybridations) | priorité : `penalite_priorite_patient`, `calculer_f_priorite`, `PoidsNiveau2.priorite` |
+| `metaheuristiques/` (utilisée par l'hybridation) | priorité : `penalite_priorite_patient` |
 
 Comme tout le système doit partager les mêmes classes (`Patient`, `Vacation`, `InstanceNiveau2`…),
 j'ai créé `commun/structures_communes.py`, **union exacte des deux** (aucune fonction modifiée), et
 l'interface le charge **avant** les autres. Ainsi un `Patient` créé en consultation est exactement
 celui qu'attendent les métaheuristiques et les agents. Les deux copies ont ensuite été supprimées :
-`hybridage2.py`, `recuit_simulé.py`, `sorties.py`, `planning_vacations_v28.py` et `sma_urgences.py` ajoutent
+`hybridation.py`, `sorties.py`, `planning_vacations_v28.py` et `sma_urgences.py` ajoutent
 `commun/` à leur `sys.path` et fonctionnent aussi lancés seuls (sorties identiques avant / après).
 
 ## 3. Chaîne de décision
@@ -86,21 +86,17 @@ celui qu'attendent les métaheuristiques et les agents. Les deux copies ont ensu
 * **Vacations des chirurgiens** : planning fixe `planning_vacations_v28.py` (comme demandé pour la
   première version), avec la parité automatique (cycle impaire A / paire / impaire B / paire) et les
   plages URGENCES / LIBRE.
-* **Programme opératoire** (niveau 2 : patients → vacations) calculé par **`hybridage2.py`**
-  (AGS + RS + Tabou), mode « mémétique » par défaut, 10 s au premier lancement. Tous les modes de
-  `hybridage2` (mémétique, AGS>RS>TABOU, RS>AGS>TABOU, et les références RS / Tabou / AGS seuls),
-  le **recuit simulé du dépôt** (`recuit_simulé.py`) et le glouton commun sont proposés, avec une
-  page de comparaison (même instance, même départ, même budget, courbes de convergence).
-* **Pourquoi `hybridage2.py` plutôt que `hybridage.py` / `tabou_fonctionnel`** : ces deux fichiers
-  redéfinissent leurs propres classes (`Patient`, `Vacation`… incompatibles avec les structures
-  communes) et lisent des fichiers Excel sur un chemin local (`C:\Users\Richard\Downloads\…`).
-  `hybridage2.py` s'appuie uniquement sur `structures_communes.py` et `sorties.py` : c'est la version
-  intégrable. `hybridage.py`, inutilisé, a été retiré du dépôt ; ses idées (horizon compact, vacations
-  supplémentaires) mériteraient d'être portées sur les structures communes.
+* **Programme opératoire** (niveau 2 : patients → vacations) calculé par **`hybridation.py`**
+  (AGS + RS + Tabou), mode « mémétique » par défaut. Tous les modes de l'hybridation (mémétique,
+  AGS>RS>TABOU, RS>AGS>TABOU, et les références RS / Tabou / AGS seuls) et le glouton commun sont
+  proposés, avec le même départ et le même budget.
+* **Une seule implémentation par algorithme** : celle de `hybridation.py`, qui s'appuie uniquement sur
+  `structures_communes.py` et `sorties.py`. Les anciennes versions autonomes (recherche taboue avec ses
+  propres classes, recuit simulé et AGS seuls) ont été retirées du dépôt (voir NETTOYAGE.md).
 * **Niveau 1 (chirurgiens → plages)** : l'hybridation N1 travaille sur des blocs de 2 h. Le planning v28
   a des horaires irréguliers (7 h 45, 15 h 30…) et n'est donc pas ré-optimisable tel quel. L'onglet lance
-  le niveau 1 sur l'**instance d'étude commune** (8 chirurgiens, 3 salles) et affiche le planning obtenu
-  (optimum connu de l'étude : 900). Brancher le N1 sur v28 demande de définir une grille de créneaux
+  le niveau 1 sur l'**instance d'étude commune** (8 chirurgiens, 3 salles) et affiche le planning obtenu.
+  Brancher le N1 sur v28 demande de définir une grille de créneaux
   (question ouverte § 10).
 * **Programme initial fictif** : le dépôt ne contient pas de liste de patients à programmer. J'utilise le
   générateur commun `generer_patients_etude` (patients `DEMO-xxxx`) sur un **horizon de 4 semaines**, avec

@@ -3,9 +3,9 @@
 Planning des vacations (niveau 1) et programme opératoire (niveau 2).
 
 * Planning des chirurgiens : planning de référence planning_vacations_v28 (parité des semaines),
-  ou planning recalculé par l'hybridation AGS+RS+TABOU (hybridage2.py) sur l'instance d'étude.
-* Programme opératoire (patients -> vacations) : hybridage2.py (mode au choix) ou recuit simulé seul,
-  sur les vacations v28 de l'horizon. Ce programme sert d'état initial au système multi-agent.
+  ou planning recalculé par l'hybridation AGS+RS+TABOU (hybridation.py) sur l'instance d'étude du niveau 1.
+* Programme opératoire (patients -> vacations) : hybridation.py (mode hybride ou référence RS / Tabou / AGS
+  seul), sur les vacations v28 de l'horizon. Ce programme sert d'état initial au système multi-agent.
 """
 from __future__ import annotations
 
@@ -104,10 +104,10 @@ class ResultatNiveau1:
 
 def recalculer_planning_niveau1(modes: list[str], temps_s: float, graine: int = SC.GRAINE_ETUDE
                                 ) -> ResultatNiveau1:
-    """Niveau 1 de hybridage2.py (AGS+RS+TABOU) sur l'instance d'étude commune (8 chirurgiens,
+    """Niveau 1 de hybridation.py (AGS+RS+TABOU) sur l'instance d'étude commune (8 chirurgiens,
     3 salles, créneaux de 2 h). Le planning v28 réel n'est pas découpé en créneaux de 2 h : il ne peut
     pas être ré-optimisé tel quel au niveau 1 (voir CHOIX.md)."""
-    H = chemins.module("hybridage2")
+    H = chemins.module("hybridation")
     inst1 = SC.construire_instance_etude()
     tampon = io.StringIO()
     with contextlib.redirect_stdout(tampon):
@@ -190,21 +190,12 @@ def calculer_programme(lundi: date, mode: str = "memetique", temps_s: float = 15
     if mode == "glouton":
         sol = glouton
     else:
-        H = chemins.module("hybridage2")
+        H = chemins.module("hybridation")
         with contextlib.redirect_stdout(io.StringIO()):
             resultat = H._executer_niveau(2, i2, [mode], temps_s, graine, H.ParametresRechercheLocale())[0]
         sol = resultat.solution_patients()
     return Programme(lundi_de(lundi), nb_semaines, mode, temps_s, graine, i1, i2, sol, resultat, s_glouton,
                      datetime.now(ZoneInfo("Europe/Paris")).replace(tzinfo=None).isoformat(timespec="seconds"))
-
-
-def comparer_algorithmes_n2(lundi: date, modes: list[str], temps_s: float, nb_semaines: int = NB_SEMAINES_HORIZON,
-                            graine: int = SC.GRAINE_ETUDE) -> list:
-    """Même instance, même départ, même budget : un ResultatMetaheuristique par mode."""
-    _, i2 = construire_instances(lundi, nb_semaines)
-    H = chemins.module("hybridage2")
-    with contextlib.redirect_stdout(io.StringIO()):
-        return H._executer_niveau(2, i2, list(modes), temps_s, graine, H.ParametresRechercheLocale())
 
 
 def indicateurs(programme: Programme):

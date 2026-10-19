@@ -16,7 +16,7 @@ from orchestre import programme as P
 
 import structures_communes as SC
 
-H = chemins.module("hybridage2")
+H = chemins.module("hybridation")
 REFERENCES = ["RS seul", "TABOU seul", "AGS seul"]
 
 

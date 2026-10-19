@@ -8,10 +8,8 @@ et les valeurs manquantes, entraînement très rapide même sur des
 variables à forte cardinalité comme type_intervention).
 
 Évaluation par un simple split train/test (80/20), pas de validation
-croisée exhaustive : c'est volontairement "quick & dirty" pour juger
-en quelques minutes si l'approche est prometteuse. Une fois validée,
-utilise le script complet (modeles_prediction.py) pour comparer
-plusieurs familles de modèles avec validation croisée.
+croisée exhaustive : c'est volontairement rapide, pour juger en quelques
+minutes si l'approche est prometteuse.
 =====================================================================
 """
 

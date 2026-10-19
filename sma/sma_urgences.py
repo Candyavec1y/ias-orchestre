@@ -4,7 +4,7 @@ sma/sma_urgences.py — Système MULTI-AGENT de gestion des aléas du bloc opér
 ==================================================================================================
 
 Ce fichier ne contient QUE le SMA. Il réutilise, sans les recopier :
-    planning_vacations/structures_communes.py   Patient, Vacation, InstanceNiveau2, glouton N2...
+    commun/structures_communes.py               Patient, Vacation, InstanceNiveau2, glouton N2...
     planning_vacations/planning_vacations_v28.py planning réel du bloc (vacations, plages URGENCE / LIBRE)
 
 Le SMA corrige EN TEMPS RÉEL le planning du niveau 2 (patient -> vacation, sortie des métaheuristiques)
@@ -30,7 +30,7 @@ Agents (messages FIPA-ACL, protocole Contract Net)
     AgentOptimisation  réoptimisation GLOBALE du programme restant (toutes salles, tout l'horizon) par vos
                        métaheuristiques ; propose, ne décide pas (optimisation_sma.py)
 
-Architecture HYBRIDE (optimisation_sma.py, metaheuristiques_sma.py -> metaheuristiques/hybride_ags_rs_tabou.py)
+Architecture HYBRIDE (optimisation_sma.py, metaheuristiques_sma.py -> metaheuristiques/hybridation.py)
 --------------------
     Cas B, réaction immédiate : chaque AgentSalle chiffre ses propositions par un glouton, puis les améliore
         localement (ordre de passage + patients reportés dans son créneau) par une métaheuristique courte
@@ -39,7 +39,8 @@ Architecture HYBRIDE (optimisation_sma.py, metaheuristiques_sma.py -> metaheuris
         (`optimisation_globale`, `budget_global_s`), qui réaffecte les patients non gelés aux créneaux en démarrage
         à chaud ; le plan n'est appliqué que s'il améliore le score ET passe le contrôle GROUPÉ des agents
         Chirurgien et Hébergement (retraits puis ajouts, en deux phases).
-    Les modes disponibles et le choix par défaut sont justifiés par sma/comparer_metaheuristiques_sma.py.
+    Sur le site, les deux optimisations sont désactivées (rejeu de tous les événements à chaque affichage) ;
+    l'optimisation globale y reste disponible à la demande (Administration).
 
 Règles
 ------
@@ -251,7 +252,7 @@ class ParametresSMA:
     garde_soir: time = time(18, 0)      # les jours de programme, la garde commence à...
     garde_matin: time = time(8, 0)      # ... et se termine le lendemain à
     garde_permanente: bool = False      # True : la salle de garde fonctionne aussi pendant la journée
-    # --- architecture hybride : vos métaheuristiques (metaheuristiques/hybride_ags_rs_tabou.py) ---
+    # --- architecture hybride : vos métaheuristiques (metaheuristiques/hybridation.py) ---
     # modes : "RS seul" | "TABOU seul" | "AGS seul" | "memetique" | "AGS>RS>TABOU" | "RS>AGS>TABOU"
     methode_locale: Optional[str] = "TABOU seul"  # cas B, agents Salle ("glouton" ou None : pas d'optimisation locale)
     budget_local_s: float = 0.02                  # secondes par créneau et par appel d'offres (temps réel)
