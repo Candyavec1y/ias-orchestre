@@ -1,6 +1,6 @@
 # Tâche H — SMA : résumé
 
-Source : `sma_scenarios.csv` (une ligne par scénario × stratégie × graine), `sma_evenements_agreges.csv` (temps
+Source (rejoué sur la branche v3, avec `solution_finale` côté SMA) : `sma_scenarios.csv` (une ligne par scénario × stratégie × graine), `sma_evenements_agreges.csv` (temps
 réel par type d'événement), script `scripts/h_sma.py`, commit `d8fbf35`. Planning v28, 2 semaines à partir du
 12/10/2026, programme initial glouton commun (181 interventions), capacités 30 lits / 3 réserve / 20 places,
 graine Mesa 42. **Les durées « simulées » (attentes, heures) relèvent de l'horloge du SMA ; les temps de calcul
@@ -21,18 +21,18 @@ sont des temps réels.**
 
 | Stratégie | Urgences | Dans le délai | Transferts proposés | Décalés | Reportés à un autre jour | Repris par un confrère | Liste d'attente | Planning conservé (moy.) | Incohérences | Temps réel cumulé |
 |---|---|---|---|---|---|---|---|---|---|---|
-| S_CN | 23 | 21 | 1 | 26 | 54 | 57 | 8 | 97,3 % | 0 | 6,0 s |
-| S_LOC | 23 | 21 | 1 | 27 | 54 | 57 | 8 | 97,3 % | 0 | 10,7 s |
-| S_GLOB | 23 | 21 | 1 | 48 | 48 | 73 | 5 | 96,7 % | 0 | 65,0 s |
-| S_LOC_GLOB | 23 | 21 | 1 | 53 | 47 | 71 | 4 | 96,6 % | 0 | 69,0 s |
+| S_CN | 23 | 21 | 1 | 26 | 54 | 57 | 8 | 97,3 % | 0 | 6,2 s |
+| S_LOC | 23 | 21 | 1 | 27 | 54 | 57 | 8 | 97,3 % | 0 | 10,8 s |
+| S_GLOB | 23 | 21 | 1 | 48 | 49 | 72 | 5 | 96,7 % | 0 | 64,8 s |
+| S_LOC_GLOB | 23 | 21 | 1 | 51 | 47 | 69 | 4 | 96,7 % | 0 | 69,3 s |
 
 - **Urgences** : les quatre stratégies traitent les urgences de la même façon (même nombre dans le délai, mêmes
   attentes, sauf dans deux scénarios où l'optimisation globale modifie l'attente moyenne : `urgence_vitale_surcharge` 72,5 → 82,5 min et `journee_multi_aleas` 460 → 390 min, en S_LOC_GLOB). Les 2 urgences hors délai sont : l'ischémie vasculaire (spécialité non couverte →
   **transfert proposé**, décision humaine requise, `chirurgien_absent`) et une urgence de la journée surchargée avec
   panne du monte-lit (`urgence_vitale_surcharge`, confiée à la garde).
 - **Optimisation globale** : elle vide davantage la liste d'attente (8 → 4 ou 5 patients) et réduit un peu les
-  reports à un autre jour (54 → 47 ou 48), au prix de **plus de patients décalés** (26 → 48-53), de plus de reprises
-  par un confrère (57 → 71-73) et d'un temps de calcul multiplié par environ 11 (6 s → 65-69 s cumulées). C'est un
+  reports à un autre jour (54 → 47 ou 49), au prix de **plus de patients décalés** (26 → 48-51), de plus de reprises
+  par un confrère (57 → 69-72) et d'un temps de calcul multiplié par environ 11 (6 s → 65-69 s cumulées). C'est un
   compromis, pas une amélioration nette.
 - **Optimisation locale seule** : quasiment aucun effet mesurable par rapport à S_CN (1 décalé de plus, 65 minutes
   de décalage en moins), pour un temps de calcul presque doublé.
@@ -65,7 +65,7 @@ marquées ÉCHEC et **ne sont pas comptées comme des succès**.
 | Stratégie | Arrivée d'urgence : médiane / P95 / max | Autres événements (médiane) |
 |---|---|---|
 | S_CN (site) | 0,004 s / 0,031 s / 0,046 s | 0,001-0,019 s |
-| S_LOC_GLOB | 1,19 s / 1,89 s / 2,22 s | 1,03-1,10 s (dominé par la réoptimisation globale de 1 s) |
+| S_LOC_GLOB | 1,21 s / 1,84 s / 2,32 s | 1,03-1,10 s (dominé par la réoptimisation globale de 1 s) |
 
 Reconstruction de l'état du site (rejeu du SMA, sans événement) : 0,25 s (`temps.csv`).
 

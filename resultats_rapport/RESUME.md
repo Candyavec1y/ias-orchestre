@@ -69,6 +69,11 @@ La pénalité de report départage donc memetique et TABOU seul : à F2 égal, m
 **Budget** (2 / 5 / 10 / 20 s, 3 graines, objectif) : RS seul est le meilleur à tous les budgets (9 157 à 2 s ; 7 251 à
 20 s), AGS>RS>TABOU deuxième (10 909 à 2 s ; 7 722 à 20 s) ; à 2 s, AGS seul ne propose aucune solution.
 
+**Rapidité** (courbes de convergence, médiane des 10 graines ; figure `vitesse_convergence`) : **TABOU seul est la
+méthode qui démarre le plus vite** : en N2, il améliore le départ en 0,04 s (RS>AGS>TABOU 0,32 s ; AGS seul,
+memetique et AGS>RS>TABOU environ 0,6 s ; RS seul 3,4 s), et en N1 il atteint son meilleur score en 0,12 s (le plus
+tôt de toutes les méthodes). Il plafonne ensuite à un niveau moins bon : à 10 s, il n'est que cinquième en N2.
+
 ### Comparaison avec v2
 
 | | v2 | v3 |
@@ -116,8 +121,9 @@ les places ambulatoires ne sont jamais saturées. Délai moyen entre la date au 
 Le programme figé et la régulation simple ne sont pas disponibles : l'apport du SMA par rapport à une absence de
 régulation n'est pas mesuré.
 
-**Réoptimisation globale (v3, 21 scénarios, 1 s)** : memetique et AGS>RS>TABOU sont équivalents (score du programme
-345 093 contre 347 560, 14 et 13 plans appliqués sur 57) ; RS seul n'applique aucun plan en 1 s. **memetique est
+**Réoptimisation globale (v3, 21 scénarios, 1 s)** : memetique donne le meilleur programme (score 343 793 contre
+354 437 pour AGS>RS>TABOU, 14 et 13 plans appliqués sur 57 ; 345 093 contre 347 560 lors d'une première exécution) ;
+RS seul n'applique aucun plan en 1 s. **memetique est
 conservé** pour la réoptimisation globale. Côté SMA aussi, la solution proposée est maintenant la meilleure solution
 applicable rencontrée.
 

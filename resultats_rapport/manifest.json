@@ -198,6 +198,24 @@
    "script": "—",
    "statut": "CALCULÉ À PARTIR DE MESURES",
    "note": "RESUME.md, INTERPRETATION.md, *_resume.md, parametres.md"
+  },
+  "vitesse_convergence": {
+   "sources": [
+    "donnees_agregees/convergence.json",
+    "donnees_agregees/vitesse_convergence.csv"
+   ],
+   "script": "scripts/l_figures_messages.py",
+   "statut": "MESURÉ",
+   "note": "figures/vitesse_convergence.png, figures/vitesse_convergence.pdf"
+  },
+  "memetique_comparaisons": {
+   "sources": [
+    "n2_resultats.csv",
+    "donnees_agregees/v3_pilote/sma_reoptimisation_globale.csv"
+   ],
+   "script": "scripts/l_figures_messages.py",
+   "statut": "MESURÉ",
+   "note": "figures/memetique_comparaisons.png, figures/memetique_comparaisons.pdf"
   }
  }
 }

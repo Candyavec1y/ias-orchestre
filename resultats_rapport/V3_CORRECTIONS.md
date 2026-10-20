@@ -16,14 +16,15 @@ courts (`donnees_agregees/v3_pilote/`, `sensibilite_poids/`).
 
 | Méthode | Solutions proposées | Objectif F2 + report | F2 commun | Patients reportés | Occupation bloc |
 |---|---|---|---|---|---|
-| RS seul | 3 / 3 | 7 764 | 3 397 | 23,7 | 92,7 % |
-| AGS>RS>TABOU | 3 / 3 | 8 140 | 3 506 | 25,0 | 92,1 % |
-| RS>AGS>TABOU | 3 / 3 | 8 749 | 3 649 | 26,0 | 91,7 % |
-| memetique | 3 / 3 | 8 833 | 3 899 | 26,7 | 91,1 % |
+| RS seul | 3 / 3 | 7 535 | 3 468 | 22,0 | 92,7 % |
+| AGS>RS>TABOU | 3 / 3 | 8 162 | 3 562 | 25,0 | 92,0 % |
+| RS>AGS>TABOU | 3 / 3 | 8 708 | 3 774 | 27,0 | 91,3 % |
+| memetique | 3 / 3 | 9 098 | 3 932 | 27,7 | 91,1 % |
 | TABOU seul | 3 / 3 | 10 450 | 3 983 | 33,3 | 90,5 % |
-| AGS seul | 3 / 3 | 19 674 | 5 641 | 64,3 | 85,5 % |
+| AGS seul | 3 / 3 | 22 118 | 5 852 | 69,7 | 84,7 % |
 
-Toutes les méthodes proposent maintenant une solution faisable (contre 70 à 90 % des exécutions en v2). Le classement
+Toutes les méthodes proposent maintenant une solution faisable (contre 70 à 90 % des exécutions en v2). Chiffres du
+fichier actuel `pilote_v3.csv` (le pilote a été relancé ; la première exécution donnait le même classement). Le classement
 ne change pas : RS seul reste en tête. Ce n'est pas un effet du critère de comparaison : RS seul est meilleur sur F2
 **et** sur la pénalité de report.
 
@@ -35,12 +36,13 @@ Objectif = F2 + report de la solution proposée (moyenne de 5 graines, à minimi
 
 | Budget | RS seul | AGS>RS>TABOU | memetique actuel | memetique RS 300 | memetique RS 1500 |
 |---|---|---|---|---|---|
-| 10 s | **7 468** | 8 260 (171 gén.) | 9 179 (8 gén.) | 8 901 (151 gén.) | 9 021 (87 gén.) |
-| 30 s | **7 319** | 7 689 (524 gén.) | 8 136 (22 gén.) | 8 008 (479 gén.) | 8 095 (277 gén.) |
+| 10 s | **7 497** | 8 424 (173 gén.) | 8 799 (8 gén.) | 8 889 (144 gén.) | 8 774 (87 gén.) |
+| 30 s | **7 080** | 7 738 (531 gén.) | 7 997 (23 gén.) | 7 960 (497 gén.) | 8 032 (285 gén.) |
 
-Le polissage par RS fait réellement tourner l'AGS (centaines de générations) et améliore un peu le mémétique, mais il
-**perd contre RS seul sur les 5 graines aux deux budgets** (écart médian +700 à +1 200 ; Wilcoxon apparié p = 0,062,
-le minimum possible avec 5 paires) et contre AGS>RS>TABOU (0 ou 1 graine gagnée sur 5). **Décision (règle de
+Le polissage par RS fait réellement tourner l'AGS (centaines de générations), mais il **n'améliore pas nettement le
+mémétique** (2 ou 3 graines gagnées sur 5 selon la variante et le budget, non significatif), il **perd contre RS seul
+sur les 5 graines aux deux budgets** (écart médian +980 à +1 450 ; Wilcoxon apparié p = 0,062, le minimum possible
+avec 5 paires) et contre AGS>RS>TABOU (0 à 2 graines gagnées sur 5). **Décision (règle de
 l'équipe)** : le mémétique reste tel quel ; **AGS>RS>TABOU est présenté comme l'hybridation de référence**. L'option
 reste dans le code, désactivée, pour reproduire le pilote.
 
@@ -67,12 +69,14 @@ jouer) ; les 15 scénarios du projet restent cohérents.
 | Méthode | Plans appliqués / calculés | Gain cumulé | Score du programme | Décalés | Reportés | Liste d'attente | Urgences dans le délai |
 |---|---|---|---|---|---|---|---|
 | aucune (site) | — | — | 427 110 | 26 | 54 | 8 | 21 / 23 |
-| memetique | 14 / 57 | 91 770 | **345 093** | 48 | 48 | 5 | 21 / 23 |
-| AGS>RS>TABOU | 13 / 57 | 91 452 | 347 560 | 52 | 45 | 6 | 21 / 23 |
+| memetique | 14 / 57 | 93 054 | **343 793** | 48 | 48 | 5 | 21 / 23 |
+| AGS>RS>TABOU | 13 / 57 | 95 245 | 354 437 | 52 | 45 | 6 | 21 / 23 |
 | RS seul | 0 / 58 | 0 | 427 110 | 26 | 54 | 8 | 21 / 23 |
 
 **Recommandation : garder memetique** pour la réoptimisation globale (meilleur score, moins de patients décalés que
-AGS>RS>TABOU, écart de 0,7 % seulement : les deux sont équivalents en pratique). **RS seul est à exclure** : en 1 s
+AGS>RS>TABOU ; écart de 3 % sur le score du programme). Une première exécution donnait 345 093 contre 347 560
+(0,7 %) : avec un budget en temps réel, l'écart varie d'une exécution à l'autre, mais memetique est devant les deux
+fois. **RS seul est à exclure** : en 1 s
 il n'améliore jamais le programme (température encore trop haute, aucun plan ne dépasse le gain minimal de 50).
 Une seule graine Mesa : la différence memetique / AGS>RS>TABOU n'est pas significative.
 

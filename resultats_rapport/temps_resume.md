@@ -44,7 +44,7 @@ coup.
 | Calcul du programme du site (glouton) | 0,13 s |
 | Reconstruction de l'état du site (rejeu SMA, sans événement) | 0,25 s |
 | SMA, configuration du site : traitement d'une arrivée d'urgence | 0,004 s (P95 0,031 s) |
-| SMA avec optimisation locale + globale : arrivée d'urgence | 1,19 s (P95 1,89 s, max 2,22 s) |
+| SMA avec optimisation locale + globale : arrivée d'urgence | 1,21 s (P95 1,84 s, max 2,32 s) |
 | Étude de saturation (4 semaines, une variante) | 4 à 34 s |
 
 ## Compatibilité avec les usages
