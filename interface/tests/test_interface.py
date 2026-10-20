@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Interface Streamlit sans navigateur (streamlit.testing.AppTest), sur une base isolée : connexion, chaque page pour
-chaque rôle, onglets selon le rôle, déclaration d'une urgence, d'une absence, d'une prolongation d'intervention et de
+chaque rôle, onglets selon le rôle, déclaration d'une urgence (proposition puis validation), d'une absence, d'une prolongation d'intervention et de
 lits indisponibles, alertes temporaires.
 """
 from datetime import date, datetime, timedelta
@@ -77,13 +77,31 @@ def test_onglets_selon_le_role(site):
                                                               "Optimisation globale", "Horloge"]
 
 
+def _declarer_urgence(at: AppTest, gravite: str) -> AppTest:
+    next(r for r in at.radio if r.label == "Gravité").set_value(gravite)
+    _bouton(at, "Déclarer l'urgence").click().run()
+    return _bouton(at, "Valider le placement").click().run()
+
+
 def test_declarer_une_urgence(site):
     at = page("urgences", "regulation")
     next(r for r in at.radio if r.label == "Gravité").set_value("urgente")
     _bouton(at, "Déclarer l'urgence").click().run()
     assert not at.exception
+    assert any("Proposition du système multi-agent pour URG-001" in m.value for m in at.markdown)
+    assert DB.lister_evenements() == []                                    # rien n'est placé avant validation
+    _bouton(at, "Valider le placement").click().run()
+    assert not at.exception
     assert any(m.value.startswith("URG-") for m in list(at.success) + list(at.warning))
     assert [e["type"] for e in DB.lister_evenements()] == ["urgence"]
+
+
+def test_une_urgence_annulee_avant_validation_n_est_pas_placee(site):
+    at = page("urgences", "regulation")
+    _bouton(at, "Déclarer l'urgence").click().run()
+    _bouton(at, "Annuler").click().run()
+    assert not at.exception and DB.lister_evenements() == []
+    assert not any(b.label.startswith("Valider le placement") for b in at.button)
 
 
 def test_un_chirurgien_declare_sa_propre_absence_et_ne_voit_pas_celle_des_autres(site):
@@ -100,9 +118,8 @@ def test_un_chirurgien_declare_sa_propre_absence_et_ne_voit_pas_celle_des_autres
 
 def test_une_alerte_disparait_du_bandeau_apres_10_minutes(site):
     at = page("urgences", "regulation")
-    next(r for r in at.radio if r.label == "Gravité").set_value("vitale")
     for _ in range(12):                                                    # sature la plage d'urgence : alerte
-        _bouton(at, "Déclarer l'urgence").click().run()
+        at = _declarer_urgence(at, "vitale")
     assert page("urgences", "regulation").error, "alerte visible juste après"
     site.regler_horloge(HORLOGE + timedelta(minutes=11))
     at = page("urgences", "regulation")

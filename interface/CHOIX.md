@@ -183,6 +183,9 @@ Trois générateurs, aux objectifs différents, volontairement séparés :
 * Correctif côté interface : pour un patient de consultation, l'heure « initiale » de référence est celle
   de son **premier placement** (sinon le bilan du SMA le comptait comme « décalé » depuis minuit).
 * Une urgence est enregistrée **à l'heure courante** (pas de saisie rétroactive, qui réécrirait l'histoire).
+  Le SMA calcule d'abord une **proposition** (salle, heure, chirurgien, délai, patients déplacés) sans rien
+  enregistrer ; l'urgence n'est placée qu'après « Valider le placement ». Si le programme a changé entre-temps,
+  une nouvelle proposition est présentée.
 * **Horloge** : temps réel (Europe/Paris) par défaut ; l'administrateur peut figer une **heure de
   démonstration** et l'avancer (+30 min, +2 h, lendemain 7 h 30) pour montrer le SMA en action.
 * Spécialités : tous les praticiens du planning sont dans le même service (`SPECIALITE_SERVICE`,

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Onglet URGENCES : gestion dynamique par le système multi-agent.
-  * déclarer une urgence (gravité, délai d'incision) -> triage, appel d'offres aux salles, décision ;
+  * déclarer une urgence (gravité, délai d'incision) -> triage, appel d'offres aux salles, proposition de
+    placement, puis placement seulement après « Valider le placement » ;
   * déclarer un incident logistique (panne / prolongation / fin de panne du monte-lit) ;
   * suivre les décisions, les alertes et les messages échangés par les agents.
 """
@@ -134,46 +135,125 @@ def _urgence(sim: S.Simulation) -> None:
         post = c4.number_input("Nuits après", 0, 30, int(est.get("post", 2)))
         diag = st.text_input("Motif (facultatif, sans donnée identifiante)", value=est.get("interv", ""),
                              placeholder="ex. fracture col du fémur")
-        ok = st.form_submit_button("Déclarer l'urgence au système multi-agent", type="primary", width="stretch")
+        ok = st.form_submit_button("Déclarer l'urgence et calculer le placement", type="primary", width="stretch")
     if ok:
-        numero = 1 + sum(e["type"] == "urgence" for e in DB.lister_evenements())
-        p = S.patient_urgent(numero, prat, int(duree), ambulatoire=amb, nuits_post_op=0 if amb else int(post),
-                             diagnostic=est.get("cim", ""), type_intervention=diag.strip(), age=int(est.get("age", 40)))
-        code = f"URG-{numero:03d}"
-        sim2 = C.appliquer(
-            lambda: DB.ajouter_evenement(maintenant, "urgence", {"patient": S.patient_vers_dict(p), "gravite": gravite},
-                                         u["login"]),
-            categorie="Urgence", action="Déclaration d'urgence", patient=code,
-            detail=(f"{S.LIBELLES_GRAVITE[gravite]} · vue par Dr {prat} · {int(duree)} min · "
-                    f"{'ambulatoire' if amb else f'hospitalisation {int(post)} nuit(s)'}"),
-            motif=diag.strip() or "non renseigné")
-        st.session_state.pop("estim_urg", None)
-        d = next((x for x in reversed(sim2.decisions()) if x.get("patient") == p.id), None)
-        delai = S.GRAVITES[gravite].delai_max_min
+        st.session_state["urgence_a_valider"] = {
+            "heure": maintenant, "gravite": gravite, "prat": prat, "duree": int(duree), "amb": amb,
+            "post": 0 if amb else int(post), "diag": diag.strip(), "cim": est.get("cim", ""),
+            "age": int(est.get("age", 40))}
+    saisie = st.session_state.get("urgence_a_valider")
+    if saisie:
+        _valider_urgence(saisie, u)
+
+
+def _apercu_urgence(saisie: dict) -> dict:
+    """Placement que le SMA choisirait pour l'urgence, calculé SANS rien enregistrer : rejeu des événements de la
+    base plus l'urgence, à son heure d'arrivée."""
+    numero = 1 + sum(e["type"] == "urgence" for e in DB.lister_evenements())
+    p = S.patient_urgent(numero, saisie["prat"], saisie["duree"], ambulatoire=saisie["amb"],
+                         nuits_post_op=saisie["post"], diagnostic=saisie["cim"], type_intervention=saisie["diag"],
+                         age=saisie["age"])
+    contenu = {"patient": S.patient_vers_dict(p), "gravite": saisie["gravite"]}
+    evt = {"id": None, "heure": saisie["heure"], "type": "urgence", "contenu": contenu, "auteur": "aperçu",
+           "patient_id": None}
+    avant = C.simulation()
+    apres = S.simuler(C.programme(), DB.lister_evenements() + [evt], C.maintenant())
+    d = next((x for x in reversed(apres.decisions()) if x.get("patient") == p.id), None)
+    return {"numero": numero, "patient": p, "contenu": contenu, "decision": d, "simulation": apres,
+            "mouvements": [m for m in C.mouvements(avant, apres) if m[0] != p.id],
+            "empreinte": DB.empreinte_evenements()}
+
+
+def _signature(apercu: dict) -> tuple:
+    d = apercu["decision"]
+    return (apercu["numero"], d and d["type"], d and d.get("salle"), d and d.get("debut"), d and d.get("chirurgien"))
+
+
+def _valider_urgence(saisie: dict, u: dict) -> None:
+    """Affiche la proposition du SMA ; l'urgence n'est placée (enregistrée) qu'après « Valider le placement »."""
+    apercu = st.session_state.get("apercu_urgence")
+    if apercu is None or apercu["empreinte"] != DB.empreinte_evenements():
+        with st.spinner("Calcul du placement par le système multi-agent…"):
+            apercu = st.session_state["apercu_urgence"] = _apercu_urgence(saisie)
+    code, d, sim2 = f"URG-{apercu['numero']:03d}", apercu["decision"], apercu["simulation"]
+    gravite = saisie["gravite"]
+    with st.container(border=True):
+        st.markdown(f"**Proposition du système multi-agent pour {code}** ({S.LIBELLES_GRAVITE[gravite]}, arrivée à "
+                    f"{saisie['heure']:%H:%M})")
         if d and d["type"] == "urgence":
-            DB.historiser(C.SYSTEME, "automatique", "Urgence",
-                          "Prise en charge dans le délai" if d["dans_delai"] else "Prise en charge HORS DÉLAI",
-                          patient=code, heure_metier=maintenant,
-                          detail=(f"{sim2.modele.salles[d['salle']].nom_affiche}, {C.jour_long(d['debut'].date())} "
-                                  f"{d['debut']:%H:%M}, {S.nom_chirurgien(d['chirurgien'])} · attente "
-                                  f"{d['attente_min']:.0f} min (délai maximal {delai} min)"),
-                          motif=("Programme sans place : confiée au planning de garde (équipe de garde prévenue)"
-                                 if d.get("garde") else
-                                 f"Meilleure des {d['nb_propositions']} propositions des salles (coût minimal)"))
+            st.markdown(f"{sim2.modele.salles[d['salle']].nom_affiche}, {C.jour_long(d['debut'].date())} à "
+                        f"**{d['debut']:%H:%M}**, {S.nom_chirurgien(d['chirurgien'])} · attente "
+                        f"{d['attente_min']:.0f} min, **{'dans' if d['dans_delai'] else 'HORS'} délai**"
+                        + (" · programme sans place : planning de garde" if d.get("garde") else ""))
+        elif d and d["type"] == "urgence_transferee":
+            st.warning("Aucun chirurgien compétent ne peut opérer dans la limite acceptable : transfert vers un autre "
+                       "établissement proposé, à décider par le médecin régulateur.")
         else:
-            DB.historiser(C.SYSTEME, "automatique", "Urgence", "Aucun créneau dans le délai", patient=code,
-                          heure_metier=maintenant, detail=f"délai maximal {delai} min",
-                          motif="Transfert vers un autre établissement à décider par le médecin régulateur")
-        if d and d["type"] == "urgence":
-            st.session_state["flash_urgence"] = ("ok" if d["dans_delai"] else "attention", (
-                f"URG-{numero:03d} : programmé(e) avec {S.nom_chirurgien(d['chirurgien'])} en "
-                f"{sim2.modele.salles[d['salle']].nom_affiche} à {d['debut']:%H:%M} le {C.jour_long(d['debut'].date())} "
-                f"(attente {d['attente_min']:.0f} min, {'dans' if d['dans_delai'] else 'HORS'} délai"
-                + (", programme sans place : planning de garde)." if d.get("garde")
-                   else f", {d['nb_propositions']} propositions comparées).")))
+            st.warning("Aucun créneau du planning ne convient.")
+        if apercu["mouvements"]:
+            noms = C.noms_patients(sim2)
+            st.caption(f"{len(apercu['mouvements'])} patient(s) déplacé(s) par ce placement :")
+            st.dataframe(pd.DataFrame([{"Patient": noms.get(pid, f"P{pid}"), "Mouvement": m, "Trajet": t}
+                                       for pid, m, t in apercu["mouvements"]]), hide_index=True, width="stretch")
         else:
-            st.session_state["flash_urgence"] = ("attention", f"URG-{numero:03d} : aucun créneau du planning ne convient.")
+            st.caption("Aucun autre patient déplacé.")
+        c1, c2 = st.columns(2)
+        valider = c1.button("Valider le placement", type="primary", width="stretch")
+        annuler = c2.button("Annuler", width="stretch")
+    if annuler:
+        for k in ("urgence_a_valider", "apercu_urgence"):
+            st.session_state.pop(k, None)
         st.rerun()
+    if not valider:
+        return
+    recalcul = _apercu_urgence(saisie)
+    if _signature(recalcul) != _signature(apercu):          # le programme a changé depuis la proposition
+        st.session_state["apercu_urgence"] = recalcul
+        st.session_state["flash_urgence"] = ("attention", "Le programme a changé depuis la proposition : "
+                                                          "nouvelle proposition à valider.")
+        st.rerun()
+    _enregistrer_urgence(recalcul, saisie, u)
+
+
+def _enregistrer_urgence(apercu: dict, saisie: dict, u: dict) -> None:
+    numero, p, gravite = apercu["numero"], apercu["patient"], saisie["gravite"]
+    duree, amb, post, prat, diag = saisie["duree"], saisie["amb"], saisie["post"], saisie["prat"], saisie["diag"]
+    maintenant = saisie["heure"]
+    code = f"URG-{numero:03d}"
+    sim2 = C.appliquer(
+        lambda: DB.ajouter_evenement(maintenant, "urgence", apercu["contenu"], u["login"]),
+        categorie="Urgence", action="Déclaration d'urgence", patient=code,
+        detail=(f"{S.LIBELLES_GRAVITE[gravite]} · vue par Dr {prat} · {duree} min · "
+                f"{'ambulatoire' if amb else f'hospitalisation {post} nuit(s)'}"),
+        motif=diag or "non renseigné")
+    for k in ("estim_urg", "urgence_a_valider", "apercu_urgence"):
+        st.session_state.pop(k, None)
+    d = next((x for x in reversed(sim2.decisions()) if x.get("patient") == p.id), None)
+    delai = S.GRAVITES[gravite].delai_max_min
+    if d and d["type"] == "urgence":
+        DB.historiser(C.SYSTEME, "automatique", "Urgence",
+                      "Prise en charge dans le délai" if d["dans_delai"] else "Prise en charge HORS DÉLAI",
+                      patient=code, heure_metier=maintenant,
+                      detail=(f"{sim2.modele.salles[d['salle']].nom_affiche}, {C.jour_long(d['debut'].date())} "
+                              f"{d['debut']:%H:%M}, {S.nom_chirurgien(d['chirurgien'])} · attente "
+                              f"{d['attente_min']:.0f} min (délai maximal {delai} min)"),
+                      motif=("Programme sans place : confiée au planning de garde (équipe de garde prévenue)"
+                             if d.get("garde") else
+                             f"Meilleure des {d['nb_propositions']} propositions des salles (coût minimal)"))
+    else:
+        DB.historiser(C.SYSTEME, "automatique", "Urgence", "Aucun créneau dans le délai", patient=code,
+                      heure_metier=maintenant, detail=f"délai maximal {delai} min",
+                      motif="Transfert vers un autre établissement à décider par le médecin régulateur")
+    if d and d["type"] == "urgence":
+        st.session_state["flash_urgence"] = ("ok" if d["dans_delai"] else "attention", (
+            f"URG-{numero:03d} : programmé(e) avec {S.nom_chirurgien(d['chirurgien'])} en "
+            f"{sim2.modele.salles[d['salle']].nom_affiche} à {d['debut']:%H:%M} le {C.jour_long(d['debut'].date())} "
+            f"(attente {d['attente_min']:.0f} min, {'dans' if d['dans_delai'] else 'HORS'} délai"
+            + (", programme sans place : planning de garde)." if d.get("garde")
+               else f", {d['nb_propositions']} propositions comparées).")))
+    else:
+        st.session_state["flash_urgence"] = ("attention", f"URG-{numero:03d} : aucun créneau du planning ne convient.")
+    st.rerun()
 
 
 # =============================================================================

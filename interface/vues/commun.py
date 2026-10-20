@@ -380,17 +380,27 @@ def appliquer(modification, *, categorie: str, action: str, patient: str = "", d
     if apres is None:
         return None
     noms.update(noms_patients(apres))
-    etat_apres = _etat_programme(apres)
     cause = f"Conséquence de : {action}{' ' + patient if patient else ''} ({u['login']})"
+    for pid, mouvement, trajet in mouvements(avant, apres, etat_avant):
+        DB.historiser(SYSTEME, "automatique", "Décision automatique", mouvement,
+                      patient=noms.get(pid, f"P{pid}"), detail=trajet, motif=cause, heure_metier=instant)
+    return apres
+
+
+def mouvements(avant: Optional[S.Simulation], apres: S.Simulation,
+               etat_avant: Optional[dict] = None) -> list[tuple[int, str, str]]:
+    """Patients dont la place change entre deux simulations : (pid, type de mouvement, trajet lisible)."""
+    etat_avant = _etat_programme(avant) if etat_avant is None else etat_avant
+    etat_apres = _etat_programme(apres)
+    res = []
     for pid in sorted(set(etat_avant) | set(etat_apres)):
         a, b = etat_avant.get(pid), etat_apres.get(pid)
         if a == b:
             continue
         trajet = (f"{_lieu(avant, a)} → {_lieu(apres, b)}" if a and b
                   else _lieu(apres, b) if b else f"était : {_lieu(avant, a)}")
-        DB.historiser(SYSTEME, "automatique", "Décision automatique", _mouvement(a, b),
-                      patient=noms.get(pid, f"P{pid}"), detail=trajet, motif=cause, heure_metier=instant)
-    return apres
+        res.append((pid, _mouvement(a, b), trajet))
+    return res
 
 
 @st.cache_resource(max_entries=4, show_spinner=False)
