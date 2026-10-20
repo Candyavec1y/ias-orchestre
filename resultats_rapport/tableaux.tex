@@ -1,0 +1,153 @@
+% Tableaux générés par resultats_rapport/scripts/j_tableaux.py à partir des CSV mesurés.
+% Nécessite \usepackage{booktabs}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Instances (cohorte 43 pour N2 ; budget 10~s, graines 1--10 ; voir parametres.md)}
+\label{tab:instances}
+\begin{tabular}{lrrrrrrl}
+\toprule
+Instance & Chir. & Salles & Sem. & Vacations / blocs & Patients & Charge (\%) & Lits / réserve / places \\
+\midrule
+N1 instance d'étude fictive & 8 & 3 & 1 & 45 & — & — & — / — / — \\
+N2 v28 70 \% & 23 & 4 & 4 & 144 & 297 & 68,8 & 30 / 3 / 20 \\
+N2 v28 85 \% & 23 & 4 & 4 & 144 & 353 & 84,3 & 30 / 3 / 20 \\
+N2 v28 100 \% & 23 & 4 & 4 & 144 & 421 & 99,1 & 30 / 3 / 20 \\
+N2 v28 115 \% & 23 & 4 & 4 & 144 & 471 & 113,4 & 30 / 3 / 20 \\
+SMA v28 (scénarios) & 21 & 4 & 2 & 72 & 222 & — & 30 / 3 / 20 \\
+ML & — & — & — & — & 14477 & — & — / — / — \\
+Saturation v28 (programme vide) & — & — & 4 & — & 694 & — & 30 / 3 / 20 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Quatre modèles ML sur le jeu de test (séparation par séjour ; 35,5~\% des séjours de test ont un patient vu à l'entraînement). Le score d'urgence est une règle, sans métrique ML.}
+\label{tab:ml}
+\begin{tabular}{lrrrrl}
+\toprule
+Modèle & n test & R² / acc. & MAE / F1 & RMSE / Brier & Référence simple \\
+\midrule
+Durée au bloc (min) & 2 896 & 0,670 & 14,8 & 21,8 & médiane par type : R² 0,45, MAE 19,1 \\
+Nuits avant (hosp.) & 1 304 & 0,028 & 0,26 & 2,48 & médiane : MAE 0,29 \\
+Nuits après (hosp.) & 1 304 & 0,695 & 0,54 & 0,83 & médiane : MAE 1,13 \\
+Mode (ambu./hosp.) & 2 896 & acc. 0,925 & F1 0,933 / 0,915 & Brier 0,056 & majoritaire : acc. 0,550 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{N1 sur l'instance d'étude fictive (10 graines, budget 10~s)}
+\label{tab:n1}
+\begin{tabular}{lrrrrrrr}
+\toprule
+Méthode & Faisable (\%) & F1 moy. $\pm$ é.-t. & F1 min & Gain vs départ (\%) & Fragm. & Salles diff. & Temps (s) \\
+\midrule
+glouton & 100 & 1 750,0 $\pm$ 0,0 & 1 750 & 0,0 & 25,0 & 5,0 & 0,02 \\
+RS seul & 100 & 900,0 $\pm$ 0,0 & 900 & 48,6 & 16,2 & 0,9 & 10,00 \\
+TABOU seul & 100 & 960,0 $\pm$ 31,6 & 950 & 45,1 & 17,0 & 1,1 & 10,00 \\
+AGS seul & 100 & 1 005,0 $\pm$ 49,7 & 950 & 42,6 & 16,9 & 1,6 & 10,16 \\
+memetique & 100 & 920,0 $\pm$ 48,3 & 900 & 47,4 & 16,6 & 0,9 & 10,16 \\
+AGS\textgreater{}RS\textgreater{}TABOU & 100 & 925,0 $\pm$ 48,6 & 900 & 47,1 & 16,3 & 1,1 & 10,17 \\
+RS\textgreater{}AGS\textgreater{}TABOU & 100 & 900,0 $\pm$ 0,0 & 900 & 48,6 & 16,2 & 0,9 & 10,18 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{N2 sur v28, cohorte de référence (charge 100~\% de la capacité utile), budget 10~s ; F2 commun (sans pénalité de report). Écart à la meilleure solution faisable observée, pas un gap d'optimalité.}
+\label{tab:n2}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Méthode & n & Faisable (\%) & F2 moy. $\pm$ é.-t. & F2 méd. & Gain vs départ (\%) & Écart meill. faisable (\%) & Reportés & Temps (s) \\
+\midrule
+glouton & 1 & 0 & 8 265 $\pm$ 0 & 8 265 & 0,0 & 167,3 & 82,0 & 0,5 \\
+premier créneau & 1 & 100 & 5 484 $\pm$ 0 & 5 484 & 33,6 & 77,4 & 36,0 & 0,5 \\
+RS seul & 10 & 100 & 3 344 $\pm$ 173 & 3 355 & 59,5 & 8,1 & 23,2 & 10,0 \\
+TABOU seul & 10 & 90 & 3 956 $\pm$ 186 & 3 888 & 52,1 & 28,0 & 33,7 & 10,0 \\
+AGS seul & 10 & 70 & 5 708 $\pm$ 164 & 5 752 & 30,9 & 84,6 & 65,4 & 10,3 \\
+memetique & 10 & 100 & 3 823 $\pm$ 178 & 3 814 & 53,7 & 23,7 & 28,2 & 10,3 \\
+AGS\textgreater{}RS\textgreater{}TABOU & 10 & 80 & 3 593 $\pm$ 179 & 3 600 & 56,5 & 16,2 & 25,3 & 10,4 \\
+RS\textgreater{}AGS\textgreater{}TABOU & 10 & 90 & 3 905 $\pm$ 104 & 3 935 & 52,8 & 26,3 & 28,0 & 10,4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Gains et contreparties (moyennes sur 10 graines, cohorte de référence) : composantes pondérées de F2 et indicateurs opérationnels}
+\label{tab:compromis}
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+Méthode & Bloc & Lits & Places & Occ. bloc (\%) & Pic lits & Pic places & Reportés & Délai (j) & Délai prio. 4 (j) \\
+\midrule
+glouton & 7 107 & 1 044 & 114 & 83,6 & 27,0 & 11,0 & 82,0 & 6,7 & 6,7 \\
+premier créneau & 3 894 & 1 487 & 103 & 88,0 & 27,0 & 9,0 & 36,0 & 3,6 & 1,6 \\
+RS seul & 2 318 & 982 & 44 & 92,9 & 25,2 & 6,9 & 23,2 & 3,5 & 2,6 \\
+TABOU seul & 3 083 & 840 & 34 & 90,5 & 24,9 & 6,3 & 33,7 & 4,0 & 2,8 \\
+AGS seul & 4 856 & 797 & 55 & 85,2 & 23,0 & 7,5 & 65,4 & 5,7 & 4,5 \\
+memetique & 2 900 & 891 & 33 & 91,1 & 25,0 & 6,5 & 28,2 & 3,7 & 2,8 \\
+AGS\textgreater{}RS\textgreater{}TABOU & 2 627 & 937 & 29 & 92,0 & 25,0 & 6,7 & 25,3 & 3,6 & 2,8 \\
+RS\textgreater{}AGS\textgreater{}TABOU & 2 979 & 891 & 35 & 90,9 & 25,0 & 6,4 & 28,0 & 3,7 & 2,9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{SMA : stratégies comparées à événements identiques (scénarios déterministes ; sommes, sauf planning conservé : moyenne)}
+\label{tab:sma_strategies}
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+Stratégie & Scén. & Urgences & Dans délai & Transf. proposés & Décalés & Reportés & Liste att. & Planning conservé (\%) & Incohérences \\
+\midrule
+S\_CN & 21 & 23 & 21 & 1 & 26 & 54 & 8 & 97,3 & 0 \\
+S\_LOC & 21 & 23 & 21 & 1 & 27 & 54 & 8 & 97,3 & 0 \\
+S\_GLOB & 21 & 23 & 21 & 1 & 48 & 48 & 5 & 96,7 & 0 \\
+S\_LOC\_GLOB & 21 & 23 & 21 & 1 & 53 & 47 & 4 & 96,6 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{SMA, configuration du site (Contract Net sans métaheuristique) : bilan par scénario}
+\label{tab:sma_scenarios}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Scénario & Urg. & Dans délai & Transf. prop. & Décalés & Reportés & Liste att. & Alertes & Incoh. \\
+\midrule
+insertion\_simple & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+fracture\_panne & 1 & 1 & 0 & 2 & 0 & 0 & 0 & 0 \\
+gravite\_vitale & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+gravite\_differable & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+urgences\_simultanees & 3 & 3 & 0 & 0 & 0 & 0 & 0 & 0 \\
+journee\_chargee & 3 & 3 & 0 & 3 & 5 & 3 & 0 & 0 \\
+panne\_matinale & 0 & 0 & 0 & 3 & 4 & 0 & 0 & 0 \\
+chirurgien\_absent & 3 & 2 & 1 & 2 & 1 & 0 & 1 & 0 \\
+rattrapage & 0 & 0 & 0 & 2 & 1 & 0 & 0 & 0 \\
+panne\_sans\_effet & 0 & 0 & 0 & 0 & 1 & 1 & 0 & 0 \\
+absence\_chirurgien & 0 & 0 & 0 & 1 & 8 & 0 & 3 & 0 \\
+prolongation\_intervention & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+lits\_indisponibles & 0 & 0 & 0 & 0 & 8 & 1 & 0 & 0 \\
+témoin\_sans\_événement & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+urgence\_absence & 1 & 1 & 0 & 1 & 6 & 0 & 0 & 0 \\
+prolongation\_urgence & 1 & 1 & 0 & 2 & 0 & 0 & 0 & 0 \\
+panne\_prolongation & 0 & 0 & 0 & 3 & 0 & 0 & 0 & 0 \\
+absence\_lits & 0 & 0 & 0 & 1 & 8 & 0 & 3 & 0 \\
+urgence\_lits\_satures & 1 & 1 & 0 & 0 & 9 & 2 & 0 & 0 \\
+urgence\_vitale\_surcharge & 4 & 3 & 0 & 5 & 3 & 1 & 2 & 0 \\
+journee\_multi\_aleas & 3 & 3 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}

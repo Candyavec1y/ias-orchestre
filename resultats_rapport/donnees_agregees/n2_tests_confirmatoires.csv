@@ -1,0 +1,4 @@
+comparaison,n_paires,difference_mediane,difference_moyenne,memetique_meilleur,statistique_W,p_brute,p_holm,significatif_5pct
+memetique - RS seul,10,463.4411616161617,479.502789909401,0,0.0,0.001953125,0.005859375,True
+memetique - TABOU seul,10,-154.75958482802116,-133.02993442995677,6,12.0,0.130859375,0.130859375,False
+memetique - AGS seul,10,-1869.823245363282,-1885.075493695993,10,0.0,0.001953125,0.005859375,True

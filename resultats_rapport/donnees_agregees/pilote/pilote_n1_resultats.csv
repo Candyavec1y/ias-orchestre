@@ -1,0 +1,8 @@
+campagne,niveau,methode,graine,budget_s,temps_reel_s,temps_instance_s,evaluations,generations,score_commun,score_depart,faisable,nb_violations,violations_par_type,conflits_salles,conflits_chirurgiens,salles_differentes,fragmentation,blocs_total,blocs_places,vacations,heures_demandees,heures_planifiees
+N1,1,AGS seul,1,2.0,2.1498318330268376,2.374988980591297e-06,26324,1393,950.0,1750.0,True,0,{},0,0,1,17,45,45,25,90,90.0
+N1,1,AGS>RS>TABOU,1,2.0,2.1426164169679396,2.334010787308216e-06,36251,703,950.0,1750.0,True,0,{},0,0,1,17,45,45,25,90,90.0
+N1,1,RS seul,1,2.0,2.0024503340246156,0.01551416702568531,46376,0,900.0,1750.0,True,0,{},0,0,1,16,45,45,24,90,90.0
+N1,1,RS>AGS>TABOU,1,2.0,2.1662322499905713,0.01795416697859764,43010,14,900.0,1750.0,True,0,{},0,0,1,16,45,45,24,90,90.0
+N1,1,TABOU seul,1,2.0,2.000111458997708,0.014340708032250404,41358,0,950.0,1750.0,True,0,{},0,0,1,17,45,45,25,90,90.0
+N1,1,glouton,1,0.0,0.013846958987414837,0.014444249973166734,0,0,1750.0,1750.0,True,0,{},0,0,5,25,45,45,33,90,90.0
+N1,1,memetique,1,2.0,2.1444704169989564,1.5830155462026596e-06,37111,19,1050.0,1750.0,True,0,{},0,0,2,17,45,45,25,90,90.0

@@ -1,0 +1,62 @@
+source,composant,mesure,valeur,n,max,depassement_budget_max_pct,evaluations_moyennes,p95
+c_ml.py,ML préparation des données,temps réel (s),0.26699745800578967,1,,,,
+c_ml.py,ML évaluation (entraînement 4 copies + prédiction du test),temps réel (s),1.3269359999685548,1,,,,
+c_ml.py,ML chargement des 4 modèles déployés,temps réel (s),0.05424883298110217,1,,,,
+c_ml.py,ML prédiction unitaire (4 modèles),médiane (s),0.010064271482406184,50,,,,
+c_ml.py,ML prédiction unitaire (4 modèles),P95 (s),0.012128340976778418,50,,,,
+de_optimisation.py,N1 glouton,"temps réel (s), budget 0.0",0.015678216697415336,10,0.017836541985161602,,0.0,
+de_optimisation.py,N1 RS seul,"temps réel (s), budget 10.0",10.002682316699065,10,10.003066791978199,0.03066791978199035,196091.8,
+de_optimisation.py,N1 TABOU seul,"temps réel (s), budget 10.0",10.003100929205539,10,10.004413334012497,0.044133340124972165,184204.3,
+de_optimisation.py,N1 AGS seul,"temps réel (s), budget 10.0",10.159855591895758,10,10.170458416978363,1.7045841697836295,111738.3,
+de_optimisation.py,N1 memetique,"temps réel (s), budget 10.0",10.163949562504422,10,10.177232708025258,1.7723270802525803,189221.1,
+de_optimisation.py,N1 AGS>RS>TABOU,"temps réel (s), budget 10.0",10.165607604413527,10,10.187328625004739,1.8732862500473857,150296.0,
+de_optimisation.py,N1 RS>AGS>TABOU,"temps réel (s), budget 10.0",10.18429932059371,10,10.200838540971745,2.008385409717448,191295.5,
+de_optimisation.py,N2 glouton,"temps réel (s), budget 0.0",0.4502283330075443,1,0.4502283330075443,,0.0,
+de_optimisation.py,N2 premier créneau,"temps réel (s), budget 0.0",0.4541183339897543,1,0.4541183339897543,,0.0,
+de_optimisation.py,N2 RS seul,"temps réel (s), budget 10.0",10.003671387495706,10,10.003928625024855,0.03928625024855137,811553.4,
+de_optimisation.py,N2 TABOU seul,"temps réel (s), budget 10.0",10.021908004203578,10,10.056459457962774,0.5645945796277374,1807149.9,
+de_optimisation.py,N2 AGS seul,"temps réel (s), budget 10.0",10.338386866799556,10,10.361967250006273,3.619672500062734,9726.8,
+de_optimisation.py,N2 memetique,"temps réel (s), budget 10.0",10.347529437509365,10,10.3733620410203,3.7336204102030024,1649835.3,
+de_optimisation.py,N2 AGS>RS>TABOU,"temps réel (s), budget 10.0",10.354846620792523,10,10.37627824995434,3.762782499543391,657420.3,
+de_optimisation.py,N2 RS>AGS>TABOU,"temps réel (s), budget 10.0",10.423131216713227,10,10.488279583049007,4.882795830490068,1442687.5,
+i_temps.py,génération instance N2 v28 4 semaines,médiane (s),0.0040227919816970825,5,0.5836545419879258,,,
+i_temps.py,validateur indépendant N2,médiane (s),0.0005014789931010455,20,0.0006926659843884408,,,
+i_temps.py,évaluation complète F2,médiane (s),0.0005098750116303563,20,0.0005458749947138131,,,
+i_temps.py,glouton multi-départ N2 (40 essais),médiane (s),0.3752133749658242,3,0.3807567909825593,,,
+i_temps.py,calcul du programme du site (glouton),médiane (s),0.13266100001055747,1,0.13266100001055747,,,
+i_temps.py,"reconstruction de l'état du site (rejeu SMA, 0 événement, mercredi 10 h)",médiane (s),0.2490226670051925,5,0.2699110000394285,,,
+h_sma.py,SMA S_CN AbsenceChirurgien,médiane (s),0.008470666012726724,3,0.01070208300370723,,,0.01070208300370723
+h_sma.py,SMA S_CN ArriveeUrgence,médiane (s),0.0036778750363737345,73,0.045541000028606504,,,0.030649332969915122
+h_sma.py,SMA S_CN FinPanne,médiane (s),0.0008738340111449361,3,0.009035958966705948,,,0.009035958966705948
+h_sma.py,SMA S_CN IndisponibiliteLits,médiane (s),0.01864595850929618,4,0.04099758400116116,,,0.04099758400116116
+h_sma.py,SMA S_CN PanneAscenseur,médiane (s),0.006554229505127296,12,0.027965417015366256,,,0.019796374952420592
+h_sma.py,SMA S_CN ProlongationIntervention,médiane (s),0.0017109584878198802,4,0.0036241660127416253,,,0.0036241660127416253
+h_sma.py,SMA S_CN ProlongationPanne,médiane (s),0.0037001660093665123,1,0.0037001660093665123,,,0.0037001660093665123
+h_sma.py,SMA S_LOC AbsenceChirurgien,médiane (s),0.00823116599349305,3,0.009948583028744906,,,0.009948583028744906
+h_sma.py,SMA S_LOC ArriveeUrgence,médiane (s),0.16320099995937198,73,1.26025741599733,,,0.8629962500417605
+h_sma.py,SMA S_LOC FinPanne,médiane (s),0.0008682920015417039,3,0.008538166992366314,,,0.008538166992366314
+h_sma.py,SMA S_LOC IndisponibiliteLits,médiane (s),0.018474395503289998,4,0.040751916996669024,,,0.040751916996669024
+h_sma.py,SMA S_LOC PanneAscenseur,médiane (s),0.03397997948923148,12,0.11147058400092646,,,0.08084595802938566
+h_sma.py,SMA S_LOC ProlongationIntervention,médiane (s),0.001691771496552974,4,0.0033812920446507633,,,0.0033812920446507633
+h_sma.py,SMA S_LOC ProlongationPanne,médiane (s),0.02377475000685081,1,0.02377475000685081,,,0.02377475000685081
+h_sma.py,SMA S_GLOB AbsenceChirurgien,médiane (s),0.008322959009092301,3,0.009873959003016353,,,0.009873959003016353
+h_sma.py,SMA S_GLOB ArriveeUrgence,médiane (s),1.035744833003264,73,1.1059092919458635,,,1.071090749988798
+h_sma.py,SMA S_GLOB FinPanne,médiane (s),1.0429362920112908,3,1.0582393750082701,,,1.0582393750082701
+h_sma.py,SMA S_GLOB IndisponibiliteLits,médiane (s),1.0647616460046265,4,1.1932110409834422,,,1.1932110409834422
+h_sma.py,SMA S_GLOB PanneAscenseur,médiane (s),1.0392637499899138,12,1.1096317500341684,,,1.0837460840120912
+h_sma.py,SMA S_GLOB ProlongationIntervention,médiane (s),1.0223937710106838,4,1.045763416972477,,,1.045763416972477
+h_sma.py,SMA S_GLOB ProlongationPanne,médiane (s),1.028698957990855,1,1.028698957990855,,,1.028698957990855
+h_sma.py,SMA S_LOC_GLOB AbsenceChirurgien,médiane (s),0.00847495801281184,3,0.010003667033743113,,,0.010003667033743113
+h_sma.py,SMA S_LOC_GLOB ArriveeUrgence,médiane (s),1.1877073340001516,73,2.2249294579960406,,,1.8885404579923488
+h_sma.py,SMA S_LOC_GLOB FinPanne,médiane (s),1.0518492499832064,3,1.106772584025748,,,1.106772584025748
+h_sma.py,SMA S_LOC_GLOB IndisponibiliteLits,médiane (s),1.099564833479235,4,1.185987665958237,,,1.185987665958237
+h_sma.py,SMA S_LOC_GLOB PanneAscenseur,médiane (s),1.0565186869935133,12,1.2954567089909688,,,1.1426050419686362
+h_sma.py,SMA S_LOC_GLOB ProlongationIntervention,médiane (s),1.0329683749878313,4,1.0518147910479456,,,1.0518147910479456
+h_sma.py,SMA S_LOC_GLOB ProlongationPanne,médiane (s),1.071697250008583,1,1.071697250008583,,,1.071697250008583
+g_saturation_robustesse.py,"saturation : site (30 lits dont 3 réserve, 20 places)",temps réel (s),12.425583666015882,1,,,,
+g_saturation_robustesse.py,"saturation : site, graine 43",temps réel (s),4.31643291702494,1,,,,
+g_saturation_robustesse.py,"saturation : site, graine 44",temps réel (s),4.216990165994503,1,,,,
+g_saturation_robustesse.py,saturation : lits réduits (20 dont 3 réserve),temps réel (s),4.420709209050983,1,,,,
+g_saturation_robustesse.py,saturation : places réduites (10),temps réel (s),4.145656584005337,1,,,,
+g_saturation_robustesse.py,saturation : réserve 6 lits,temps réel (s),4.128726374998223,1,,,,
+g_saturation_robustesse.py,saturation : patients acceptant un confrère,temps réel (s),33.52044279099209,1,,,,
