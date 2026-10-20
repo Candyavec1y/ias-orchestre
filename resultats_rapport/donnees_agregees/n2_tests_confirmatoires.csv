@@ -1,9 +1,9 @@
 comparaison,critere,n_paires,difference_mediane,difference_moyenne,premiere_meilleure,statistique_W,p_brute,p_holm,significatif_5pct,statut
-memetique - RS seul,score_recherche,10,1866.0351251838965,1881.7059293181962,0,0.0,0.001953125,0.005859375,True,confirmatoire
-memetique - TABOU seul,score_recherche,10,-1125.8478637148137,-995.8885084011132,9,1.0,0.00390625,0.0078125,True,confirmatoire
-memetique - AGS seul,score_recherche,9,-12803.65431614612,-12760.180474789233,9,0.0,0.00390625,0.0078125,True,confirmatoire
-AGS>RS>TABOU - RS seul,score_recherche,10,534.9110973910565,538.6109038312175,0,0.0,0.001953125,,True,exploratoire
-memetique - RS seul,score_commun,10,601.0432924689067,591.7059293181959,0,0.0,0.001953125,0.005859375,True,confirmatoire
-memetique - TABOU seul,score_commun,10,-2.9501266051158836,14.111491598887005,5,27.0,1.0,1.0,False,confirmatoire
-memetique - AGS seul,score_commun,9,-2038.6566000918274,-2004.6249192336752,9,0.0,0.00390625,0.0078125,True,confirmatoire
-AGS>RS>TABOU - RS seul,score_commun,10,178.10531840762837,178.61090383121683,0,0.0,0.001953125,,True,exploratoire
+memetique - RS seul,score_recherche,10,1897.8862111769604,1860.2151189192919,0,0.0,0.001953125,0.005859375,True,confirmatoire
+memetique - TABOU seul,score_recherche,10,-1314.9848838353937,-1190.816151219567,10,0.0,0.001953125,0.005859375,True,confirmatoire
+memetique - AGS seul,score_recherche,9,-13087.758921020204,-13019.402632620862,9,0.0,0.00390625,0.005859375,True,confirmatoire
+AGS>RS>TABOU - RS seul,score_recherche,10,542.8018060823688,637.5912965302487,0,0.0,0.001953125,,True,exploratoire
+memetique - RS seul,score_commun,10,511.54384748157645,540.2151189192921,0,0.0,0.001953125,0.005859375,True,confirmatoire
+memetique - TABOU seul,score_commun,10,-17.092152587558076,-80.8161512195663,6,19.0,0.431640625,0.431640625,False,confirmatoire
+memetique - AGS seul,score_commun,9,-2036.0863141902232,-2063.8470770653043,9,0.0,0.00390625,0.0078125,True,confirmatoire
+AGS>RS>TABOU - RS seul,score_commun,10,134.46117713469698,197.5912965302485,1,1.0,0.00390625,,True,exploratoire

@@ -1,0 +1,1587 @@
+methode,graine,perturbation,minutes_au_dela_capacite_utile,minutes_heures_supplementaires,vacations_en_heures_supplementaires,faisable,violations_lits,violations_places,violations_capacite_vacation,tirage
+AGS seul,6,"durées ×0,9",0,0,0,True,0,0,0,
+AGS seul,6,"durées ×1,0 (nominal)",3.0,0,0,True,0,0,0,
+AGS seul,6,"durées ×1,1",1337.0,0,0,False,0,0,77,
+AGS seul,6,"durées ×1,2",3514.5,1092,77,False,0,0,105,
+AGS seul,6,"bruit lognormal σ=0,25",1354.0,600,20,False,0,0,37,0
+AGS seul,6,"bruit lognormal σ=0,25",1080.5,357,21,False,0,0,34,1
+AGS seul,6,"bruit lognormal σ=0,25",1265.0,578,16,False,0,0,35,2
+AGS seul,6,"bruit lognormal σ=0,25",1530.0,691,25,False,0,0,40,3
+AGS seul,6,"bruit lognormal σ=0,25",1086.0,420,18,False,0,0,33,4
+AGS seul,6,"bruit lognormal σ=0,25",1081.0,445,17,False,0,0,33,5
+AGS seul,6,"bruit lognormal σ=0,25",859.0,405,14,False,0,0,25,6
+AGS seul,6,"bruit lognormal σ=0,25",1515.0,582,25,False,0,0,46,7
+AGS seul,6,"bruit lognormal σ=0,25",1299.5,544,22,False,0,0,38,8
+AGS seul,6,"bruit lognormal σ=0,25",796.0,254,17,False,0,0,30,9
+AGS seul,6,"bruit lognormal σ=0,25",1203.0,495,21,False,0,0,35,10
+AGS seul,6,"bruit lognormal σ=0,25",1066.0,510,20,False,0,0,31,11
+AGS seul,6,"bruit lognormal σ=0,25",1063.5,401,17,False,0,0,33,12
+AGS seul,6,"bruit lognormal σ=0,25",1061.5,466,17,False,0,0,31,13
+AGS seul,6,"bruit lognormal σ=0,25",1594.5,748,22,False,0,0,43,14
+AGS seul,6,"bruit lognormal σ=0,25",1367.5,569,20,False,0,0,39,15
+AGS seul,6,"bruit lognormal σ=0,25",941.5,390,15,False,0,0,30,16
+AGS seul,6,"bruit lognormal σ=0,25",1370.0,561,20,False,0,0,41,17
+AGS seul,6,"bruit lognormal σ=0,25",1291.0,555,21,False,0,0,39,18
+AGS seul,6,"bruit lognormal σ=0,25",1111.0,510,20,False,0,0,33,19
+AGS seul,6,lits 24 (−6),3.0,0,0,False,2,0,0,
+AGS seul,6,places 15 (−5),3.0,0,0,True,0,0,0,
+memetique,2,"durées ×0,9",0,0,0,True,0,0,0,
+memetique,2,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+memetique,2,"durées ×1,1",1284.5,0,0,False,0,0,77,
+memetique,2,"durées ×1,2",3591.0,1017,77,False,0,0,108,
+memetique,2,"bruit lognormal σ=0,25",1257.5,515,22,False,0,0,37,0
+memetique,2,"bruit lognormal σ=0,25",1146.5,476,19,False,0,0,32,1
+memetique,2,"bruit lognormal σ=0,25",1214.5,509,16,False,0,0,34,2
+memetique,2,"bruit lognormal σ=0,25",1121.0,352,18,False,0,0,36,3
+memetique,2,"bruit lognormal σ=0,25",1006.5,382,16,False,0,0,33,4
+memetique,2,"bruit lognormal σ=0,25",883.5,248,13,False,0,0,31,5
+memetique,2,"bruit lognormal σ=0,25",978.5,387,14,False,0,0,31,6
+memetique,2,"bruit lognormal σ=0,25",1222.0,390,21,False,0,0,38,7
+memetique,2,"bruit lognormal σ=0,25",985.0,328,13,False,0,0,34,8
+memetique,2,"bruit lognormal σ=0,25",793.5,228,12,False,0,0,30,9
+memetique,2,"bruit lognormal σ=0,25",1011.0,265,20,False,0,0,37,10
+memetique,2,"bruit lognormal σ=0,25",1041.0,436,15,False,0,0,34,11
+memetique,2,"bruit lognormal σ=0,25",1025.0,345,18,False,0,0,34,12
+memetique,2,"bruit lognormal σ=0,25",891.5,338,15,False,0,0,27,13
+memetique,2,"bruit lognormal σ=0,25",1495.5,738,18,False,0,0,39,14
+memetique,2,"bruit lognormal σ=0,25",1236.0,497,16,False,0,0,33,15
+memetique,2,"bruit lognormal σ=0,25",792.5,264,12,False,0,0,24,16
+memetique,2,"bruit lognormal σ=0,25",1429.5,560,21,False,0,0,44,17
+memetique,2,"bruit lognormal σ=0,25",1260.0,470,17,False,0,0,41,18
+memetique,2,"bruit lognormal σ=0,25",993.5,265,14,False,0,0,42,19
+memetique,2,lits 24 (−6),0,0,0,False,6,0,0,
+memetique,2,places 15 (−5),0,0,0,True,0,0,0,
+memetique,1,"durées ×0,9",0,0,0,True,0,0,0,
+memetique,1,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+memetique,1,"durées ×1,1",1458.5,0,0,False,0,0,87,
+memetique,1,"durées ×1,2",3820.5,1143,87,False,0,0,107,
+memetique,1,"bruit lognormal σ=0,25",1441.5,596,23,False,0,0,38,0
+memetique,1,"bruit lognormal σ=0,25",1192.5,488,21,False,0,0,31,1
+memetique,1,"bruit lognormal σ=0,25",1286.5,530,21,False,0,0,33,2
+memetique,1,"bruit lognormal σ=0,25",1281.0,447,20,False,0,0,38,3
+memetique,1,"bruit lognormal σ=0,25",1053.0,418,14,False,0,0,33,4
+memetique,1,"bruit lognormal σ=0,25",1185.5,428,17,False,0,0,37,5
+memetique,1,"bruit lognormal σ=0,25",1032.5,358,16,False,0,0,30,6
+memetique,1,"bruit lognormal σ=0,25",1462.0,644,21,False,0,0,38,7
+memetique,1,"bruit lognormal σ=0,25",1150.5,420,14,False,0,0,37,8
+memetique,1,"bruit lognormal σ=0,25",839.0,306,14,False,0,0,26,9
+memetique,1,"bruit lognormal σ=0,25",1199.0,423,22,False,0,0,36,10
+memetique,1,"bruit lognormal σ=0,25",1083.0,341,15,False,0,0,40,11
+memetique,1,"bruit lognormal σ=0,25",1033.5,343,16,False,0,0,30,12
+memetique,1,"bruit lognormal σ=0,25",986.0,365,15,False,0,0,30,13
+memetique,1,"bruit lognormal σ=0,25",1561.5,799,19,False,0,0,39,14
+memetique,1,"bruit lognormal σ=0,25",1305.5,529,16,False,0,0,35,15
+memetique,1,"bruit lognormal σ=0,25",1000.5,291,14,False,0,0,31,16
+memetique,1,"bruit lognormal σ=0,25",1388.5,498,22,False,0,0,43,17
+memetique,1,"bruit lognormal σ=0,25",1302.0,530,18,False,0,0,39,18
+memetique,1,"bruit lognormal σ=0,25",969.5,268,12,False,0,0,38,19
+memetique,1,lits 24 (−6),0,0,0,False,5,0,0,
+memetique,1,places 15 (−5),0,0,0,True,0,0,0,
+RS>AGS>TABOU,3,"durées ×0,9",0,0,0,True,0,0,0,
+RS>AGS>TABOU,3,"durées ×1,0 (nominal)",1.5,0,0,True,0,0,0,
+RS>AGS>TABOU,3,"durées ×1,1",1387.5,0,0,False,0,0,76,
+RS>AGS>TABOU,3,"durées ×1,2",3537.0,1119,76,False,0,0,98,
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1239.0,494,19,False,0,0,34,0
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",878.5,297,13,False,0,0,28,1
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1041.5,398,19,False,0,0,31,2
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1061.5,359,19,False,0,0,32,3
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",860.5,357,11,False,0,0,23,4
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",985.5,300,16,False,0,0,35,5
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",876.0,233,14,False,0,0,30,6
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1130.5,382,18,False,0,0,36,7
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1065.0,324,14,False,0,0,40,8
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",807.0,249,14,False,0,0,26,9
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1334.5,421,24,False,0,0,45,10
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1099.5,396,16,False,0,0,34,11
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1012.5,319,17,False,0,0,33,12
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",973.5,332,16,False,0,0,32,13
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1460.5,693,18,False,0,0,36,14
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1199.0,494,14,False,0,0,34,15
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",979.5,280,14,False,0,0,33,16
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1298.5,467,20,False,0,0,44,17
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1290.0,564,19,False,0,0,40,18
+RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1087.0,357,8,False,0,0,37,19
+RS>AGS>TABOU,3,lits 24 (−6),1.5,0,0,False,5,0,0,
+RS>AGS>TABOU,3,places 15 (−5),1.5,0,0,True,0,0,0,
+AGS>RS>TABOU,4,"durées ×0,9",0,0,0,True,0,0,0,
+AGS>RS>TABOU,4,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS>RS>TABOU,4,"durées ×1,1",1329.0,0,0,False,0,0,81,
+AGS>RS>TABOU,4,"durées ×1,2",3811.5,1026,81,False,0,0,113,
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1510.5,640,24,False,0,0,38,0
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1197.0,477,21,False,0,0,33,1
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1192.0,537,18,False,0,0,30,2
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1249.0,468,20,False,0,0,37,3
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",950.5,362,15,False,0,0,27,4
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1053.0,411,13,False,0,0,32,5
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",936.0,406,13,False,0,0,27,6
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1254.0,489,19,False,0,0,35,7
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1104.0,381,19,False,0,0,36,8
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",787.5,248,12,False,0,0,27,9
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1243.5,389,27,False,0,0,42,10
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1179.5,398,20,False,0,0,39,11
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1119.5,450,15,False,0,0,32,12
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1041.5,414,14,False,0,0,32,13
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1658.0,868,20,False,0,0,39,14
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1340.5,565,17,False,0,0,39,15
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",918.0,345,14,False,0,0,29,16
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1268.0,434,20,False,0,0,42,17
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1274.0,547,17,False,0,0,39,18
+AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1140.5,427,15,False,0,0,36,19
+AGS>RS>TABOU,4,lits 24 (−6),0,0,0,False,3,0,0,
+AGS>RS>TABOU,4,places 15 (−5),0,0,0,True,0,0,0,
+RS>AGS>TABOU,10,"durées ×0,9",0,0,0,True,0,0,0,
+RS>AGS>TABOU,10,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS>AGS>TABOU,10,"durées ×1,1",1422.0,0,0,False,0,0,88,
+RS>AGS>TABOU,10,"durées ×1,2",3843.0,1110,88,False,0,0,111,
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1387.5,565,21,False,0,0,38,0
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1069.0,438,17,False,0,0,30,1
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1219.5,546,17,False,0,0,33,2
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1353.5,552,22,False,0,0,36,3
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",826.5,351,10,False,0,0,25,4
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1102.0,337,16,False,0,0,37,5
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",854.0,298,10,False,0,0,27,6
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1403.5,650,19,False,0,0,36,7
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1039.0,305,18,False,0,0,36,8
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",876.0,230,15,False,0,0,34,9
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1074.5,294,17,False,0,0,39,10
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1100.5,439,18,False,0,0,38,11
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1204.0,485,17,False,0,0,31,12
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1229.5,543,20,False,0,0,33,13
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1637.0,788,21,False,0,0,40,14
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1114.0,384,14,False,0,0,36,15
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",966.0,327,15,False,0,0,30,16
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1574.0,708,23,False,0,0,40,17
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1307.0,466,21,False,0,0,41,18
+RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1050.5,286,16,False,0,0,44,19
+RS>AGS>TABOU,10,lits 24 (−6),0,0,0,False,6,0,0,
+RS>AGS>TABOU,10,places 15 (−5),0,0,0,True,0,0,0,
+AGS>RS>TABOU,9,"durées ×0,9",0,0,0,True,0,0,0,
+AGS>RS>TABOU,9,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS>RS>TABOU,9,"durées ×1,1",1379.0,0,0,False,0,0,82,
+AGS>RS>TABOU,9,"durées ×1,2",3730.5,1080,82,False,0,0,105,
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1240.0,478,21,False,0,0,32,0
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1077.0,436,20,False,0,0,29,1
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1438.0,660,20,False,0,0,34,2
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1342.0,539,22,False,0,0,38,3
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",882.0,315,11,False,0,0,30,4
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",969.5,367,15,False,0,0,26,5
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",988.5,303,12,False,0,0,32,6
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1251.5,496,19,False,0,0,39,7
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",981.0,322,15,False,0,0,32,8
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",898.5,297,16,False,0,0,27,9
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1223.5,350,24,False,0,0,41,10
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1128.5,443,17,False,0,0,35,11
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1003.0,343,19,False,0,0,30,12
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",947.0,407,15,False,0,0,29,13
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1569.5,778,23,False,0,0,37,14
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1222.0,498,17,False,0,0,35,15
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",729.5,216,10,False,0,0,23,16
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1501.0,647,23,False,0,0,43,17
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1238.5,477,18,False,0,0,35,18
+AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1159.0,418,14,False,0,0,39,19
+AGS>RS>TABOU,9,lits 24 (−6),0,0,0,False,5,0,0,
+AGS>RS>TABOU,9,places 15 (−5),0,0,0,True,0,0,0,
+RS seul,9,"durées ×0,9",0,0,0,True,0,0,0,
+RS seul,9,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS seul,9,"durées ×1,1",1477.5,0,0,False,0,0,87,
+RS seul,9,"durées ×1,2",3825.0,1173,87,False,0,0,106,
+RS seul,9,"bruit lognormal σ=0,25",1429.0,639,24,False,0,0,37,0
+RS seul,9,"bruit lognormal σ=0,25",964.5,365,14,False,0,0,30,1
+RS seul,9,"bruit lognormal σ=0,25",1324.5,611,19,False,0,0,34,2
+RS seul,9,"bruit lognormal σ=0,25",1395.0,495,23,False,0,0,44,3
+RS seul,9,"bruit lognormal σ=0,25",989.5,380,15,False,0,0,28,4
+RS seul,9,"bruit lognormal σ=0,25",976.5,264,14,False,0,0,36,5
+RS seul,9,"bruit lognormal σ=0,25",874.5,313,14,False,0,0,29,6
+RS seul,9,"bruit lognormal σ=0,25",1468.0,670,22,False,0,0,40,7
+RS seul,9,"bruit lognormal σ=0,25",1130.0,372,18,False,0,0,37,8
+RS seul,9,"bruit lognormal σ=0,25",810.0,281,14,False,0,0,27,9
+RS seul,9,"bruit lognormal σ=0,25",1229.0,410,19,False,0,0,38,10
+RS seul,9,"bruit lognormal σ=0,25",1173.5,457,19,False,0,0,36,11
+RS seul,9,"bruit lognormal σ=0,25",1177.0,369,19,False,0,0,38,12
+RS seul,9,"bruit lognormal σ=0,25",1100.5,420,14,False,0,0,30,13
+RS seul,9,"bruit lognormal σ=0,25",1572.5,721,22,False,0,0,39,14
+RS seul,9,"bruit lognormal σ=0,25",1334.0,601,19,False,0,0,38,15
+RS seul,9,"bruit lognormal σ=0,25",871.5,274,13,False,0,0,28,16
+RS seul,9,"bruit lognormal σ=0,25",1433.0,577,22,False,0,0,41,17
+RS seul,9,"bruit lognormal σ=0,25",1402.0,567,20,False,0,0,41,18
+RS seul,9,"bruit lognormal σ=0,25",1150.0,372,15,False,0,0,43,19
+RS seul,9,lits 24 (−6),0,0,0,False,6,0,0,
+RS seul,9,places 15 (−5),0,0,0,True,0,0,0,
+RS seul,3,"durées ×0,9",0,0,0,True,0,0,0,
+RS seul,3,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS seul,3,"durées ×1,1",1498.0,0,0,False,0,0,92,
+RS seul,3,"durées ×1,2",4059.0,1170,92,False,0,0,119,
+RS seul,3,"bruit lognormal σ=0,25",1531.5,635,23,False,0,0,38,0
+RS seul,3,"bruit lognormal σ=0,25",1233.5,478,18,False,0,0,36,1
+RS seul,3,"bruit lognormal σ=0,25",1359.5,646,22,False,0,0,31,2
+RS seul,3,"bruit lognormal σ=0,25",1380.0,544,23,False,0,0,40,3
+RS seul,3,"bruit lognormal σ=0,25",954.5,329,13,False,0,0,30,4
+RS seul,3,"bruit lognormal σ=0,25",1157.0,423,16,False,0,0,34,5
+RS seul,3,"bruit lognormal σ=0,25",981.5,365,13,False,0,0,32,6
+RS seul,3,"bruit lognormal σ=0,25",1427.0,480,20,False,0,0,46,7
+RS seul,3,"bruit lognormal σ=0,25",1094.5,346,14,False,0,0,43,8
+RS seul,3,"bruit lognormal σ=0,25",941.5,338,17,False,0,0,32,9
+RS seul,3,"bruit lognormal σ=0,25",1170.0,414,20,False,0,0,41,10
+RS seul,3,"bruit lognormal σ=0,25",1043.5,328,20,False,0,0,37,11
+RS seul,3,"bruit lognormal σ=0,25",1115.0,381,16,False,0,0,33,12
+RS seul,3,"bruit lognormal σ=0,25",1004.5,309,18,False,0,0,32,13
+RS seul,3,"bruit lognormal σ=0,25",1571.5,659,20,False,0,0,47,14
+RS seul,3,"bruit lognormal σ=0,25",1359.0,464,21,False,0,0,42,15
+RS seul,3,"bruit lognormal σ=0,25",870.5,296,11,False,0,0,29,16
+RS seul,3,"bruit lognormal σ=0,25",1761.0,769,27,False,0,0,49,17
+RS seul,3,"bruit lognormal σ=0,25",1321.5,569,21,False,0,0,41,18
+RS seul,3,"bruit lognormal σ=0,25",1174.0,346,18,False,0,0,44,19
+RS seul,3,lits 24 (−6),0,0,0,False,5,0,0,
+RS seul,3,places 15 (−5),0,0,0,True,0,0,0,
+TABOU seul,7,"durées ×0,9",0,0,0,True,0,0,0,
+TABOU seul,7,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+TABOU seul,7,"durées ×1,1",1323.0,0,0,False,0,0,83,
+TABOU seul,7,"durées ×1,2",3654.0,1020,83,False,0,0,107,
+TABOU seul,7,"bruit lognormal σ=0,25",1287.0,605,18,False,0,0,34,0
+TABOU seul,7,"bruit lognormal σ=0,25",900.5,361,14,False,0,0,27,1
+TABOU seul,7,"bruit lognormal σ=0,25",1195.0,566,19,False,0,0,30,2
+TABOU seul,7,"bruit lognormal σ=0,25",1111.5,351,17,False,0,0,37,3
+TABOU seul,7,"bruit lognormal σ=0,25",1008.5,477,16,False,0,0,26,4
+TABOU seul,7,"bruit lognormal σ=0,25",932.0,322,15,False,0,0,34,5
+TABOU seul,7,"bruit lognormal σ=0,25",872.5,284,14,False,0,0,30,6
+TABOU seul,7,"bruit lognormal σ=0,25",1237.5,458,23,False,0,0,39,7
+TABOU seul,7,"bruit lognormal σ=0,25",1291.0,456,18,False,0,0,43,8
+TABOU seul,7,"bruit lognormal σ=0,25",834.0,276,15,False,0,0,30,9
+TABOU seul,7,"bruit lognormal σ=0,25",1456.5,703,24,False,0,0,37,10
+TABOU seul,7,"bruit lognormal σ=0,25",1109.5,525,17,False,0,0,32,11
+TABOU seul,7,"bruit lognormal σ=0,25",1171.0,472,18,False,0,0,31,12
+TABOU seul,7,"bruit lognormal σ=0,25",1068.0,382,19,False,0,0,34,13
+TABOU seul,7,"bruit lognormal σ=0,25",1393.0,664,21,False,0,0,39,14
+TABOU seul,7,"bruit lognormal σ=0,25",1190.5,439,18,False,0,0,36,15
+TABOU seul,7,"bruit lognormal σ=0,25",976.5,329,15,False,0,0,33,16
+TABOU seul,7,"bruit lognormal σ=0,25",1403.0,515,23,False,0,0,45,17
+TABOU seul,7,"bruit lognormal σ=0,25",1284.5,558,15,False,0,0,41,18
+TABOU seul,7,"bruit lognormal σ=0,25",1228.5,395,21,False,0,0,41,19
+TABOU seul,7,lits 24 (−6),0,0,0,False,2,0,0,
+TABOU seul,7,places 15 (−5),0,0,0,True,0,0,0,
+AGS seul,7,"durées ×0,9",0,0,0,True,0,0,0,
+AGS seul,7,"durées ×1,0 (nominal)",1.5,0,0,True,0,0,0,
+AGS seul,7,"durées ×1,1",1421.5,0,0,False,0,0,86,
+AGS seul,7,"durées ×1,2",3631.5,1125,86,False,0,0,103,
+AGS seul,7,"bruit lognormal σ=0,25",1315.5,560,22,False,0,0,36,0
+AGS seul,7,"bruit lognormal σ=0,25",870.0,314,15,False,0,0,29,1
+AGS seul,7,"bruit lognormal σ=0,25",1445.0,699,22,False,0,0,35,2
+AGS seul,7,"bruit lognormal σ=0,25",1370.5,620,18,False,0,0,35,3
+AGS seul,7,"bruit lognormal σ=0,25",884.5,352,15,False,0,0,28,4
+AGS seul,7,"bruit lognormal σ=0,25",936.0,319,15,False,0,0,34,5
+AGS seul,7,"bruit lognormal σ=0,25",901.0,388,13,False,0,0,26,6
+AGS seul,7,"bruit lognormal σ=0,25",1379.5,425,25,False,0,0,46,7
+AGS seul,7,"bruit lognormal σ=0,25",1189.0,454,18,False,0,0,36,8
+AGS seul,7,"bruit lognormal σ=0,25",945.5,355,19,False,0,0,32,9
+AGS seul,7,"bruit lognormal σ=0,25",1206.0,438,20,False,0,0,41,10
+AGS seul,7,"bruit lognormal σ=0,25",1020.0,407,18,False,0,0,34,11
+AGS seul,7,"bruit lognormal σ=0,25",967.0,361,15,False,0,0,30,12
+AGS seul,7,"bruit lognormal σ=0,25",1148.0,515,19,False,0,0,32,13
+AGS seul,7,"bruit lognormal σ=0,25",1332.0,617,18,False,0,0,38,14
+AGS seul,7,"bruit lognormal σ=0,25",1451.5,671,19,False,0,0,36,15
+AGS seul,7,"bruit lognormal σ=0,25",936.5,377,14,False,0,0,31,16
+AGS seul,7,"bruit lognormal σ=0,25",1399.0,575,22,False,0,0,39,17
+AGS seul,7,"bruit lognormal σ=0,25",1401.0,595,22,False,0,0,42,18
+AGS seul,7,"bruit lognormal σ=0,25",1317.5,541,23,False,0,0,39,19
+AGS seul,7,lits 24 (−6),1.5,0,0,False,2,0,0,
+AGS seul,7,places 15 (−5),1.5,0,0,True,0,0,0,
+TABOU seul,5,"durées ×0,9",0,0,0,True,0,0,0,
+TABOU seul,5,"durées ×1,0 (nominal)",1.5,0,0,True,0,0,0,
+TABOU seul,5,"durées ×1,1",1357.0,0,0,False,0,0,82,
+TABOU seul,5,"durées ×1,2",3640.5,1056,82,False,0,0,103,
+TABOU seul,5,"bruit lognormal σ=0,25",1313.0,535,22,False,0,0,42,0
+TABOU seul,5,"bruit lognormal σ=0,25",909.5,359,14,False,0,0,28,1
+TABOU seul,5,"bruit lognormal σ=0,25",1288.5,617,19,False,0,0,29,2
+TABOU seul,5,"bruit lognormal σ=0,25",1098.0,391,15,False,0,0,35,3
+TABOU seul,5,"bruit lognormal σ=0,25",1096.0,426,16,False,0,0,33,4
+TABOU seul,5,"bruit lognormal σ=0,25",1093.0,368,18,False,0,0,36,5
+TABOU seul,5,"bruit lognormal σ=0,25",844.0,215,11,False,0,0,32,6
+TABOU seul,5,"bruit lognormal σ=0,25",1183.0,388,19,False,0,0,40,7
+TABOU seul,5,"bruit lognormal σ=0,25",1330.0,521,23,False,0,0,43,8
+TABOU seul,5,"bruit lognormal σ=0,25",799.5,290,16,False,0,0,26,9
+TABOU seul,5,"bruit lognormal σ=0,25",1260.0,477,25,False,0,0,36,10
+TABOU seul,5,"bruit lognormal σ=0,25",1062.5,401,13,False,0,0,37,11
+TABOU seul,5,"bruit lognormal σ=0,25",1322.0,540,20,False,0,0,34,12
+TABOU seul,5,"bruit lognormal σ=0,25",1018.0,375,19,False,0,0,31,13
+TABOU seul,5,"bruit lognormal σ=0,25",1732.5,893,25,False,0,0,41,14
+TABOU seul,5,"bruit lognormal σ=0,25",1457.5,677,20,False,0,0,34,15
+TABOU seul,5,"bruit lognormal σ=0,25",977.5,369,13,False,0,0,31,16
+TABOU seul,5,"bruit lognormal σ=0,25",1586.5,580,24,False,0,0,49,17
+TABOU seul,5,"bruit lognormal σ=0,25",1285.0,604,18,False,0,0,35,18
+TABOU seul,5,"bruit lognormal σ=0,25",1077.0,349,16,False,0,0,39,19
+TABOU seul,5,lits 24 (−6),1.5,0,0,False,5,0,0,
+TABOU seul,5,places 15 (−5),1.5,0,0,True,0,0,0,
+AGS seul,4,"durées ×0,9",0,0,0,True,0,0,0,
+AGS seul,4,"durées ×1,0 (nominal)",1.5,0,0,True,0,0,0,
+AGS seul,4,"durées ×1,1",1384.5,0,0,False,0,0,85,
+AGS seul,4,"durées ×1,2",3640.5,1101,85,False,0,0,107,
+AGS seul,4,"bruit lognormal σ=0,25",1392.0,637,23,False,0,0,38,0
+AGS seul,4,"bruit lognormal σ=0,25",1005.0,355,18,False,0,0,31,1
+AGS seul,4,"bruit lognormal σ=0,25",1115.5,566,16,False,0,0,27,2
+AGS seul,4,"bruit lognormal σ=0,25",1465.0,668,22,False,0,0,37,3
+AGS seul,4,"bruit lognormal σ=0,25",1127.5,460,17,False,0,0,34,4
+AGS seul,4,"bruit lognormal σ=0,25",1071.5,418,18,False,0,0,35,5
+AGS seul,4,"bruit lognormal σ=0,25",851.0,336,13,False,0,0,30,6
+AGS seul,4,"bruit lognormal σ=0,25",1349.0,537,21,False,0,0,39,7
+AGS seul,4,"bruit lognormal σ=0,25",1407.5,577,23,False,0,0,43,8
+AGS seul,4,"bruit lognormal σ=0,25",843.5,281,16,False,0,0,30,9
+AGS seul,4,"bruit lognormal σ=0,25",1372.0,640,24,False,0,0,37,10
+AGS seul,4,"bruit lognormal σ=0,25",865.5,292,16,False,0,0,30,11
+AGS seul,4,"bruit lognormal σ=0,25",1172.0,508,17,False,0,0,30,12
+AGS seul,4,"bruit lognormal σ=0,25",929.5,374,18,False,0,0,27,13
+AGS seul,4,"bruit lognormal σ=0,25",1491.0,727,23,False,0,0,39,14
+AGS seul,4,"bruit lognormal σ=0,25",1192.5,377,15,False,0,0,40,15
+AGS seul,4,"bruit lognormal σ=0,25",859.5,276,12,False,0,0,29,16
+AGS seul,4,"bruit lognormal σ=0,25",1458.0,583,25,False,0,0,44,17
+AGS seul,4,"bruit lognormal σ=0,25",1424.5,645,20,False,0,0,41,18
+AGS seul,4,"bruit lognormal σ=0,25",1225.5,512,24,False,0,0,37,19
+AGS seul,4,lits 24 (−6),1.5,0,0,False,4,0,0,
+AGS seul,4,places 15 (−5),1.5,0,0,True,0,0,0,
+RS>AGS>TABOU,4,"durées ×0,9",0,0,0,True,0,0,0,
+RS>AGS>TABOU,4,"durées ×1,0 (nominal)",1.5,0,0,True,0,0,0,
+RS>AGS>TABOU,4,"durées ×1,1",1378.5,0,0,False,0,0,82,
+RS>AGS>TABOU,4,"durées ×1,2",3604.5,1089,82,False,0,0,102,
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1235.0,510,18,False,0,0,34,0
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",883.0,309,16,False,0,0,29,1
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1166.0,467,19,False,0,0,33,2
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1190.5,413,19,False,0,0,42,3
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",882.5,363,11,False,0,0,24,4
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",903.5,270,15,False,0,0,31,5
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",868.5,301,13,False,0,0,30,6
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1309.5,484,22,False,0,0,38,7
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1104.5,388,17,False,0,0,38,8
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",697.0,213,11,False,0,0,27,9
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1241.0,503,23,False,0,0,38,10
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1138.0,395,18,False,0,0,39,11
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1081.5,442,17,False,0,0,31,12
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1064.0,407,19,False,0,0,31,13
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1549.0,696,22,False,0,0,42,14
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1359.0,531,20,False,0,0,41,15
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",899.0,298,14,False,0,0,29,16
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1588.5,726,22,False,0,0,42,17
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1188.0,535,17,False,0,0,34,18
+RS>AGS>TABOU,4,"bruit lognormal σ=0,25",1175.0,414,17,False,0,0,39,19
+RS>AGS>TABOU,4,lits 24 (−6),1.5,0,0,False,4,0,0,
+RS>AGS>TABOU,4,places 15 (−5),1.5,0,0,True,0,0,0,
+TABOU seul,4,"durées ×0,9",0,0,0,True,0,0,0,
+TABOU seul,4,"durées ×1,0 (nominal)",1.5,0,0,True,0,0,0,
+TABOU seul,4,"durées ×1,1",1489.0,0,0,False,0,0,91,
+TABOU seul,4,"durées ×1,2",3937.5,1164,91,False,0,0,111,
+TABOU seul,4,"bruit lognormal σ=0,25",1450.0,593,23,False,0,0,42,0
+TABOU seul,4,"bruit lognormal σ=0,25",1070.0,418,17,False,0,0,31,1
+TABOU seul,4,"bruit lognormal σ=0,25",1410.0,728,22,False,0,0,30,2
+TABOU seul,4,"bruit lognormal σ=0,25",1389.5,543,24,False,0,0,37,3
+TABOU seul,4,"bruit lognormal σ=0,25",1033.0,438,15,False,0,0,30,4
+TABOU seul,4,"bruit lognormal σ=0,25",1280.0,517,15,False,0,0,40,5
+TABOU seul,4,"bruit lognormal σ=0,25",904.0,257,14,False,0,0,31,6
+TABOU seul,4,"bruit lognormal σ=0,25",1273.5,460,20,False,0,0,42,7
+TABOU seul,4,"bruit lognormal σ=0,25",1304.0,507,21,False,0,0,42,8
+TABOU seul,4,"bruit lognormal σ=0,25",871.5,273,15,False,0,0,30,9
+TABOU seul,4,"bruit lognormal σ=0,25",1509.0,693,26,False,0,0,37,10
+TABOU seul,4,"bruit lognormal σ=0,25",1059.0,455,16,False,0,0,31,11
+TABOU seul,4,"bruit lognormal σ=0,25",1218.5,503,19,False,0,0,32,12
+TABOU seul,4,"bruit lognormal σ=0,25",1028.0,338,18,False,0,0,33,13
+TABOU seul,4,"bruit lognormal σ=0,25",1625.0,770,24,False,0,0,39,14
+TABOU seul,4,"bruit lognormal σ=0,25",1319.5,539,21,False,0,0,36,15
+TABOU seul,4,"bruit lognormal σ=0,25",1001.5,298,16,False,0,0,32,16
+TABOU seul,4,"bruit lognormal σ=0,25",1378.0,443,23,False,0,0,48,17
+TABOU seul,4,"bruit lognormal σ=0,25",1196.5,488,15,False,0,0,38,18
+TABOU seul,4,"bruit lognormal σ=0,25",1151.5,295,16,False,0,0,44,19
+TABOU seul,4,lits 24 (−6),1.5,0,0,False,5,0,0,
+TABOU seul,4,places 15 (−5),1.5,0,0,True,0,0,0,
+premier créneau,1,"durées ×0,9",0,0,0,True,0,0,0,
+premier créneau,1,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+premier créneau,1,"durées ×1,1",1165.5,0,0,False,0,0,76,
+premier créneau,1,"durées ×1,2",3348.0,873,76,False,0,0,98,
+premier créneau,1,"bruit lognormal σ=0,25",1241.5,478,18,False,0,0,34,0
+premier créneau,1,"bruit lognormal σ=0,25",950.5,378,12,False,0,0,28,1
+premier créneau,1,"bruit lognormal σ=0,25",1149.0,526,17,False,0,0,30,2
+premier créneau,1,"bruit lognormal σ=0,25",875.5,311,11,False,0,0,31,3
+premier créneau,1,"bruit lognormal σ=0,25",724.0,260,8,False,0,0,22,4
+premier créneau,1,"bruit lognormal σ=0,25",869.0,228,13,False,0,0,30,5
+premier créneau,1,"bruit lognormal σ=0,25",815.5,309,12,False,0,0,25,6
+premier créneau,1,"bruit lognormal σ=0,25",1217.5,466,17,False,0,0,37,7
+premier créneau,1,"bruit lognormal σ=0,25",893.5,332,12,False,0,0,31,8
+premier créneau,1,"bruit lognormal σ=0,25",758.5,272,12,False,0,0,27,9
+premier créneau,1,"bruit lognormal σ=0,25",929.0,279,16,False,0,0,32,10
+premier créneau,1,"bruit lognormal σ=0,25",1016.0,353,15,False,0,0,35,11
+premier créneau,1,"bruit lognormal σ=0,25",943.0,401,16,False,0,0,22,12
+premier créneau,1,"bruit lognormal σ=0,25",989.5,371,14,False,0,0,28,13
+premier créneau,1,"bruit lognormal σ=0,25",1559.0,732,19,False,0,0,41,14
+premier créneau,1,"bruit lognormal σ=0,25",1303.0,478,21,False,0,0,39,15
+premier créneau,1,"bruit lognormal σ=0,25",818.0,199,13,False,0,0,34,16
+premier créneau,1,"bruit lognormal σ=0,25",1301.0,406,20,False,0,0,41,17
+premier créneau,1,"bruit lognormal σ=0,25",1242.0,529,15,False,0,0,34,18
+premier créneau,1,"bruit lognormal σ=0,25",889.5,248,11,False,0,0,35,19
+premier créneau,1,lits 24 (−6),0,0,0,False,9,0,0,
+premier créneau,1,places 15 (−5),0,0,0,True,0,0,0,
+memetique,3,"durées ×0,9",0,0,0,True,0,0,0,
+memetique,3,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+memetique,3,"durées ×1,1",1379.5,0,0,False,0,0,83,
+memetique,3,"durées ×1,2",3654.0,1077,83,False,0,0,102,
+memetique,3,"bruit lognormal σ=0,25",1193.0,531,18,False,0,0,29,0
+memetique,3,"bruit lognormal σ=0,25",1104.0,405,18,False,0,0,35,1
+memetique,3,"bruit lognormal σ=0,25",1104.0,491,15,False,0,0,28,2
+memetique,3,"bruit lognormal σ=0,25",1238.0,443,19,False,0,0,39,3
+memetique,3,"bruit lognormal σ=0,25",850.5,362,11,False,0,0,26,4
+memetique,3,"bruit lognormal σ=0,25",1048.5,427,17,False,0,0,31,5
+memetique,3,"bruit lognormal σ=0,25",821.5,246,11,False,0,0,26,6
+memetique,3,"bruit lognormal σ=0,25",1205.5,366,15,False,0,0,44,7
+memetique,3,"bruit lognormal σ=0,25",1036.0,315,17,False,0,0,39,8
+memetique,3,"bruit lognormal σ=0,25",764.0,260,13,False,0,0,25,9
+memetique,3,"bruit lognormal σ=0,25",1274.0,500,24,False,0,0,37,10
+memetique,3,"bruit lognormal σ=0,25",1113.0,478,15,False,0,0,34,11
+memetique,3,"bruit lognormal σ=0,25",1072.0,443,16,False,0,0,30,12
+memetique,3,"bruit lognormal σ=0,25",997.5,385,17,False,0,0,29,13
+memetique,3,"bruit lognormal σ=0,25",1620.0,815,20,False,0,0,39,14
+memetique,3,"bruit lognormal σ=0,25",1168.5,475,14,False,0,0,34,15
+memetique,3,"bruit lognormal σ=0,25",804.5,311,11,False,0,0,23,16
+memetique,3,"bruit lognormal σ=0,25",1397.5,579,22,False,0,0,46,17
+memetique,3,"bruit lognormal σ=0,25",1370.5,679,19,False,0,0,31,18
+memetique,3,"bruit lognormal σ=0,25",1125.0,377,15,False,0,0,38,19
+memetique,3,lits 24 (−6),0,0,0,False,4,0,0,
+memetique,3,places 15 (−5),0,0,0,True,0,0,0,
+TABOU seul,3,"durées ×0,9",0,0,0,True,0,0,0,
+TABOU seul,3,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+TABOU seul,3,"durées ×1,1",1361.5,0,0,False,0,0,86,
+TABOU seul,3,"durées ×1,2",3694.5,1059,86,False,0,0,107,
+TABOU seul,3,"bruit lognormal σ=0,25",1314.0,588,21,False,0,0,38,0
+TABOU seul,3,"bruit lognormal σ=0,25",1069.0,440,19,False,0,0,28,1
+TABOU seul,3,"bruit lognormal σ=0,25",1051.0,511,15,False,0,0,24,2
+TABOU seul,3,"bruit lognormal σ=0,25",1187.0,393,17,False,0,0,40,3
+TABOU seul,3,"bruit lognormal σ=0,25",920.5,373,12,False,0,0,32,4
+TABOU seul,3,"bruit lognormal σ=0,25",974.5,340,13,False,0,0,36,5
+TABOU seul,3,"bruit lognormal σ=0,25",868.0,278,15,False,0,0,28,6
+TABOU seul,3,"bruit lognormal σ=0,25",1225.0,437,21,False,0,0,39,7
+TABOU seul,3,"bruit lognormal σ=0,25",1236.0,455,21,False,0,0,40,8
+TABOU seul,3,"bruit lognormal σ=0,25",827.0,314,16,False,0,0,28,9
+TABOU seul,3,"bruit lognormal σ=0,25",1462.5,631,22,False,0,0,44,10
+TABOU seul,3,"bruit lognormal σ=0,25",953.0,354,17,False,0,0,33,11
+TABOU seul,3,"bruit lognormal σ=0,25",1153.0,458,19,False,0,0,34,12
+TABOU seul,3,"bruit lognormal σ=0,25",1146.5,442,20,False,0,0,33,13
+TABOU seul,3,"bruit lognormal σ=0,25",1611.0,768,23,False,0,0,41,14
+TABOU seul,3,"bruit lognormal σ=0,25",1363.5,486,17,False,0,0,42,15
+TABOU seul,3,"bruit lognormal σ=0,25",991.5,347,16,False,0,0,33,16
+TABOU seul,3,"bruit lognormal σ=0,25",1423.0,577,21,False,0,0,44,17
+TABOU seul,3,"bruit lognormal σ=0,25",1272.5,594,16,False,0,0,35,18
+TABOU seul,3,"bruit lognormal σ=0,25",1117.0,385,16,False,0,0,42,19
+TABOU seul,3,lits 24 (−6),0,0,0,False,3,0,0,
+TABOU seul,3,places 15 (−5),0,0,0,True,0,0,0,
+AGS seul,8,"durées ×0,9",0,0,0,True,0,0,0,
+AGS seul,8,"durées ×1,0 (nominal)",1.5,0,0,True,0,0,0,
+AGS seul,8,"durées ×1,1",1357.0,0,0,False,0,0,80,
+AGS seul,8,"durées ×1,2",3492.0,1092,80,False,0,0,101,
+AGS seul,8,"bruit lognormal σ=0,25",1381.5,641,24,False,0,0,35,0
+AGS seul,8,"bruit lognormal σ=0,25",770.0,247,14,False,0,0,29,1
+AGS seul,8,"bruit lognormal σ=0,25",1170.5,583,16,False,0,0,30,2
+AGS seul,8,"bruit lognormal σ=0,25",1349.5,557,21,False,0,0,40,3
+AGS seul,8,"bruit lognormal σ=0,25",930.5,390,14,False,0,0,30,4
+AGS seul,8,"bruit lognormal σ=0,25",908.5,267,17,False,0,0,33,5
+AGS seul,8,"bruit lognormal σ=0,25",876.5,351,13,False,0,0,27,6
+AGS seul,8,"bruit lognormal σ=0,25",1338.0,497,22,False,0,0,42,7
+AGS seul,8,"bruit lognormal σ=0,25",1124.0,461,20,False,0,0,37,8
+AGS seul,8,"bruit lognormal σ=0,25",772.0,279,15,False,0,0,26,9
+AGS seul,8,"bruit lognormal σ=0,25",1346.5,501,20,False,0,0,46,10
+AGS seul,8,"bruit lognormal σ=0,25",1162.5,570,19,False,0,0,31,11
+AGS seul,8,"bruit lognormal σ=0,25",883.0,307,14,False,0,0,29,12
+AGS seul,8,"bruit lognormal σ=0,25",1053.0,447,17,False,0,0,31,13
+AGS seul,8,"bruit lognormal σ=0,25",1362.0,638,19,False,0,0,39,14
+AGS seul,8,"bruit lognormal σ=0,25",1179.5,476,15,False,0,0,36,15
+AGS seul,8,"bruit lognormal σ=0,25",930.0,353,14,False,0,0,28,16
+AGS seul,8,"bruit lognormal σ=0,25",1168.0,408,22,False,0,0,39,17
+AGS seul,8,"bruit lognormal σ=0,25",1113.0,449,15,False,0,0,41,18
+AGS seul,8,"bruit lognormal σ=0,25",1248.5,531,20,False,0,0,43,19
+AGS seul,8,lits 24 (−6),1.5,0,0,False,3,0,0,
+AGS seul,8,places 15 (−5),1.5,0,0,True,0,0,0,
+AGS>RS>TABOU,5,"durées ×0,9",0,0,0,True,0,0,0,
+AGS>RS>TABOU,5,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS>RS>TABOU,5,"durées ×1,1",1523.0,0,0,False,0,0,89,
+AGS>RS>TABOU,5,"durées ×1,2",3991.5,1200,89,False,0,0,110,
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1406.5,643,25,False,0,0,32,0
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1098.5,427,19,False,0,0,33,1
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1313.0,648,21,False,0,0,29,2
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1258.0,428,18,False,0,0,40,3
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",996.5,352,15,False,0,0,33,4
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1130.5,437,16,False,0,0,34,5
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1049.0,357,13,False,0,0,35,6
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1379.0,532,18,False,0,0,43,7
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1041.0,343,15,False,0,0,38,8
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",924.5,314,15,False,0,0,31,9
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1203.5,393,19,False,0,0,37,10
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",932.5,312,13,False,0,0,34,11
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1135.0,444,16,False,0,0,31,12
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1019.5,441,14,False,0,0,26,13
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1648.5,831,19,False,0,0,42,14
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1352.0,576,17,False,0,0,40,15
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",775.0,198,11,False,0,0,32,16
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1427.0,465,20,False,0,0,46,17
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1432.5,585,18,False,0,0,39,18
+AGS>RS>TABOU,5,"bruit lognormal σ=0,25",1037.5,268,14,False,0,0,42,19
+AGS>RS>TABOU,5,lits 24 (−6),0,0,0,False,8,0,0,
+AGS>RS>TABOU,5,places 15 (−5),0,0,0,True,0,0,0,
+AGS>RS>TABOU,2,"durées ×0,9",0,0,0,True,0,0,0,
+AGS>RS>TABOU,2,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS>RS>TABOU,2,"durées ×1,1",1353.5,0,0,False,0,0,85,
+AGS>RS>TABOU,2,"durées ×1,2",3654.0,1053,85,False,0,0,106,
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1242.5,521,20,False,0,0,32,0
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",994.5,379,14,False,0,0,33,1
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1194.0,552,18,False,0,0,32,2
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1260.5,475,22,False,0,0,37,3
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",854.5,359,10,False,0,0,26,4
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1044.0,382,14,False,0,0,32,5
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1091.5,438,16,False,0,0,33,6
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1300.0,483,19,False,0,0,38,7
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1160.5,380,18,False,0,0,39,8
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",696.0,214,11,False,0,0,28,9
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1084.0,395,16,False,0,0,36,10
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1088.5,368,18,False,0,0,39,11
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1130.0,429,17,False,0,0,32,12
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",741.0,263,14,False,0,0,24,13
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1405.5,635,18,False,0,0,35,14
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1270.0,564,17,False,0,0,36,15
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",828.0,260,13,False,0,0,30,16
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1466.0,585,20,False,0,0,46,17
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1358.5,575,20,False,0,0,38,18
+AGS>RS>TABOU,2,"bruit lognormal σ=0,25",1090.0,396,15,False,0,0,34,19
+AGS>RS>TABOU,2,lits 24 (−6),0,0,0,False,7,0,0,
+AGS>RS>TABOU,2,places 15 (−5),0,0,0,True,0,0,0,
+AGS>RS>TABOU,7,"durées ×0,9",0,0,0,True,0,0,0,
+AGS>RS>TABOU,7,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS>RS>TABOU,7,"durées ×1,1",1482.0,0,0,False,0,0,91,
+AGS>RS>TABOU,7,"durées ×1,2",3865.5,1158,91,False,0,0,107,
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1450.0,612,25,False,0,0,38,0
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",991.0,401,14,False,0,0,28,1
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1347.5,627,21,False,0,0,37,2
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1289.0,435,20,False,0,0,40,3
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",843.0,292,13,False,0,0,25,4
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1119.0,474,15,False,0,0,29,5
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",991.0,409,15,False,0,0,29,6
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1441.5,579,23,False,0,0,42,7
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1141.5,349,17,False,0,0,40,8
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",984.5,284,17,False,0,0,36,9
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1312.0,440,21,False,0,0,42,10
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1120.5,450,18,False,0,0,35,11
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1144.5,425,19,False,0,0,31,12
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1009.0,427,14,False,0,0,30,13
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1429.0,648,19,False,0,0,39,14
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1370.0,559,19,False,0,0,40,15
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",843.5,240,11,False,0,0,31,16
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1440.0,588,18,False,0,0,41,17
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1139.0,416,13,False,0,0,39,18
+AGS>RS>TABOU,7,"bruit lognormal σ=0,25",1149.0,341,17,False,0,0,43,19
+AGS>RS>TABOU,7,lits 24 (−6),0,0,0,False,5,0,0,
+AGS>RS>TABOU,7,places 15 (−5),0,0,0,True,0,0,0,
+glouton,1,"durées ×0,9",0,0,0,True,0,0,0,
+glouton,1,"durées ×1,0 (nominal)",18.0,0,0,False,0,0,1,
+glouton,1,"durées ×1,1",1625.0,18,1,False,0,0,93,
+glouton,1,"durées ×1,2",4086.0,1326,93,False,0,0,114,
+glouton,1,"bruit lognormal σ=0,25",1488.5,583,25,False,0,0,45,0
+glouton,1,"bruit lognormal σ=0,25",1071.0,379,18,False,0,0,34,1
+glouton,1,"bruit lognormal σ=0,25",1397.5,710,22,False,0,0,32,2
+glouton,1,"bruit lognormal σ=0,25",1553.0,695,26,False,0,0,40,3
+glouton,1,"bruit lognormal σ=0,25",1125.5,513,18,False,0,0,30,4
+glouton,1,"bruit lognormal σ=0,25",1323.0,525,21,False,0,0,37,5
+glouton,1,"bruit lognormal σ=0,25",890.0,356,12,False,0,0,30,6
+glouton,1,"bruit lognormal σ=0,25",1442.5,490,23,False,0,0,48,7
+glouton,1,"bruit lognormal σ=0,25",1368.0,532,24,False,0,0,45,8
+glouton,1,"bruit lognormal σ=0,25",1031.0,386,18,False,0,0,35,9
+glouton,1,"bruit lognormal σ=0,25",1247.5,485,21,False,0,0,42,10
+glouton,1,"bruit lognormal σ=0,25",1194.5,540,19,False,0,0,36,11
+glouton,1,"bruit lognormal σ=0,25",1054.5,363,16,False,0,0,33,12
+glouton,1,"bruit lognormal σ=0,25",1187.0,550,20,False,0,0,33,13
+glouton,1,"bruit lognormal σ=0,25",1635.5,713,25,False,0,0,44,14
+glouton,1,"bruit lognormal σ=0,25",1537.0,589,23,False,0,0,45,15
+glouton,1,"bruit lognormal σ=0,25",1105.5,385,14,False,0,0,33,16
+glouton,1,"bruit lognormal σ=0,25",1576.0,666,27,False,0,0,47,17
+glouton,1,"bruit lognormal σ=0,25",1343.5,562,21,False,0,0,44,18
+glouton,1,"bruit lognormal σ=0,25",1399.5,642,23,False,0,0,42,19
+glouton,1,lits 24 (−6),18.0,0,0,False,8,0,1,
+glouton,1,places 15 (−5),18.0,0,0,False,0,0,1,
+RS>AGS>TABOU,7,"durées ×0,9",0,0,0,True,0,0,0,
+RS>AGS>TABOU,7,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS>AGS>TABOU,7,"durées ×1,1",1395.5,0,0,False,0,0,83,
+RS>AGS>TABOU,7,"durées ×1,2",3559.5,1113,83,False,0,0,100,
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1250.5,579,22,False,0,0,30,0
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1055.5,443,19,False,0,0,30,1
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1129.0,492,14,False,0,0,31,2
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1055.5,401,17,False,0,0,35,3
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",929.5,451,12,False,0,0,26,4
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1127.5,408,18,False,0,0,35,5
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",857.0,287,14,False,0,0,28,6
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1319.5,423,23,False,0,0,41,7
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1206.0,402,17,False,0,0,40,8
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",812.5,282,13,False,0,0,26,9
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1301.0,417,25,False,0,0,47,10
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",960.0,349,16,False,0,0,36,11
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",981.5,334,16,False,0,0,34,12
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",857.0,294,12,False,0,0,27,13
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1572.5,769,19,False,0,0,39,14
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1167.0,446,17,False,0,0,35,15
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",882.0,331,15,False,0,0,25,16
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1446.5,553,22,False,0,0,42,17
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1405.0,603,17,False,0,0,40,18
+RS>AGS>TABOU,7,"bruit lognormal σ=0,25",1203.0,436,19,False,0,0,38,19
+RS>AGS>TABOU,7,lits 24 (−6),0,0,0,False,6,0,0,
+RS>AGS>TABOU,7,places 15 (−5),0,0,0,True,0,0,0,
+TABOU seul,1,"durées ×0,9",0,0,0,True,0,0,0,
+TABOU seul,1,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+TABOU seul,1,"durées ×1,1",1482.5,0,0,False,0,0,88,
+TABOU seul,1,"durées ×1,2",3856.5,1173,88,False,0,0,108,
+TABOU seul,1,"bruit lognormal σ=0,25",1345.5,601,22,False,0,0,39,0
+TABOU seul,1,"bruit lognormal σ=0,25",1074.0,427,18,False,0,0,30,1
+TABOU seul,1,"bruit lognormal σ=0,25",1229.5,606,18,False,0,0,29,2
+TABOU seul,1,"bruit lognormal σ=0,25",1359.0,549,20,False,0,0,37,3
+TABOU seul,1,"bruit lognormal σ=0,25",1107.5,478,19,False,0,0,35,4
+TABOU seul,1,"bruit lognormal σ=0,25",1119.5,401,15,False,0,0,36,5
+TABOU seul,1,"bruit lognormal σ=0,25",886.0,269,15,False,0,0,31,6
+TABOU seul,1,"bruit lognormal σ=0,25",1376.5,547,22,False,0,0,40,7
+TABOU seul,1,"bruit lognormal σ=0,25",1261.0,512,20,False,0,0,41,8
+TABOU seul,1,"bruit lognormal σ=0,25",875.5,327,17,False,0,0,31,9
+TABOU seul,1,"bruit lognormal σ=0,25",1231.0,496,20,False,0,0,38,10
+TABOU seul,1,"bruit lognormal σ=0,25",1047.0,403,18,False,0,0,34,11
+TABOU seul,1,"bruit lognormal σ=0,25",1142.0,442,17,False,0,0,32,12
+TABOU seul,1,"bruit lognormal σ=0,25",1098.0,419,20,False,0,0,34,13
+TABOU seul,1,"bruit lognormal σ=0,25",1680.5,757,20,False,0,0,48,14
+TABOU seul,1,"bruit lognormal σ=0,25",1475.5,652,21,False,0,0,37,15
+TABOU seul,1,"bruit lognormal σ=0,25",971.5,365,13,False,0,0,29,16
+TABOU seul,1,"bruit lognormal σ=0,25",1514.0,634,25,False,0,0,44,17
+TABOU seul,1,"bruit lognormal σ=0,25",1179.0,534,17,False,0,0,36,18
+TABOU seul,1,"bruit lognormal σ=0,25",1135.5,407,17,False,0,0,38,19
+TABOU seul,1,lits 24 (−6),0,0,0,False,4,0,0,
+TABOU seul,1,places 15 (−5),0,0,0,True,0,0,0,
+AGS>RS>TABOU,8,"durées ×0,9",0,0,0,True,0,0,0,
+AGS>RS>TABOU,8,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS>RS>TABOU,8,"durées ×1,1",1488.5,0,0,False,0,0,88,
+AGS>RS>TABOU,8,"durées ×1,2",3892.5,1173,88,False,0,0,107,
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1456.0,702,21,False,0,0,31,0
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1125.5,443,17,False,0,0,35,1
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1404.0,705,18,False,0,0,35,2
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1413.5,501,23,False,0,0,45,3
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",984.5,434,16,False,0,0,27,4
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1101.5,370,15,False,0,0,31,5
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",947.0,337,12,False,0,0,27,6
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1409.5,507,21,False,0,0,42,7
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",948.5,218,11,False,0,0,37,8
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",858.0,268,14,False,0,0,29,9
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1369.5,353,21,False,0,0,48,10
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1097.5,385,20,False,0,0,34,11
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1309.0,535,19,False,0,0,35,12
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1075.5,460,15,False,0,0,31,13
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1539.5,689,18,False,0,0,42,14
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1278.0,421,14,False,0,0,42,15
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1001.0,384,15,False,0,0,30,16
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1386.0,525,24,False,0,0,44,17
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1451.0,580,18,False,0,0,42,18
+AGS>RS>TABOU,8,"bruit lognormal σ=0,25",1136.0,309,14,False,0,0,42,19
+AGS>RS>TABOU,8,lits 24 (−6),0,0,0,False,4,0,0,
+AGS>RS>TABOU,8,places 15 (−5),0,0,0,True,0,0,0,
+AGS seul,5,"durées ×0,9",0,0,0,True,0,0,0,
+AGS seul,5,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS seul,5,"durées ×1,1",1482.5,0,0,False,0,0,87,
+AGS seul,5,"durées ×1,2",3834.0,1197,87,False,0,0,110,
+AGS seul,5,"bruit lognormal σ=0,25",1526.5,698,23,False,0,0,40,0
+AGS seul,5,"bruit lognormal σ=0,25",859.0,226,16,False,0,0,28,1
+AGS seul,5,"bruit lognormal σ=0,25",1320.5,658,20,False,0,0,32,2
+AGS seul,5,"bruit lognormal σ=0,25",1465.5,669,24,False,0,0,37,3
+AGS seul,5,"bruit lognormal σ=0,25",949.5,385,15,False,0,0,31,4
+AGS seul,5,"bruit lognormal σ=0,25",1057.5,331,15,False,0,0,36,5
+AGS seul,5,"bruit lognormal σ=0,25",947.5,385,13,False,0,0,28,6
+AGS seul,5,"bruit lognormal σ=0,25",1383.0,515,22,False,0,0,44,7
+AGS seul,5,"bruit lognormal σ=0,25",1238.5,510,21,False,0,0,42,8
+AGS seul,5,"bruit lognormal σ=0,25",992.0,341,19,False,0,0,33,9
+AGS seul,5,"bruit lognormal σ=0,25",1307.5,512,23,False,0,0,43,10
+AGS seul,5,"bruit lognormal σ=0,25",1270.0,536,20,False,0,0,39,11
+AGS seul,5,"bruit lognormal σ=0,25",1108.5,401,18,False,0,0,35,12
+AGS seul,5,"bruit lognormal σ=0,25",1073.0,473,19,False,0,0,30,13
+AGS seul,5,"bruit lognormal σ=0,25",1453.0,728,21,False,0,0,38,14
+AGS seul,5,"bruit lognormal σ=0,25",1598.0,650,24,False,0,0,42,15
+AGS seul,5,"bruit lognormal σ=0,25",936.5,335,14,False,0,0,31,16
+AGS seul,5,"bruit lognormal σ=0,25",1493.0,581,26,False,0,0,46,17
+AGS seul,5,"bruit lognormal σ=0,25",1221.5,548,17,False,0,0,41,18
+AGS seul,5,"bruit lognormal σ=0,25",1436.5,570,24,False,0,0,44,19
+AGS seul,5,lits 24 (−6),0,0,0,False,3,0,0,
+AGS seul,5,places 15 (−5),0,0,0,True,0,0,0,
+RS seul,7,"durées ×0,9",0,0,0,True,0,0,0,
+RS seul,7,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS seul,7,"durées ×1,1",1595.5,0,0,False,0,0,96,
+RS seul,7,"durées ×1,2",4135.5,1245,96,False,0,0,113,
+RS seul,7,"bruit lognormal σ=0,25",1469.0,640,23,False,0,0,40,0
+RS seul,7,"bruit lognormal σ=0,25",1145.0,523,16,False,0,0,29,1
+RS seul,7,"bruit lognormal σ=0,25",1376.0,613,23,False,0,0,36,2
+RS seul,7,"bruit lognormal σ=0,25",1299.0,458,18,False,0,0,44,3
+RS seul,7,"bruit lognormal σ=0,25",920.0,358,13,False,0,0,26,4
+RS seul,7,"bruit lognormal σ=0,25",1270.5,503,17,False,0,0,36,5
+RS seul,7,"bruit lognormal σ=0,25",996.0,377,14,False,0,0,34,6
+RS seul,7,"bruit lognormal σ=0,25",1321.5,469,17,False,0,0,42,7
+RS seul,7,"bruit lognormal σ=0,25",1299.5,448,19,False,0,0,43,8
+RS seul,7,"bruit lognormal σ=0,25",867.5,229,16,False,0,0,34,9
+RS seul,7,"bruit lognormal σ=0,25",1326.0,406,23,False,0,0,48,10
+RS seul,7,"bruit lognormal σ=0,25",1172.5,412,17,False,0,0,39,11
+RS seul,7,"bruit lognormal σ=0,25",1215.0,440,17,False,0,0,35,12
+RS seul,7,"bruit lognormal σ=0,25",1142.5,478,15,False,0,0,31,13
+RS seul,7,"bruit lognormal σ=0,25",1787.5,889,25,False,0,0,43,14
+RS seul,7,"bruit lognormal σ=0,25",1375.0,590,18,False,0,0,39,15
+RS seul,7,"bruit lognormal σ=0,25",995.5,295,13,False,0,0,33,16
+RS seul,7,"bruit lognormal σ=0,25",1455.0,542,24,False,0,0,46,17
+RS seul,7,"bruit lognormal σ=0,25",1457.5,638,24,False,0,0,38,18
+RS seul,7,"bruit lognormal σ=0,25",1277.0,425,20,False,0,0,42,19
+RS seul,7,lits 24 (−6),0,0,0,False,4,0,0,
+RS seul,7,places 15 (−5),0,0,0,True,0,0,0,
+memetique,9,"durées ×0,9",0,0,0,True,0,0,0,
+memetique,9,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+memetique,9,"durées ×1,1",1330.0,0,0,False,0,0,83,
+memetique,9,"durées ×1,2",3546.0,1038,83,False,0,0,103,
+memetique,9,"bruit lognormal σ=0,25",1302.5,595,18,False,0,0,32,0
+memetique,9,"bruit lognormal σ=0,25",806.5,279,11,False,0,0,29,1
+memetique,9,"bruit lognormal σ=0,25",1279.0,587,16,False,0,0,35,2
+memetique,9,"bruit lognormal σ=0,25",1081.5,388,17,False,0,0,37,3
+memetique,9,"bruit lognormal σ=0,25",880.5,317,12,False,0,0,27,4
+memetique,9,"bruit lognormal σ=0,25",840.0,278,12,False,0,0,29,5
+memetique,9,"bruit lognormal σ=0,25",918.0,356,14,False,0,0,28,6
+memetique,9,"bruit lognormal σ=0,25",1187.0,419,17,False,0,0,41,7
+memetique,9,"bruit lognormal σ=0,25",973.5,314,15,False,0,0,37,8
+memetique,9,"bruit lognormal σ=0,25",890.0,333,17,False,0,0,32,9
+memetique,9,"bruit lognormal σ=0,25",1226.0,453,19,False,0,0,38,10
+memetique,9,"bruit lognormal σ=0,25",1096.0,399,14,False,0,0,36,11
+memetique,9,"bruit lognormal σ=0,25",1095.0,358,20,False,0,0,34,12
+memetique,9,"bruit lognormal σ=0,25",1054.0,379,17,False,0,0,34,13
+memetique,9,"bruit lognormal σ=0,25",1421.5,689,20,False,0,0,38,14
+memetique,9,"bruit lognormal σ=0,25",1264.0,526,18,False,0,0,36,15
+memetique,9,"bruit lognormal σ=0,25",898.0,311,12,False,0,0,27,16
+memetique,9,"bruit lognormal σ=0,25",1449.0,596,21,False,0,0,47,17
+memetique,9,"bruit lognormal σ=0,25",1269.5,548,18,False,0,0,38,18
+memetique,9,"bruit lognormal σ=0,25",1151.0,373,19,False,0,0,41,19
+memetique,9,lits 24 (−6),0,0,0,False,4,0,0,
+memetique,9,places 15 (−5),0,0,0,True,0,0,0,
+AGS seul,3,"durées ×0,9",0,0,0,True,0,0,0,
+AGS seul,3,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS seul,3,"durées ×1,1",1249.0,0,0,False,0,0,76,
+AGS seul,3,"durées ×1,2",3366.0,990,76,False,0,0,100,
+AGS seul,3,"bruit lognormal σ=0,25",1282.0,567,21,False,0,0,37,0
+AGS seul,3,"bruit lognormal σ=0,25",956.5,343,17,False,0,0,29,1
+AGS seul,3,"bruit lognormal σ=0,25",1261.5,704,17,False,0,0,26,2
+AGS seul,3,"bruit lognormal σ=0,25",1343.0,572,22,False,0,0,39,3
+AGS seul,3,"bruit lognormal σ=0,25",903.5,339,15,False,0,0,27,4
+AGS seul,3,"bruit lognormal σ=0,25",988.5,403,14,False,0,0,30,5
+AGS seul,3,"bruit lognormal σ=0,25",763.0,278,12,False,0,0,26,6
+AGS seul,3,"bruit lognormal σ=0,25",1333.5,482,22,False,0,0,41,7
+AGS seul,3,"bruit lognormal σ=0,25",1038.5,374,17,False,0,0,39,8
+AGS seul,3,"bruit lognormal σ=0,25",842.0,352,16,False,0,0,27,9
+AGS seul,3,"bruit lognormal σ=0,25",1217.0,480,21,False,0,0,40,10
+AGS seul,3,"bruit lognormal σ=0,25",1055.0,419,17,False,0,0,34,11
+AGS seul,3,"bruit lognormal σ=0,25",944.0,354,16,False,0,0,28,12
+AGS seul,3,"bruit lognormal σ=0,25",1077.0,449,17,False,0,0,31,13
+AGS seul,3,"bruit lognormal σ=0,25",1463.5,632,22,False,0,0,41,14
+AGS seul,3,"bruit lognormal σ=0,25",1252.0,479,17,False,0,0,39,15
+AGS seul,3,"bruit lognormal σ=0,25",878.5,266,13,False,0,0,32,16
+AGS seul,3,"bruit lognormal σ=0,25",1347.5,531,23,False,0,0,41,17
+AGS seul,3,"bruit lognormal σ=0,25",1399.5,667,18,False,0,0,37,18
+AGS seul,3,"bruit lognormal σ=0,25",1168.5,515,21,False,0,0,33,19
+AGS seul,3,lits 24 (−6),0,0,0,False,2,0,0,
+AGS seul,3,places 15 (−5),0,0,0,True,0,0,0,
+memetique,7,"durées ×0,9",0,0,0,True,0,0,0,
+memetique,7,"durées ×1,0 (nominal)",1.5,0,0,True,0,0,0,
+memetique,7,"durées ×1,1",1446.5,0,0,False,0,0,89,
+memetique,7,"durées ×1,2",3883.5,1125,89,False,0,0,110,
+memetique,7,"bruit lognormal σ=0,25",1159.5,450,19,False,0,0,34,0
+memetique,7,"bruit lognormal σ=0,25",1090.0,458,16,False,0,0,31,1
+memetique,7,"bruit lognormal σ=0,25",1255.0,535,18,False,0,0,38,2
+memetique,7,"bruit lognormal σ=0,25",1384.5,524,23,False,0,0,39,3
+memetique,7,"bruit lognormal σ=0,25",840.0,307,12,False,0,0,29,4
+memetique,7,"bruit lognormal σ=0,25",1083.0,319,16,False,0,0,38,5
+memetique,7,"bruit lognormal σ=0,25",985.5,387,13,False,0,0,30,6
+memetique,7,"bruit lognormal σ=0,25",1280.0,451,20,False,0,0,40,7
+memetique,7,"bruit lognormal σ=0,25",1047.5,288,15,False,0,0,37,8
+memetique,7,"bruit lognormal σ=0,25",860.5,245,14,False,0,0,30,9
+memetique,7,"bruit lognormal σ=0,25",1295.5,453,23,False,0,0,43,10
+memetique,7,"bruit lognormal σ=0,25",1049.5,454,16,False,0,0,29,11
+memetique,7,"bruit lognormal σ=0,25",1042.0,360,19,False,0,0,31,12
+memetique,7,"bruit lognormal σ=0,25",964.0,420,13,False,0,0,28,13
+memetique,7,"bruit lognormal σ=0,25",1453.5,787,19,False,0,0,33,14
+memetique,7,"bruit lognormal σ=0,25",1310.5,457,17,False,0,0,42,15
+memetique,7,"bruit lognormal σ=0,25",951.5,356,15,False,0,0,29,16
+memetique,7,"bruit lognormal σ=0,25",1490.0,577,22,False,0,0,46,17
+memetique,7,"bruit lognormal σ=0,25",1266.0,490,22,False,0,0,36,18
+memetique,7,"bruit lognormal σ=0,25",1131.0,288,19,False,0,0,46,19
+memetique,7,lits 24 (−6),1.5,0,0,False,4,0,0,
+memetique,7,places 15 (−5),1.5,0,0,True,0,0,0,
+RS>AGS>TABOU,8,"durées ×0,9",0,0,0,True,0,0,0,
+RS>AGS>TABOU,8,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS>AGS>TABOU,8,"durées ×1,1",1379.0,0,0,False,0,0,84,
+RS>AGS>TABOU,8,"durées ×1,2",3699.0,1074,84,False,0,0,105,
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",994.5,334,18,False,0,0,30,0
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",947.0,297,12,False,0,0,33,1
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1188.5,468,20,False,0,0,36,2
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1329.0,406,24,False,0,0,43,3
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",878.5,375,11,False,0,0,25,4
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1097.0,393,14,False,0,0,36,5
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",840.5,292,13,False,0,0,27,6
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1231.0,421,20,False,0,0,43,7
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1236.5,456,18,False,0,0,35,8
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",735.5,252,12,False,0,0,30,9
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1216.5,414,20,False,0,0,38,10
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",960.5,345,17,False,0,0,32,11
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1232.0,530,19,False,0,0,31,12
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",851.5,284,14,False,0,0,28,13
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1703.0,941,21,False,0,0,35,14
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1157.0,529,17,False,0,0,33,15
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",920.5,341,15,False,0,0,29,16
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1313.0,458,24,False,0,0,42,17
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1219.0,569,17,False,0,0,33,18
+RS>AGS>TABOU,8,"bruit lognormal σ=0,25",1099.5,314,16,False,0,0,41,19
+RS>AGS>TABOU,8,lits 24 (−6),0,0,0,False,5,0,0,
+RS>AGS>TABOU,8,places 15 (−5),0,0,0,True,0,0,0,
+TABOU seul,10,"durées ×0,9",0,0,0,True,0,0,0,
+TABOU seul,10,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+TABOU seul,10,"durées ×1,1",1254.0,0,0,False,0,0,76,
+TABOU seul,10,"durées ×1,2",3591.0,984,76,False,0,0,109,
+TABOU seul,10,"bruit lognormal σ=0,25",1314.0,531,20,False,0,0,38,0
+TABOU seul,10,"bruit lognormal σ=0,25",867.0,309,17,False,0,0,26,1
+TABOU seul,10,"bruit lognormal σ=0,25",1325.0,640,18,False,0,0,31,2
+TABOU seul,10,"bruit lognormal σ=0,25",1242.0,454,19,False,0,0,36,3
+TABOU seul,10,"bruit lognormal σ=0,25",868.5,336,13,False,0,0,26,4
+TABOU seul,10,"bruit lognormal σ=0,25",1164.5,447,16,False,0,0,38,5
+TABOU seul,10,"bruit lognormal σ=0,25",928.0,341,15,False,0,0,30,6
+TABOU seul,10,"bruit lognormal σ=0,25",1198.5,384,17,False,0,0,42,7
+TABOU seul,10,"bruit lognormal σ=0,25",961.0,300,15,False,0,0,35,8
+TABOU seul,10,"bruit lognormal σ=0,25",775.0,265,13,False,0,0,28,9
+TABOU seul,10,"bruit lognormal σ=0,25",1241.0,420,19,False,0,0,40,10
+TABOU seul,10,"bruit lognormal σ=0,25",866.0,305,12,False,0,0,31,11
+TABOU seul,10,"bruit lognormal σ=0,25",1084.5,463,14,False,0,0,31,12
+TABOU seul,10,"bruit lognormal σ=0,25",1141.5,508,20,False,0,0,30,13
+TABOU seul,10,"bruit lognormal σ=0,25",1652.0,826,21,False,0,0,39,14
+TABOU seul,10,"bruit lognormal σ=0,25",1113.0,350,16,False,0,0,34,15
+TABOU seul,10,"bruit lognormal σ=0,25",1041.5,364,14,False,0,0,31,16
+TABOU seul,10,"bruit lognormal σ=0,25",1448.5,528,24,False,0,0,43,17
+TABOU seul,10,"bruit lognormal σ=0,25",1030.0,432,15,False,0,0,30,18
+TABOU seul,10,"bruit lognormal σ=0,25",1110.0,320,17,False,0,0,37,19
+TABOU seul,10,lits 24 (−6),0,0,0,False,3,0,0,
+TABOU seul,10,places 15 (−5),0,0,0,True,0,0,0,
+TABOU seul,8,"durées ×0,9",0,0,0,True,0,0,0,
+TABOU seul,8,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+TABOU seul,8,"durées ×1,1",1397.5,0,0,False,0,0,87,
+TABOU seul,8,"durées ×1,2",3784.5,1089,87,False,0,0,110,
+TABOU seul,8,"bruit lognormal σ=0,25",1403.5,648,20,False,0,0,37,0
+TABOU seul,8,"bruit lognormal σ=0,25",1193.5,514,22,False,0,0,33,1
+TABOU seul,8,"bruit lognormal σ=0,25",1433.0,778,21,False,0,0,30,2
+TABOU seul,8,"bruit lognormal σ=0,25",1208.0,468,20,False,0,0,37,3
+TABOU seul,8,"bruit lognormal σ=0,25",860.5,384,12,False,0,0,24,4
+TABOU seul,8,"bruit lognormal σ=0,25",1126.5,381,20,False,0,0,37,5
+TABOU seul,8,"bruit lognormal σ=0,25",827.5,268,14,False,0,0,26,6
+TABOU seul,8,"bruit lognormal σ=0,25",1270.0,433,19,False,0,0,42,7
+TABOU seul,8,"bruit lognormal σ=0,25",1146.0,367,18,False,0,0,40,8
+TABOU seul,8,"bruit lognormal σ=0,25",861.0,290,16,False,0,0,29,9
+TABOU seul,8,"bruit lognormal σ=0,25",1345.5,470,25,False,0,0,43,10
+TABOU seul,8,"bruit lognormal σ=0,25",1051.5,440,17,False,0,0,33,11
+TABOU seul,8,"bruit lognormal σ=0,25",1099.5,430,18,False,0,0,31,12
+TABOU seul,8,"bruit lognormal σ=0,25",984.0,347,18,False,0,0,34,13
+TABOU seul,8,"bruit lognormal σ=0,25",1695.0,830,24,False,0,0,38,14
+TABOU seul,8,"bruit lognormal σ=0,25",1288.5,501,20,False,0,0,38,15
+TABOU seul,8,"bruit lognormal σ=0,25",929.5,269,11,False,0,0,34,16
+TABOU seul,8,"bruit lognormal σ=0,25",1531.5,659,22,False,0,0,43,17
+TABOU seul,8,"bruit lognormal σ=0,25",1180.0,487,15,False,0,0,37,18
+TABOU seul,8,"bruit lognormal σ=0,25",1144.0,375,17,False,0,0,40,19
+TABOU seul,8,lits 24 (−6),0,0,0,False,7,0,0,
+TABOU seul,8,places 15 (−5),0,0,0,True,0,0,0,
+RS>AGS>TABOU,1,"durées ×0,9",0,0,0,True,0,0,0,
+RS>AGS>TABOU,1,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS>AGS>TABOU,1,"durées ×1,1",1287.5,0,0,False,0,0,77,
+RS>AGS>TABOU,1,"durées ×1,2",3595.5,1005,77,False,0,0,104,
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1113.5,515,18,False,0,0,27,0
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1005.0,375,17,False,0,0,31,1
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1223.0,527,16,False,0,0,33,2
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1071.0,320,14,False,0,0,39,3
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1019.0,463,14,False,0,0,27,4
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1089.0,394,15,False,0,0,32,5
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",910.0,353,14,False,0,0,27,6
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1098.0,344,15,False,0,0,40,7
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",995.0,280,15,False,0,0,36,8
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",801.5,283,14,False,0,0,28,9
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1118.5,358,20,False,0,0,38,10
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",957.5,327,17,False,0,0,32,11
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1048.5,451,16,False,0,0,28,12
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",956.0,349,12,False,0,0,32,13
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1610.5,734,22,False,0,0,41,14
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1372.0,562,20,False,0,0,39,15
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",834.0,288,13,False,0,0,25,16
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1245.0,406,19,False,0,0,38,17
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1161.5,498,17,False,0,0,32,18
+RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1069.0,296,15,False,0,0,40,19
+RS>AGS>TABOU,1,lits 24 (−6),0,0,0,False,4,0,0,
+RS>AGS>TABOU,1,places 15 (−5),0,0,0,True,0,0,0,
+RS>AGS>TABOU,2,"durées ×0,9",0,0,0,True,0,0,0,
+RS>AGS>TABOU,2,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS>AGS>TABOU,2,"durées ×1,1",1362.0,0,0,False,0,0,78,
+RS>AGS>TABOU,2,"durées ×1,2",3555.0,1080,78,False,0,0,99,
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1194.5,467,18,False,0,0,37,0
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",913.0,329,15,False,0,0,29,1
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1312.5,661,18,False,0,0,32,2
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",952.5,351,13,False,0,0,32,3
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",909.0,330,13,False,0,0,28,4
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1042.5,376,13,False,0,0,32,5
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",787.5,271,11,False,0,0,27,6
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1166.5,388,18,False,0,0,41,7
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1155.0,454,14,False,0,0,36,8
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",784.5,276,14,False,0,0,25,9
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1028.0,268,18,False,0,0,41,10
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1048.5,354,18,False,0,0,33,11
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",933.5,339,15,False,0,0,28,12
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",916.0,349,16,False,0,0,28,13
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1764.5,922,25,False,0,0,40,14
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1327.0,496,17,False,0,0,37,15
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",793.5,186,12,False,0,0,28,16
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1415.0,626,22,False,0,0,37,17
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1250.5,522,19,False,0,0,34,18
+RS>AGS>TABOU,2,"bruit lognormal σ=0,25",1060.5,268,16,False,0,0,39,19
+RS>AGS>TABOU,2,lits 24 (−6),0,0,0,False,6,0,0,
+RS>AGS>TABOU,2,places 15 (−5),0,0,0,True,0,0,0,
+AGS>RS>TABOU,10,"durées ×0,9",0,0,0,True,0,0,0,
+AGS>RS>TABOU,10,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS>RS>TABOU,10,"durées ×1,1",1503.0,0,0,False,0,0,87,
+AGS>RS>TABOU,10,"durées ×1,2",3897.0,1188,87,False,0,0,106,
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1413.0,545,20,False,0,0,38,0
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1055.0,439,18,False,0,0,32,1
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1370.5,690,16,False,0,0,29,2
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1312.0,538,18,False,0,0,39,3
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",878.5,336,12,False,0,0,27,4
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",917.0,225,14,False,0,0,33,5
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",955.0,344,13,False,0,0,32,6
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1328.0,486,23,False,0,0,38,7
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1073.0,324,14,False,0,0,40,8
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",863.5,254,14,False,0,0,29,9
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1222.0,347,21,False,0,0,44,10
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1145.0,424,19,False,0,0,36,11
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1070.0,413,14,False,0,0,33,12
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1063.0,460,16,False,0,0,28,13
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1700.5,861,19,False,0,0,39,14
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1391.5,589,21,False,0,0,39,15
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",927.5,313,12,False,0,0,27,16
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1514.5,582,24,False,0,0,43,17
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1286.5,448,17,False,0,0,41,18
+AGS>RS>TABOU,10,"bruit lognormal σ=0,25",1099.0,332,15,False,0,0,40,19
+AGS>RS>TABOU,10,lits 24 (−6),0,0,0,False,5,0,0,
+AGS>RS>TABOU,10,places 15 (−5),0,0,0,True,0,0,0,
+RS seul,4,"durées ×0,9",0,0,0,True,0,0,0,
+RS seul,4,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS seul,4,"durées ×1,1",1580.0,0,0,False,0,0,91,
+RS seul,4,"durées ×1,2",4095.0,1254,91,False,0,0,112,
+RS seul,4,"bruit lognormal σ=0,25",1425.0,623,23,False,0,0,39,0
+RS seul,4,"bruit lognormal σ=0,25",1106.0,395,17,False,0,0,38,1
+RS seul,4,"bruit lognormal σ=0,25",1350.0,675,19,False,0,0,29,2
+RS seul,4,"bruit lognormal σ=0,25",1355.5,498,22,False,0,0,44,3
+RS seul,4,"bruit lognormal σ=0,25",957.5,382,12,False,0,0,27,4
+RS seul,4,"bruit lognormal σ=0,25",1277.5,510,21,False,0,0,38,5
+RS seul,4,"bruit lognormal σ=0,25",1073.5,398,16,False,0,0,29,6
+RS seul,4,"bruit lognormal σ=0,25",1362.0,445,19,False,0,0,43,7
+RS seul,4,"bruit lognormal σ=0,25",1281.5,416,21,False,0,0,42,8
+RS seul,4,"bruit lognormal σ=0,25",787.0,252,12,False,0,0,28,9
+RS seul,4,"bruit lognormal σ=0,25",1250.0,444,21,False,0,0,44,10
+RS seul,4,"bruit lognormal σ=0,25",1235.5,481,19,False,0,0,36,11
+RS seul,4,"bruit lognormal σ=0,25",1255.5,476,19,False,0,0,36,12
+RS seul,4,"bruit lognormal σ=0,25",1284.0,564,21,False,0,0,35,13
+RS seul,4,"bruit lognormal σ=0,25",1700.0,800,24,False,0,0,43,14
+RS seul,4,"bruit lognormal σ=0,25",1340.5,530,19,False,0,0,38,15
+RS seul,4,"bruit lognormal σ=0,25",966.5,304,18,False,0,0,30,16
+RS seul,4,"bruit lognormal σ=0,25",1484.0,624,21,False,0,0,42,17
+RS seul,4,"bruit lognormal σ=0,25",1301.5,589,16,False,0,0,36,18
+RS seul,4,"bruit lognormal σ=0,25",1249.5,439,16,False,0,0,42,19
+RS seul,4,lits 24 (−6),0,0,0,False,7,0,0,
+RS seul,4,places 15 (−5),0,0,0,True,0,0,0,
+AGS>RS>TABOU,3,"durées ×0,9",0,0,0,True,0,0,0,
+AGS>RS>TABOU,3,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS>RS>TABOU,3,"durées ×1,1",1466.5,0,0,False,0,0,88,
+AGS>RS>TABOU,3,"durées ×1,2",3996.0,1149,88,False,0,0,114,
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1441.5,654,21,False,0,0,35,0
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1078.5,442,16,False,0,0,31,1
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1472.5,750,20,False,0,0,33,2
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1415.5,504,20,False,0,0,40,3
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1085.5,435,15,False,0,0,31,4
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1188.5,494,17,False,0,0,32,5
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1057.0,400,16,False,0,0,29,6
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1306.5,476,21,False,0,0,40,7
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1183.5,307,17,False,0,0,44,8
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",804.5,268,13,False,0,0,30,9
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1217.5,427,21,False,0,0,38,10
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1190.5,471,17,False,0,0,41,11
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1109.5,350,15,False,0,0,39,12
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1089.0,381,17,False,0,0,35,13
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1831.5,941,25,False,0,0,47,14
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1297.0,542,20,False,0,0,34,15
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",933.0,290,15,False,0,0,28,16
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1748.0,805,27,False,0,0,48,17
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1258.5,500,19,False,0,0,38,18
+AGS>RS>TABOU,3,"bruit lognormal σ=0,25",1286.5,407,21,False,0,0,44,19
+AGS>RS>TABOU,3,lits 24 (−6),0,0,0,False,6,0,0,
+AGS>RS>TABOU,3,places 15 (−5),0,0,0,True,0,0,0,
+RS seul,5,"durées ×0,9",0,0,0,True,0,0,0,
+RS seul,5,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS seul,5,"durées ×1,1",1465.0,0,0,False,0,0,88,
+RS seul,5,"durées ×1,2",3919.5,1152,88,False,0,0,112,
+RS seul,5,"bruit lognormal σ=0,25",1323.5,534,22,False,0,0,37,0
+RS seul,5,"bruit lognormal σ=0,25",1049.0,391,17,False,0,0,31,1
+RS seul,5,"bruit lognormal σ=0,25",1322.5,550,22,False,0,0,37,2
+RS seul,5,"bruit lognormal σ=0,25",1362.0,650,21,False,0,0,34,3
+RS seul,5,"bruit lognormal σ=0,25",1005.5,377,15,False,0,0,30,4
+RS seul,5,"bruit lognormal σ=0,25",1199.5,440,20,False,0,0,34,5
+RS seul,5,"bruit lognormal σ=0,25",1066.0,401,16,False,0,0,32,6
+RS seul,5,"bruit lognormal σ=0,25",1367.0,484,20,False,0,0,40,7
+RS seul,5,"bruit lognormal σ=0,25",1306.0,451,17,False,0,0,43,8
+RS seul,5,"bruit lognormal σ=0,25",716.0,210,11,False,0,0,26,9
+RS seul,5,"bruit lognormal σ=0,25",1291.0,456,22,False,0,0,41,10
+RS seul,5,"bruit lognormal σ=0,25",1125.5,410,18,False,0,0,37,11
+RS seul,5,"bruit lognormal σ=0,25",1002.0,340,16,False,0,0,33,12
+RS seul,5,"bruit lognormal σ=0,25",1013.5,429,16,False,0,0,30,13
+RS seul,5,"bruit lognormal σ=0,25",1496.0,662,17,False,0,0,40,14
+RS seul,5,"bruit lognormal σ=0,25",1316.5,561,19,False,0,0,36,15
+RS seul,5,"bruit lognormal σ=0,25",892.0,278,14,False,0,0,28,16
+RS seul,5,"bruit lognormal σ=0,25",1529.5,515,23,False,0,0,50,17
+RS seul,5,"bruit lognormal σ=0,25",1320.5,491,21,False,0,0,42,18
+RS seul,5,"bruit lognormal σ=0,25",1236.5,412,18,False,0,0,41,19
+RS seul,5,lits 24 (−6),0,0,0,False,7,0,0,
+RS seul,5,places 15 (−5),0,0,0,True,0,0,0,
+memetique,6,"durées ×0,9",0,0,0,True,0,0,0,
+memetique,6,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+memetique,6,"durées ×1,1",1386.0,0,0,False,0,0,85,
+memetique,6,"durées ×1,2",3793.5,1086,85,False,0,0,110,
+memetique,6,"bruit lognormal σ=0,25",1601.5,624,25,False,0,0,45,0
+memetique,6,"bruit lognormal σ=0,25",1157.0,451,20,False,0,0,34,1
+memetique,6,"bruit lognormal σ=0,25",1140.0,545,15,False,0,0,27,2
+memetique,6,"bruit lognormal σ=0,25",1225.5,389,17,False,0,0,39,3
+memetique,6,"bruit lognormal σ=0,25",976.5,415,12,False,0,0,28,4
+memetique,6,"bruit lognormal σ=0,25",1028.5,352,15,False,0,0,31,5
+memetique,6,"bruit lognormal σ=0,25",862.0,337,14,False,0,0,27,6
+memetique,6,"bruit lognormal σ=0,25",1280.0,503,17,False,0,0,40,7
+memetique,6,"bruit lognormal σ=0,25",1054.5,282,17,False,0,0,39,8
+memetique,6,"bruit lognormal σ=0,25",775.5,259,12,False,0,0,28,9
+memetique,6,"bruit lognormal σ=0,25",1102.5,285,20,False,0,0,44,10
+memetique,6,"bruit lognormal σ=0,25",1034.0,362,18,False,0,0,37,11
+memetique,6,"bruit lognormal σ=0,25",1074.0,437,17,False,0,0,29,12
+memetique,6,"bruit lognormal σ=0,25",1199.5,517,17,False,0,0,31,13
+memetique,6,"bruit lognormal σ=0,25",1586.0,778,20,False,0,0,36,14
+memetique,6,"bruit lognormal σ=0,25",1428.0,625,19,False,0,0,39,15
+memetique,6,"bruit lognormal σ=0,25",892.0,332,13,False,0,0,30,16
+memetique,6,"bruit lognormal σ=0,25",1396.5,469,24,False,0,0,46,17
+memetique,6,"bruit lognormal σ=0,25",1237.5,412,16,False,0,0,37,18
+memetique,6,"bruit lognormal σ=0,25",1157.5,426,16,False,0,0,40,19
+memetique,6,lits 24 (−6),0,0,0,False,6,0,0,
+memetique,6,places 15 (−5),0,0,0,True,0,0,0,
+RS seul,2,"durées ×0,9",0,0,0,True,0,0,0,
+RS seul,2,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS seul,2,"durées ×1,1",1539.0,0,0,False,0,0,90,
+RS seul,2,"durées ×1,2",4104.0,1218,90,False,0,0,116,
+RS seul,2,"bruit lognormal σ=0,25",1559.0,631,20,False,0,0,41,0
+RS seul,2,"bruit lognormal σ=0,25",1242.0,440,22,False,0,0,37,1
+RS seul,2,"bruit lognormal σ=0,25",1351.5,636,18,False,0,0,38,2
+RS seul,2,"bruit lognormal σ=0,25",1546.5,679,22,False,0,0,41,3
+RS seul,2,"bruit lognormal σ=0,25",960.5,387,13,False,0,0,27,4
+RS seul,2,"bruit lognormal σ=0,25",1091.0,436,13,False,0,0,33,5
+RS seul,2,"bruit lognormal σ=0,25",1138.0,486,17,False,0,0,33,6
+RS seul,2,"bruit lognormal σ=0,25",1461.0,459,25,False,0,0,44,7
+RS seul,2,"bruit lognormal σ=0,25",1284.0,443,23,False,0,0,40,8
+RS seul,2,"bruit lognormal σ=0,25",808.5,238,14,False,0,0,32,9
+RS seul,2,"bruit lognormal σ=0,25",1359.5,544,19,False,0,0,45,10
+RS seul,2,"bruit lognormal σ=0,25",1109.5,345,12,False,0,0,39,11
+RS seul,2,"bruit lognormal σ=0,25",1075.0,431,15,False,0,0,31,12
+RS seul,2,"bruit lognormal σ=0,25",1166.5,467,16,False,0,0,33,13
+RS seul,2,"bruit lognormal σ=0,25",1806.0,944,23,False,0,0,42,14
+RS seul,2,"bruit lognormal σ=0,25",1493.0,569,21,False,0,0,44,15
+RS seul,2,"bruit lognormal σ=0,25",1063.5,409,15,False,0,0,30,16
+RS seul,2,"bruit lognormal σ=0,25",1753.5,727,24,False,0,0,48,17
+RS seul,2,"bruit lognormal σ=0,25",1310.0,522,20,False,0,0,39,18
+RS seul,2,"bruit lognormal σ=0,25",1214.0,351,15,False,0,0,43,19
+RS seul,2,lits 24 (−6),0,0,0,False,7,0,0,
+RS seul,2,places 15 (−5),0,0,0,True,0,0,0,
+AGS>RS>TABOU,6,"durées ×0,9",0,0,0,True,0,0,0,
+AGS>RS>TABOU,6,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS>RS>TABOU,6,"durées ×1,1",1545.0,0,0,False,0,0,94,
+AGS>RS>TABOU,6,"durées ×1,2",3991.5,1212,94,False,0,0,110,
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1347.5,588,21,False,0,0,34,0
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1084.0,466,16,False,0,0,31,1
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1300.5,663,18,False,0,0,29,2
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1421.5,480,24,False,0,0,44,3
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",907.5,393,12,False,0,0,26,4
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1271.5,495,20,False,0,0,34,5
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",844.5,223,11,False,0,0,30,6
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1259.5,464,16,False,0,0,43,7
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",968.5,255,14,False,0,0,38,8
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",834.5,274,15,False,0,0,30,9
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1216.5,359,18,False,0,0,42,10
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1083.0,393,17,False,0,0,38,11
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1320.5,502,25,False,0,0,37,12
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1075.0,473,15,False,0,0,28,13
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1696.0,880,20,False,0,0,40,14
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1506.5,557,19,False,0,0,45,15
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",883.5,254,13,False,0,0,30,16
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1481.5,575,22,False,0,0,46,17
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1229.0,428,20,False,0,0,42,18
+AGS>RS>TABOU,6,"bruit lognormal σ=0,25",1142.5,362,16,False,0,0,41,19
+AGS>RS>TABOU,6,lits 24 (−6),0,0,0,False,8,0,0,
+AGS>RS>TABOU,6,places 15 (−5),0,0,0,True,0,0,0,
+memetique,10,"durées ×0,9",0,0,0,True,0,0,0,
+memetique,10,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+memetique,10,"durées ×1,1",1250.0,0,0,False,0,0,73,
+memetique,10,"durées ×1,2",3433.5,984,73,False,0,0,98,
+memetique,10,"bruit lognormal σ=0,25",1236.5,487,17,False,0,0,35,0
+memetique,10,"bruit lognormal σ=0,25",990.5,413,15,False,0,0,28,1
+memetique,10,"bruit lognormal σ=0,25",1149.0,497,16,False,0,0,32,2
+memetique,10,"bruit lognormal σ=0,25",1143.5,444,16,False,0,0,35,3
+memetique,10,"bruit lognormal σ=0,25",856.5,320,12,False,0,0,27,4
+memetique,10,"bruit lognormal σ=0,25",833.0,267,13,False,0,0,28,5
+memetique,10,"bruit lognormal σ=0,25",970.0,367,13,False,0,0,28,6
+memetique,10,"bruit lognormal σ=0,25",1211.5,420,18,False,0,0,41,7
+memetique,10,"bruit lognormal σ=0,25",1005.0,297,15,False,0,0,32,8
+memetique,10,"bruit lognormal σ=0,25",826.5,234,13,False,0,0,33,9
+memetique,10,"bruit lognormal σ=0,25",1148.0,337,22,False,0,0,38,10
+memetique,10,"bruit lognormal σ=0,25",1175.5,390,16,False,0,0,43,11
+memetique,10,"bruit lognormal σ=0,25",970.0,365,15,False,0,0,28,12
+memetique,10,"bruit lognormal σ=0,25",1092.5,547,15,False,0,0,24,13
+memetique,10,"bruit lognormal σ=0,25",1408.5,704,16,False,0,0,35,14
+memetique,10,"bruit lognormal σ=0,25",1323.0,522,17,False,0,0,39,15
+memetique,10,"bruit lognormal σ=0,25",922.5,372,13,False,0,0,27,16
+memetique,10,"bruit lognormal σ=0,25",1423.0,527,22,False,0,0,45,17
+memetique,10,"bruit lognormal σ=0,25",1161.0,478,16,False,0,0,34,18
+memetique,10,"bruit lognormal σ=0,25",1171.5,361,18,False,0,0,40,19
+memetique,10,lits 24 (−6),0,0,0,False,3,0,0,
+memetique,10,places 15 (−5),0,0,0,True,0,0,0,
+TABOU seul,9,"durées ×0,9",0,0,0,True,0,0,0,
+TABOU seul,9,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+TABOU seul,9,"durées ×1,1",1365.5,0,0,False,0,0,82,
+TABOU seul,9,"durées ×1,2",3753.0,1077,82,False,0,0,110,
+TABOU seul,9,"bruit lognormal σ=0,25",1300.5,586,18,False,0,0,39,0
+TABOU seul,9,"bruit lognormal σ=0,25",1004.5,420,17,False,0,0,29,1
+TABOU seul,9,"bruit lognormal σ=0,25",1312.5,610,20,False,0,0,31,2
+TABOU seul,9,"bruit lognormal σ=0,25",1294.5,503,19,False,0,0,38,3
+TABOU seul,9,"bruit lognormal σ=0,25",908.5,340,13,False,0,0,33,4
+TABOU seul,9,"bruit lognormal σ=0,25",1001.5,339,16,False,0,0,35,5
+TABOU seul,9,"bruit lognormal σ=0,25",1064.5,383,14,False,0,0,33,6
+TABOU seul,9,"bruit lognormal σ=0,25",1218.5,438,19,False,0,0,39,7
+TABOU seul,9,"bruit lognormal σ=0,25",1094.5,405,17,False,0,0,39,8
+TABOU seul,9,"bruit lognormal σ=0,25",797.5,269,15,False,0,0,29,9
+TABOU seul,9,"bruit lognormal σ=0,25",1438.0,647,25,False,0,0,39,10
+TABOU seul,9,"bruit lognormal σ=0,25",1038.0,422,17,False,0,0,33,11
+TABOU seul,9,"bruit lognormal σ=0,25",1186.5,438,19,False,0,0,34,12
+TABOU seul,9,"bruit lognormal σ=0,25",1015.5,365,18,False,0,0,34,13
+TABOU seul,9,"bruit lognormal σ=0,25",1556.0,731,22,False,0,0,44,14
+TABOU seul,9,"bruit lognormal σ=0,25",1330.0,480,20,False,0,0,39,15
+TABOU seul,9,"bruit lognormal σ=0,25",1031.0,385,17,False,0,0,29,16
+TABOU seul,9,"bruit lognormal σ=0,25",1537.0,633,26,False,0,0,43,17
+TABOU seul,9,"bruit lognormal σ=0,25",1308.0,591,20,False,0,0,37,18
+TABOU seul,9,"bruit lognormal σ=0,25",1255.0,438,20,False,0,0,42,19
+TABOU seul,9,lits 24 (−6),0,0,0,False,4,0,0,
+TABOU seul,9,places 15 (−5),0,0,0,True,0,0,0,
+RS>AGS>TABOU,9,"durées ×0,9",0,0,0,True,0,0,0,
+RS>AGS>TABOU,9,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS>AGS>TABOU,9,"durées ×1,1",1424.0,0,0,False,0,0,85,
+RS>AGS>TABOU,9,"durées ×1,2",3771.0,1110,85,False,0,0,104,
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1201.0,476,18,False,0,0,35,0
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1039.0,409,15,False,0,0,31,1
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1349.5,625,19,False,0,0,32,2
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1350.0,476,21,False,0,0,41,3
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",805.0,298,10,False,0,0,26,4
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1021.5,379,16,False,0,0,31,5
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",952.0,349,16,False,0,0,26,6
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1247.5,416,19,False,0,0,40,7
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1004.5,317,14,False,0,0,33,8
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",778.5,243,14,False,0,0,27,9
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1021.5,318,16,False,0,0,34,10
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1206.0,483,19,False,0,0,36,11
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1103.5,418,17,False,0,0,33,12
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",960.5,384,14,False,0,0,28,13
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1562.0,796,23,False,0,0,36,14
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1332.0,510,18,False,0,0,43,15
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",973.0,359,13,False,0,0,30,16
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1412.5,636,22,False,0,0,38,17
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1351.5,524,22,False,0,0,36,18
+RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1112.0,313,13,False,0,0,41,19
+RS>AGS>TABOU,9,lits 24 (−6),0,0,0,False,4,0,0,
+RS>AGS>TABOU,9,places 15 (−5),0,0,0,True,0,0,0,
+AGS seul,2,"durées ×0,9",0,0,0,True,0,0,0,
+AGS seul,2,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS seul,2,"durées ×1,1",1338.0,0,0,False,0,0,80,
+AGS seul,2,"durées ×1,2",3564.0,1074,80,False,0,0,105,
+AGS seul,2,"bruit lognormal σ=0,25",1280.5,509,23,False,0,0,40,0
+AGS seul,2,"bruit lognormal σ=0,25",923.5,262,18,False,0,0,31,1
+AGS seul,2,"bruit lognormal σ=0,25",1119.5,473,17,False,0,0,30,2
+AGS seul,2,"bruit lognormal σ=0,25",1114.5,425,17,False,0,0,37,3
+AGS seul,2,"bruit lognormal σ=0,25",1025.0,471,17,False,0,0,27,4
+AGS seul,2,"bruit lognormal σ=0,25",1005.5,423,16,False,0,0,31,5
+AGS seul,2,"bruit lognormal σ=0,25",919.0,340,15,False,0,0,30,6
+AGS seul,2,"bruit lognormal σ=0,25",1195.5,342,22,False,0,0,45,7
+AGS seul,2,"bruit lognormal σ=0,25",1330.0,543,25,False,0,0,41,8
+AGS seul,2,"bruit lognormal σ=0,25",988.0,391,19,False,0,0,32,9
+AGS seul,2,"bruit lognormal σ=0,25",1320.0,544,22,False,0,0,43,10
+AGS seul,2,"bruit lognormal σ=0,25",1176.5,481,19,False,0,0,36,11
+AGS seul,2,"bruit lognormal σ=0,25",991.5,403,16,False,0,0,27,12
+AGS seul,2,"bruit lognormal σ=0,25",1132.5,437,17,False,0,0,35,13
+AGS seul,2,"bruit lognormal σ=0,25",1665.5,797,25,False,0,0,42,14
+AGS seul,2,"bruit lognormal σ=0,25",1395.5,530,20,False,0,0,41,15
+AGS seul,2,"bruit lognormal σ=0,25",1081.0,389,18,False,0,0,34,16
+AGS seul,2,"bruit lognormal σ=0,25",1396.0,616,23,False,0,0,38,17
+AGS seul,2,"bruit lognormal σ=0,25",1378.0,615,21,False,0,0,45,18
+AGS seul,2,"bruit lognormal σ=0,25",1314.0,603,24,False,0,0,37,19
+AGS seul,2,lits 24 (−6),0,0,0,False,2,0,0,
+AGS seul,2,places 15 (−5),0,0,0,True,0,0,0,
+TABOU seul,2,"durées ×0,9",0,0,0,True,0,0,0,
+TABOU seul,2,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+TABOU seul,2,"durées ×1,1",1341.5,0,0,False,0,0,86,
+TABOU seul,2,"durées ×1,2",3712.5,1029,86,False,0,0,109,
+TABOU seul,2,"bruit lognormal σ=0,25",1355.0,620,18,False,0,0,39,0
+TABOU seul,2,"bruit lognormal σ=0,25",1080.5,434,20,False,0,0,32,1
+TABOU seul,2,"bruit lognormal σ=0,25",1100.5,545,14,False,0,0,26,2
+TABOU seul,2,"bruit lognormal σ=0,25",1458.5,583,22,False,0,0,42,3
+TABOU seul,2,"bruit lognormal σ=0,25",961.0,389,15,False,0,0,31,4
+TABOU seul,2,"bruit lognormal σ=0,25",1037.5,426,16,False,0,0,31,5
+TABOU seul,2,"bruit lognormal σ=0,25",931.0,290,18,False,0,0,30,6
+TABOU seul,2,"bruit lognormal σ=0,25",1380.0,453,20,False,0,0,46,7
+TABOU seul,2,"bruit lognormal σ=0,25",1160.5,386,19,False,0,0,42,8
+TABOU seul,2,"bruit lognormal σ=0,25",772.0,227,14,False,0,0,30,9
+TABOU seul,2,"bruit lognormal σ=0,25",1217.5,424,23,False,0,0,39,10
+TABOU seul,2,"bruit lognormal σ=0,25",1095.5,410,18,False,0,0,34,11
+TABOU seul,2,"bruit lognormal σ=0,25",1007.0,363,15,False,0,0,31,12
+TABOU seul,2,"bruit lognormal σ=0,25",978.0,362,18,False,0,0,31,13
+TABOU seul,2,"bruit lognormal σ=0,25",1716.0,815,22,False,0,0,43,14
+TABOU seul,2,"bruit lognormal σ=0,25",1165.5,416,16,False,0,0,39,15
+TABOU seul,2,"bruit lognormal σ=0,25",1004.5,325,15,False,0,0,35,16
+TABOU seul,2,"bruit lognormal σ=0,25",1467.5,534,27,False,0,0,48,17
+TABOU seul,2,"bruit lognormal σ=0,25",1137.5,491,16,False,0,0,38,18
+TABOU seul,2,"bruit lognormal σ=0,25",1283.5,469,19,False,0,0,43,19
+TABOU seul,2,lits 24 (−6),0,0,0,False,6,0,0,
+TABOU seul,2,places 15 (−5),0,0,0,True,0,0,0,
+RS seul,10,"durées ×0,9",0,0,0,True,0,0,0,
+RS seul,10,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS seul,10,"durées ×1,1",1516.5,0,0,False,0,0,89,
+RS seul,10,"durées ×1,2",3964.5,1191,89,False,0,0,110,
+RS seul,10,"bruit lognormal σ=0,25",1387.5,558,22,False,0,0,40,0
+RS seul,10,"bruit lognormal σ=0,25",1091.0,509,16,False,0,0,27,1
+RS seul,10,"bruit lognormal σ=0,25",1232.0,498,20,False,0,0,34,2
+RS seul,10,"bruit lognormal σ=0,25",1307.5,482,22,False,0,0,38,3
+RS seul,10,"bruit lognormal σ=0,25",885.5,295,9,False,0,0,31,4
+RS seul,10,"bruit lognormal σ=0,25",1156.5,402,17,False,0,0,35,5
+RS seul,10,"bruit lognormal σ=0,25",1029.5,327,15,False,0,0,34,6
+RS seul,10,"bruit lognormal σ=0,25",1299.5,412,20,False,0,0,43,7
+RS seul,10,"bruit lognormal σ=0,25",1190.5,400,17,False,0,0,42,8
+RS seul,10,"bruit lognormal σ=0,25",929.5,275,15,False,0,0,30,9
+RS seul,10,"bruit lognormal σ=0,25",1321.0,477,25,False,0,0,38,10
+RS seul,10,"bruit lognormal σ=0,25",1111.5,363,15,False,0,0,39,11
+RS seul,10,"bruit lognormal σ=0,25",1144.0,392,16,False,0,0,36,12
+RS seul,10,"bruit lognormal σ=0,25",969.0,388,19,False,0,0,27,13
+RS seul,10,"bruit lognormal σ=0,25",1677.5,812,20,False,0,0,42,14
+RS seul,10,"bruit lognormal σ=0,25",1308.5,577,18,False,0,0,38,15
+RS seul,10,"bruit lognormal σ=0,25",905.5,237,11,False,0,0,34,16
+RS seul,10,"bruit lognormal σ=0,25",1467.5,501,26,False,0,0,48,17
+RS seul,10,"bruit lognormal σ=0,25",1410.0,688,21,False,0,0,34,18
+RS seul,10,"bruit lognormal σ=0,25",1260.5,419,16,False,0,0,41,19
+RS seul,10,lits 24 (−6),0,0,0,False,5,0,0,
+RS seul,10,places 15 (−5),0,0,0,True,0,0,0,
+RS>AGS>TABOU,5,"durées ×0,9",0,0,0,True,0,0,0,
+RS>AGS>TABOU,5,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS>AGS>TABOU,5,"durées ×1,1",1468.0,0,0,False,0,0,84,
+RS>AGS>TABOU,5,"durées ×1,2",3780.0,1164,84,False,0,0,103,
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1474.0,674,23,False,0,0,38,0
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1055.5,390,17,False,0,0,31,1
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1095.5,423,15,False,0,0,33,2
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1285.0,432,20,False,0,0,41,3
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",988.5,360,12,False,0,0,29,4
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1105.0,344,16,False,0,0,36,5
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",933.0,375,14,False,0,0,23,6
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1395.0,576,20,False,0,0,42,7
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1130.0,326,20,False,0,0,39,8
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",813.0,309,15,False,0,0,26,9
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1098.5,319,16,False,0,0,39,10
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1027.5,344,15,False,0,0,35,11
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1093.5,442,17,False,0,0,30,12
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1028.5,361,14,False,0,0,29,13
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1535.5,772,18,False,0,0,39,14
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1361.5,592,17,False,0,0,37,15
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",869.5,285,11,False,0,0,29,16
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1408.5,565,20,False,0,0,38,17
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1108.5,466,16,False,0,0,30,18
+RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1064.5,285,12,False,0,0,39,19
+RS>AGS>TABOU,5,lits 24 (−6),0,0,0,False,4,0,0,
+RS>AGS>TABOU,5,places 15 (−5),0,0,0,True,0,0,0,
+AGS seul,1,"durées ×0,9",0,0,0,True,0,0,0,
+AGS seul,1,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS seul,1,"durées ×1,1",1231.0,0,0,False,0,0,78,
+AGS seul,1,"durées ×1,2",3496.5,972,78,False,0,0,109,
+AGS seul,1,"bruit lognormal σ=0,25",1171.5,511,19,False,0,0,35,0
+AGS seul,1,"bruit lognormal σ=0,25",719.0,202,14,False,0,0,27,1
+AGS seul,1,"bruit lognormal σ=0,25",1200.0,579,16,False,0,0,30,2
+AGS seul,1,"bruit lognormal σ=0,25",1503.5,665,23,False,0,0,39,3
+AGS seul,1,"bruit lognormal σ=0,25",893.5,367,16,False,0,0,27,4
+AGS seul,1,"bruit lognormal σ=0,25",1127.5,409,20,False,0,0,36,5
+AGS seul,1,"bruit lognormal σ=0,25",834.5,257,14,False,0,0,29,6
+AGS seul,1,"bruit lognormal σ=0,25",1287.0,453,22,False,0,0,42,7
+AGS seul,1,"bruit lognormal σ=0,25",1133.0,520,19,False,0,0,36,8
+AGS seul,1,"bruit lognormal σ=0,25",839.0,280,14,False,0,0,29,9
+AGS seul,1,"bruit lognormal σ=0,25",1281.5,534,20,False,0,0,42,10
+AGS seul,1,"bruit lognormal σ=0,25",1026.5,514,15,False,0,0,29,11
+AGS seul,1,"bruit lognormal σ=0,25",761.5,219,13,False,0,0,29,12
+AGS seul,1,"bruit lognormal σ=0,25",926.0,413,15,False,0,0,25,13
+AGS seul,1,"bruit lognormal σ=0,25",1527.0,699,21,False,0,0,44,14
+AGS seul,1,"bruit lognormal σ=0,25",1315.5,534,20,False,0,0,38,15
+AGS seul,1,"bruit lognormal σ=0,25",897.0,301,14,False,0,0,28,16
+AGS seul,1,"bruit lognormal σ=0,25",1166.0,450,20,False,0,0,39,17
+AGS seul,1,"bruit lognormal σ=0,25",1123.5,482,19,False,0,0,36,18
+AGS seul,1,"bruit lognormal σ=0,25",1386.5,585,26,False,0,0,44,19
+AGS seul,1,lits 24 (−6),0,0,0,False,2,0,0,
+AGS seul,1,places 15 (−5),0,0,0,True,0,0,0,
+memetique,5,"durées ×0,9",0,0,0,True,0,0,0,
+memetique,5,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+memetique,5,"durées ×1,1",1453.0,0,0,False,0,0,86,
+memetique,5,"durées ×1,2",3739.5,1146,86,False,0,0,104,
+memetique,5,"bruit lognormal σ=0,25",1277.0,454,22,False,0,0,37,0
+memetique,5,"bruit lognormal σ=0,25",961.5,393,14,False,0,0,27,1
+memetique,5,"bruit lognormal σ=0,25",1280.0,591,18,False,0,0,35,2
+memetique,5,"bruit lognormal σ=0,25",1163.5,370,21,False,0,0,38,3
+memetique,5,"bruit lognormal σ=0,25",941.5,372,14,False,0,0,30,4
+memetique,5,"bruit lognormal σ=0,25",1110.0,444,16,False,0,0,34,5
+memetique,5,"bruit lognormal σ=0,25",969.5,329,14,False,0,0,30,6
+memetique,5,"bruit lognormal σ=0,25",1247.5,419,20,False,0,0,40,7
+memetique,5,"bruit lognormal σ=0,25",1167.5,375,20,False,0,0,40,8
+memetique,5,"bruit lognormal σ=0,25",740.0,251,14,False,0,0,23,9
+memetique,5,"bruit lognormal σ=0,25",1336.5,539,23,False,0,0,40,10
+memetique,5,"bruit lognormal σ=0,25",1132.0,438,17,False,0,0,34,11
+memetique,5,"bruit lognormal σ=0,25",1057.0,415,19,False,0,0,30,12
+memetique,5,"bruit lognormal σ=0,25",875.0,298,13,False,0,0,27,13
+memetique,5,"bruit lognormal σ=0,25",1546.5,646,20,False,0,0,43,14
+memetique,5,"bruit lognormal σ=0,25",1265.0,476,19,False,0,0,42,15
+memetique,5,"bruit lognormal σ=0,25",1014.5,388,14,False,0,0,30,16
+memetique,5,"bruit lognormal σ=0,25",1388.0,577,18,False,0,0,38,17
+memetique,5,"bruit lognormal σ=0,25",1129.0,395,18,False,0,0,34,18
+memetique,5,"bruit lognormal σ=0,25",1225.5,554,17,False,0,0,36,19
+memetique,5,lits 24 (−6),0,0,0,False,4,0,0,
+memetique,5,places 15 (−5),0,0,0,True,0,0,0,
+memetique,4,"durées ×0,9",0,0,0,True,0,0,0,
+memetique,4,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+memetique,4,"durées ×1,1",1304.0,0,0,False,0,0,76,
+memetique,4,"durées ×1,2",3465.0,1032,76,False,0,0,97,
+memetique,4,"bruit lognormal σ=0,25",1194.5,465,20,False,0,0,33,0
+memetique,4,"bruit lognormal σ=0,25",1049.5,406,18,False,0,0,28,1
+memetique,4,"bruit lognormal σ=0,25",1126.0,443,17,False,0,0,33,2
+memetique,4,"bruit lognormal σ=0,25",1064.0,376,16,False,0,0,31,3
+memetique,4,"bruit lognormal σ=0,25",757.5,262,12,False,0,0,25,4
+memetique,4,"bruit lognormal σ=0,25",975.0,380,14,False,0,0,28,5
+memetique,4,"bruit lognormal σ=0,25",925.0,340,12,False,0,0,29,6
+memetique,4,"bruit lognormal σ=0,25",1208.0,430,18,False,0,0,37,7
+memetique,4,"bruit lognormal σ=0,25",1087.0,333,16,False,0,0,39,8
+memetique,4,"bruit lognormal σ=0,25",851.5,267,12,False,0,0,31,9
+memetique,4,"bruit lognormal σ=0,25",1138.5,345,19,False,0,0,42,10
+memetique,4,"bruit lognormal σ=0,25",974.0,316,16,False,0,0,34,11
+memetique,4,"bruit lognormal σ=0,25",1076.5,461,17,False,0,0,26,12
+memetique,4,"bruit lognormal σ=0,25",769.0,280,12,False,0,0,25,13
+memetique,4,"bruit lognormal σ=0,25",1539.5,786,20,False,0,0,35,14
+memetique,4,"bruit lognormal σ=0,25",1016.0,325,15,False,0,0,34,15
+memetique,4,"bruit lognormal σ=0,25",926.0,351,17,False,0,0,27,16
+memetique,4,"bruit lognormal σ=0,25",1123.5,372,14,False,0,0,40,17
+memetique,4,"bruit lognormal σ=0,25",1207.0,456,17,False,0,0,37,18
+memetique,4,"bruit lognormal σ=0,25",863.5,219,9,False,0,0,36,19
+memetique,4,lits 24 (−6),0,0,0,False,4,0,0,
+memetique,4,places 15 (−5),0,0,0,True,0,0,0,
+RS seul,6,"durées ×0,9",0,0,0,True,0,0,0,
+RS seul,6,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS seul,6,"durées ×1,1",1609.5,0,0,False,0,0,94,
+RS seul,6,"durées ×1,2",4140.0,1281,94,False,0,0,115,
+RS seul,6,"bruit lognormal σ=0,25",1378.0,546,21,False,0,0,37,0
+RS seul,6,"bruit lognormal σ=0,25",1119.0,398,18,False,0,0,36,1
+RS seul,6,"bruit lognormal σ=0,25",1295.0,500,19,False,0,0,38,2
+RS seul,6,"bruit lognormal σ=0,25",1386.0,509,23,False,0,0,41,3
+RS seul,6,"bruit lognormal σ=0,25",906.0,371,10,False,0,0,29,4
+RS seul,6,"bruit lognormal σ=0,25",1182.0,464,18,False,0,0,37,5
+RS seul,6,"bruit lognormal σ=0,25",1015.0,404,17,False,0,0,31,6
+RS seul,6,"bruit lognormal σ=0,25",1530.0,521,23,False,0,0,47,7
+RS seul,6,"bruit lognormal σ=0,25",1249.5,453,18,False,0,0,41,8
+RS seul,6,"bruit lognormal σ=0,25",855.0,295,17,False,0,0,28,9
+RS seul,6,"bruit lognormal σ=0,25",1427.5,566,22,False,0,0,43,10
+RS seul,6,"bruit lognormal σ=0,25",1245.5,433,16,False,0,0,42,11
+RS seul,6,"bruit lognormal σ=0,25",1174.0,381,18,False,0,0,36,12
+RS seul,6,"bruit lognormal σ=0,25",1025.5,386,17,False,0,0,29,13
+RS seul,6,"bruit lognormal σ=0,25",1637.5,814,23,False,0,0,38,14
+RS seul,6,"bruit lognormal σ=0,25",1351.0,527,20,False,0,0,38,15
+RS seul,6,"bruit lognormal σ=0,25",899.0,284,12,False,0,0,34,16
+RS seul,6,"bruit lognormal σ=0,25",1479.5,646,22,False,0,0,43,17
+RS seul,6,"bruit lognormal σ=0,25",1378.0,607,18,False,0,0,37,18
+RS seul,6,"bruit lognormal σ=0,25",1347.0,491,22,False,0,0,45,19
+RS seul,6,lits 24 (−6),0,0,0,False,8,0,0,
+RS seul,6,places 15 (−5),0,0,0,True,0,0,0,
+AGS>RS>TABOU,1,"durées ×0,9",0,0,0,True,0,0,0,
+AGS>RS>TABOU,1,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+AGS>RS>TABOU,1,"durées ×1,1",1445.5,0,0,False,0,0,86,
+AGS>RS>TABOU,1,"durées ×1,2",3843.0,1143,86,False,0,0,109,
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1466.5,647,24,False,0,0,37,0
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",980.5,399,13,False,0,0,31,1
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1370.0,666,22,False,0,0,36,2
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1241.5,403,21,False,0,0,42,3
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",896.0,344,13,False,0,0,28,4
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1016.5,357,15,False,0,0,31,5
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1011.0,390,16,False,0,0,30,6
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1382.5,452,21,False,0,0,44,7
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1131.5,372,16,False,0,0,38,8
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",839.5,269,15,False,0,0,28,9
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1260.5,445,24,False,0,0,41,10
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1167.5,493,20,False,0,0,34,11
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1152.5,462,17,False,0,0,35,12
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1098.5,477,17,False,0,0,29,13
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1635.5,755,22,False,0,0,44,14
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1238.0,500,15,False,0,0,37,15
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",883.5,289,14,False,0,0,26,16
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1566.0,616,21,False,0,0,49,17
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1274.5,489,17,False,0,0,42,18
+AGS>RS>TABOU,1,"bruit lognormal σ=0,25",1162.5,407,22,False,0,0,38,19
+AGS>RS>TABOU,1,lits 24 (−6),0,0,0,False,6,0,0,
+AGS>RS>TABOU,1,places 15 (−5),0,0,0,True,0,0,0,
+TABOU seul,6,"durées ×0,9",0,0,0,True,0,0,0,
+TABOU seul,6,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+TABOU seul,6,"durées ×1,1",1357.5,0,0,False,0,0,81,
+TABOU seul,6,"durées ×1,2",3730.5,1071,81,False,0,0,109,
+TABOU seul,6,"bruit lognormal σ=0,25",1342.0,601,21,False,0,0,37,0
+TABOU seul,6,"bruit lognormal σ=0,25",1041.5,409,20,False,0,0,29,1
+TABOU seul,6,"bruit lognormal σ=0,25",1321.0,707,18,False,0,0,27,2
+TABOU seul,6,"bruit lognormal σ=0,25",1315.0,460,21,False,0,0,41,3
+TABOU seul,6,"bruit lognormal σ=0,25",988.0,405,15,False,0,0,29,4
+TABOU seul,6,"bruit lognormal σ=0,25",1017.0,336,13,False,0,0,36,5
+TABOU seul,6,"bruit lognormal σ=0,25",705.5,167,10,False,0,0,25,6
+TABOU seul,6,"bruit lognormal σ=0,25",1285.5,456,22,False,0,0,40,7
+TABOU seul,6,"bruit lognormal σ=0,25",1221.0,412,19,False,0,0,43,8
+TABOU seul,6,"bruit lognormal σ=0,25",854.5,308,14,False,0,0,27,9
+TABOU seul,6,"bruit lognormal σ=0,25",1354.5,581,22,False,0,0,38,10
+TABOU seul,6,"bruit lognormal σ=0,25",1031.5,392,19,False,0,0,35,11
+TABOU seul,6,"bruit lognormal σ=0,25",1003.0,346,16,False,0,0,30,12
+TABOU seul,6,"bruit lognormal σ=0,25",1033.5,323,18,False,0,0,35,13
+TABOU seul,6,"bruit lognormal σ=0,25",1514.0,764,20,False,0,0,37,14
+TABOU seul,6,"bruit lognormal σ=0,25",1216.0,468,17,False,0,0,39,15
+TABOU seul,6,"bruit lognormal σ=0,25",909.5,277,14,False,0,0,30,16
+TABOU seul,6,"bruit lognormal σ=0,25",1475.5,616,23,False,0,0,42,17
+TABOU seul,6,"bruit lognormal σ=0,25",1188.0,441,14,False,0,0,39,18
+TABOU seul,6,"bruit lognormal σ=0,25",1037.0,356,14,False,0,0,35,19
+TABOU seul,6,lits 24 (−6),0,0,0,False,6,0,0,
+TABOU seul,6,places 15 (−5),0,0,0,True,0,0,0,
+memetique,8,"durées ×0,9",0,0,0,True,0,0,0,
+memetique,8,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+memetique,8,"durées ×1,1",1290.0,0,0,False,0,0,77,
+memetique,8,"durées ×1,2",3532.5,1014,77,False,0,0,102,
+memetique,8,"bruit lognormal σ=0,25",1265.0,519,21,False,0,0,35,0
+memetique,8,"bruit lognormal σ=0,25",734.0,244,11,False,0,0,27,1
+memetique,8,"bruit lognormal σ=0,25",1047.5,470,14,False,0,0,28,2
+memetique,8,"bruit lognormal σ=0,25",1105.0,343,16,False,0,0,35,3
+memetique,8,"bruit lognormal σ=0,25",771.5,315,10,False,0,0,24,4
+memetique,8,"bruit lognormal σ=0,25",810.5,236,11,False,0,0,27,5
+memetique,8,"bruit lognormal σ=0,25",676.5,255,7,False,0,0,25,6
+memetique,8,"bruit lognormal σ=0,25",1282.5,451,22,False,0,0,38,7
+memetique,8,"bruit lognormal σ=0,25",1021.0,323,12,False,0,0,33,8
+memetique,8,"bruit lognormal σ=0,25",774.0,201,13,False,0,0,32,9
+memetique,8,"bruit lognormal σ=0,25",1304.5,442,21,False,0,0,40,10
+memetique,8,"bruit lognormal σ=0,25",1050.0,375,15,False,0,0,36,11
+memetique,8,"bruit lognormal σ=0,25",969.5,362,12,False,0,0,27,12
+memetique,8,"bruit lognormal σ=0,25",1020.0,400,17,False,0,0,31,13
+memetique,8,"bruit lognormal σ=0,25",1637.5,831,21,False,0,0,36,14
+memetique,8,"bruit lognormal σ=0,25",1145.5,420,17,False,0,0,38,15
+memetique,8,"bruit lognormal σ=0,25",954.5,334,12,False,0,0,32,16
+memetique,8,"bruit lognormal σ=0,25",1402.0,530,23,False,0,0,41,17
+memetique,8,"bruit lognormal σ=0,25",1241.0,577,20,False,0,0,31,18
+memetique,8,"bruit lognormal σ=0,25",1054.5,348,13,False,0,0,38,19
+memetique,8,lits 24 (−6),0,0,0,False,4,0,0,
+memetique,8,places 15 (−5),0,0,0,True,0,0,0,
+RS seul,1,"durées ×0,9",0,0,0,True,0,0,0,
+RS seul,1,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS seul,1,"durées ×1,1",1602.0,0,0,False,0,0,93,
+RS seul,1,"durées ×1,2",4122.0,1260,93,False,0,0,111,
+RS seul,1,"bruit lognormal σ=0,25",1523.0,687,21,False,0,0,40,0
+RS seul,1,"bruit lognormal σ=0,25",1204.0,535,18,False,0,0,32,1
+RS seul,1,"bruit lognormal σ=0,25",1284.0,551,18,False,0,0,34,2
+RS seul,1,"bruit lognormal σ=0,25",1451.0,588,19,False,0,0,43,3
+RS seul,1,"bruit lognormal σ=0,25",956.5,353,15,False,0,0,30,4
+RS seul,1,"bruit lognormal σ=0,25",1078.5,376,15,False,0,0,34,5
+RS seul,1,"bruit lognormal σ=0,25",1106.0,424,14,False,0,0,30,6
+RS seul,1,"bruit lognormal σ=0,25",1483.0,582,22,False,0,0,45,7
+RS seul,1,"bruit lognormal σ=0,25",972.5,248,11,False,0,0,38,8
+RS seul,1,"bruit lognormal σ=0,25",893.0,249,15,False,0,0,29,9
+RS seul,1,"bruit lognormal σ=0,25",1329.0,570,23,False,0,0,37,10
+RS seul,1,"bruit lognormal σ=0,25",1249.0,490,20,False,0,0,37,11
+RS seul,1,"bruit lognormal σ=0,25",1069.5,290,19,False,0,0,35,12
+RS seul,1,"bruit lognormal σ=0,25",982.5,351,14,False,0,0,30,13
+RS seul,1,"bruit lognormal σ=0,25",1653.0,747,18,False,0,0,44,14
+RS seul,1,"bruit lognormal σ=0,25",1369.5,621,18,False,0,0,36,15
+RS seul,1,"bruit lognormal σ=0,25",916.0,300,16,False,0,0,28,16
+RS seul,1,"bruit lognormal σ=0,25",1619.5,698,21,False,0,0,43,17
+RS seul,1,"bruit lognormal σ=0,25",1302.0,485,18,False,0,0,38,18
+RS seul,1,"bruit lognormal σ=0,25",1259.5,441,18,False,0,0,41,19
+RS seul,1,lits 24 (−6),0,0,0,False,7,0,0,
+RS seul,1,places 15 (−5),0,0,0,True,0,0,0,
+AGS seul,10,"durées ×0,9",0,0,0,True,0,0,0,
+AGS seul,10,"durées ×1,0 (nominal)",1.5,0,0,True,0,0,0,
+AGS seul,10,"durées ×1,1",1219.0,0,0,False,0,0,74,
+AGS seul,10,"durées ×1,2",3366.0,984,74,False,0,0,105,
+AGS seul,10,"bruit lognormal σ=0,25",1332.5,553,22,False,0,0,39,0
+AGS seul,10,"bruit lognormal σ=0,25",813.5,234,17,False,0,0,30,1
+AGS seul,10,"bruit lognormal σ=0,25",1169.5,605,17,False,0,0,29,2
+AGS seul,10,"bruit lognormal σ=0,25",1205.0,503,20,False,0,0,34,3
+AGS seul,10,"bruit lognormal σ=0,25",934.5,397,16,False,0,0,29,4
+AGS seul,10,"bruit lognormal σ=0,25",1114.0,424,19,False,0,0,33,5
+AGS seul,10,"bruit lognormal σ=0,25",844.5,324,13,False,0,0,29,6
+AGS seul,10,"bruit lognormal σ=0,25",1300.5,425,21,False,0,0,42,7
+AGS seul,10,"bruit lognormal σ=0,25",1124.0,489,19,False,0,0,33,8
+AGS seul,10,"bruit lognormal σ=0,25",863.5,338,17,False,0,0,27,9
+AGS seul,10,"bruit lognormal σ=0,25",1262.0,581,21,False,0,0,36,10
+AGS seul,10,"bruit lognormal σ=0,25",970.5,415,16,False,0,0,30,11
+AGS seul,10,"bruit lognormal σ=0,25",1112.0,405,20,False,0,0,33,12
+AGS seul,10,"bruit lognormal σ=0,25",965.5,425,17,False,0,0,29,13
+AGS seul,10,"bruit lognormal σ=0,25",1528.0,748,21,False,0,0,39,14
+AGS seul,10,"bruit lognormal σ=0,25",1515.0,703,23,False,0,0,35,15
+AGS seul,10,"bruit lognormal σ=0,25",908.0,344,14,False,0,0,28,16
+AGS seul,10,"bruit lognormal σ=0,25",1179.5,434,20,False,0,0,41,17
+AGS seul,10,"bruit lognormal σ=0,25",1185.0,465,19,False,0,0,39,18
+AGS seul,10,"bruit lognormal σ=0,25",1266.0,618,24,False,0,0,35,19
+AGS seul,10,lits 24 (−6),1.5,0,0,False,3,0,0,
+AGS seul,10,places 15 (−5),1.5,0,0,True,0,0,0,
+RS>AGS>TABOU,6,"durées ×0,9",0,0,0,True,0,0,0,
+RS>AGS>TABOU,6,"durées ×1,0 (nominal)",1.5,0,0,True,0,0,0,
+RS>AGS>TABOU,6,"durées ×1,1",1339.5,0,0,False,0,0,78,
+RS>AGS>TABOU,6,"durées ×1,2",3586.5,1059,78,False,0,0,101,
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1293.0,551,23,False,0,0,35,0
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",926.0,389,16,False,0,0,28,1
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1112.0,450,14,False,0,0,31,2
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1166.5,439,17,False,0,0,36,3
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",812.0,296,9,False,0,0,27,4
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",905.5,340,13,False,0,0,27,5
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",948.0,410,14,False,0,0,25,6
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1268.0,468,20,False,0,0,37,7
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1026.5,325,14,False,0,0,35,8
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",720.5,259,13,False,0,0,24,9
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1211.0,482,20,False,0,0,38,10
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1188.0,497,18,False,0,0,36,11
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",861.5,221,12,False,0,0,32,12
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",817.5,280,15,False,0,0,28,13
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1352.0,675,17,False,0,0,33,14
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1236.0,553,15,False,0,0,34,15
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",755.0,201,13,False,0,0,29,16
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1443.5,593,20,False,0,0,43,17
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",1381.5,650,20,False,0,0,34,18
+RS>AGS>TABOU,6,"bruit lognormal σ=0,25",958.5,337,14,False,0,0,33,19
+RS>AGS>TABOU,6,lits 24 (−6),1.5,0,0,False,4,0,0,
+RS>AGS>TABOU,6,places 15 (−5),1.5,0,0,True,0,0,0,
+RS seul,8,"durées ×0,9",0,0,0,True,0,0,0,
+RS seul,8,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
+RS seul,8,"durées ×1,1",1616.0,0,0,False,0,0,94,
+RS seul,8,"durées ×1,2",4167.0,1284,94,False,0,0,114,
+RS seul,8,"bruit lognormal σ=0,25",1478.0,626,23,False,0,0,39,0
+RS seul,8,"bruit lognormal σ=0,25",1128.0,449,17,False,0,0,36,1
+RS seul,8,"bruit lognormal σ=0,25",1266.5,585,19,False,0,0,33,2
+RS seul,8,"bruit lognormal σ=0,25",1451.0,488,24,False,0,0,45,3
+RS seul,8,"bruit lognormal σ=0,25",988.0,366,13,False,0,0,31,4
+RS seul,8,"bruit lognormal σ=0,25",1280.5,481,20,False,0,0,39,5
+RS seul,8,"bruit lognormal σ=0,25",1045.5,363,15,False,0,0,36,6
+RS seul,8,"bruit lognormal σ=0,25",1392.5,452,19,False,0,0,47,7
+RS seul,8,"bruit lognormal σ=0,25",1274.0,362,17,False,0,0,45,8
+RS seul,8,"bruit lognormal σ=0,25",781.5,268,13,False,0,0,28,9
+RS seul,8,"bruit lognormal σ=0,25",1166.0,388,17,False,0,0,42,10
+RS seul,8,"bruit lognormal σ=0,25",1187.5,469,18,False,0,0,33,11
+RS seul,8,"bruit lognormal σ=0,25",1094.5,360,17,False,0,0,36,12
+RS seul,8,"bruit lognormal σ=0,25",1132.5,482,14,False,0,0,32,13
+RS seul,8,"bruit lognormal σ=0,25",1681.5,801,21,False,0,0,42,14
+RS seul,8,"bruit lognormal σ=0,25",1370.5,503,20,False,0,0,39,15
+RS seul,8,"bruit lognormal σ=0,25",937.0,351,15,False,0,0,31,16
+RS seul,8,"bruit lognormal σ=0,25",1606.5,726,24,False,0,0,44,17
+RS seul,8,"bruit lognormal σ=0,25",1365.5,625,15,False,0,0,37,18
+RS seul,8,"bruit lognormal σ=0,25",1294.5,429,20,False,0,0,42,19
+RS seul,8,lits 24 (−6),0,0,0,False,7,0,0,
+RS seul,8,places 15 (−5),0,0,0,True,0,0,0,

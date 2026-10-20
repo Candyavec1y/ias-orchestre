@@ -204,11 +204,16 @@ figures). Pour les régénérer, depuis `resultats_rapport/scripts/` :
 | Commande | Produit | Durée |
 |---|---|---|
 | `../../.venv/bin/python de_optimisation.py final` | campagne N1 / N2 : `n1_resultats.csv`, `n2_resultats.csv`, `donnees_agregees/convergence.json` (graines 1-10, cohortes 43-45, charges 70-115 %, budgets 2-20 s) | ≈ 17 min |
-| `../../.venv/bin/python e_analyse.py` | résumés N1 / N2, tests de Wilcoxon, figures `n1_*` et `n2_*` | < 1 min |
-| `../../.venv/bin/python h_sma.py` puis `k_figures_sma.py` | scénarios du SMA par stratégie (`sma_scenarios.csv`), figure `sma_strategies` | ≈ 7 min |
+| `../../.venv/bin/python e_analyse.py` | résumés N1 / N2, tests de Wilcoxon, figures `n1_*` et `n2_*` (dont Gantt N1, charges, délais) | < 1 min |
+| `../../.venv/bin/python h_sma.py` puis `k_figures_sma.py` | scénarios du SMA par stratégie (`sma_scenarios.csv`), Gantt `sma_gantt_*`, figure `sma_strategies` | ≈ 7 min |
 | `../../.venv/bin/python sma_globale.py` | réoptimisation globale du SMA : memetique, AGS>RS>TABOU, RS seul | ≈ 4 min |
 | `../../.venv/bin/python pilote_memetique_rs.py` | pilote du mémétique poli par un RS court | ≈ 5 min |
 | `../../.venv/bin/python l_figures_messages.py` | figures `vitesse_convergence` et `memetique_comparaisons` | < 1 min |
+| `../../.venv/bin/python c_ml.py` | évaluation des 4 modèles ML (jeu de test), figures `ml_*` | < 1 min |
+| `../../.venv/bin/python f_ressources.py` | profils bloc / lits / places, figures `ressources_*` (après la campagne) | < 1 min |
+| `../../.venv/bin/python g_saturation_robustesse.py` | étude de saturation et robustesse aux durées, figures `saturation_courbes`, `robustesse_durees` | ≈ 2 min |
+| `../../.venv/bin/python i_temps.py` | temps de calcul, figure `temps_debit_n2` (après les autres scripts) | < 1 min |
+| `../../.venv/bin/python m_sensibilite_sma.py` | sensibilité des coefficients du SMA (`sma/sma_sensibilite.py`), figures `sma_sensibilite_*` | ≈ 2 min |
 
 Les scripts n'écrivent que dans `resultats_rapport/` ; les budgets étant en temps réel, une nouvelle exécution donne
 des chiffres légèrement différents.

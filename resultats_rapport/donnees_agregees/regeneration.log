@@ -1,0 +1,182 @@
+=== de_optimisation.py final 18:39:31
+../../.venv/bin/python: can't open file '/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/de_optimisation.py final': [Errno 2] No such file or directory
+ECHEC de_optimisation.py final
+=== e_analyse.py 18:39:31
+Traceback (most recent call last):
+  File "/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/e_analyse.py", line 327, in <module>
+    n1, n2, conv, sols = charger()
+                         ~~~~~~~^^
+  File "/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/e_analyse.py", line 46, in charger
+    sols = json.loads((AGREGEES / "solutions_synthetiques.json").read_text(encoding="utf-8"))
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/pathlib/_local.py", line 546, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/donnees_agregees/solutions_synthetiques.json'
+ECHEC e_analyse.py
+=== f_ressources.py 18:39:33
+Traceback (most recent call last):
+  File "/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/f_ressources.py", line 144, in <module>
+    main()
+    ~~~~^^
+  File "/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/f_ressources.py", line 33, in main
+    sols = json.loads((AGREGEES / "solutions_synthetiques.json").read_text(encoding="utf-8"))
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/pathlib/_local.py", line 546, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/donnees_agregees/solutions_synthetiques.json'
+ECHEC f_ressources.py
+=== g_saturation_robustesse.py 18:39:34
+Traceback (most recent call last):
+  File "/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/g_saturation_robustesse.py", line 157, in <module>
+    rob = robustesse()
+  File "/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/g_saturation_robustesse.py", line 68, in robustesse
+    sols = json.loads((AGREGEES / "solutions_synthetiques.json").read_text(encoding="utf-8"))
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/pathlib/_local.py", line 546, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/donnees_agregees/solutions_synthetiques.json'
+ECHEC g_saturation_robustesse.py
+=== c_ml.py 18:39:34
+ML : 14477 séjours, test 2896, évaluation 2.0 s
+=== h_sma.py 18:39:40
+  insertion_simple (3 s)
+  fracture_panne (10 s)
+  gravite_vitale (13 s)
+  gravite_differable (17 s)
+  urgences_simultanees (25 s)
+  journee_chargee (42 s)
+  panne_matinale (47 s)
+  chirurgien_absent (57 s)
+  rattrapage (62 s)
+  panne_sans_effet (67 s)
+  absence_chirurgien (71 s)
+  prolongation_intervention (74 s)
+  lits_indisponibles (86 s)
+  témoin_sans_événement (86 s)
+  urgence_absence (90 s)
+  prolongation_urgence (95 s)
+  panne_prolongation (102 s)
+  absence_lits (108 s)
+  urgence_lits_satures (115 s)
+  urgence_vitale_surcharge (134 s)
+  journee_multi_aleas (151 s)
+  semaine_normale (244 s)
+  semaine_surcharge (421 s)
+SMA : 124 exécutions en 424 s
+=== k_figures_sma.py 18:46:45
+sma_strategies écrite
+=== sma_globale.py 18:46:46
+84 exécutions en 203 s
+=== l_figures_messages.py 18:50:10
+2 RS seul 3.4191000000000003 9.094349999999999
+2 TABOU seul 0.04 9.53705
+2 AGS seul 0.60155 10.01615
+2 memetique 0.5801000000000001 10.200849999999999
+2 AGS>RS>TABOU 0.57455 9.16525
+2 RS>AGS>TABOU 0.31535 9.123999999999999
+1 RS seul 0.0039 1.3937499999999998
+1 TABOU seul 0.005050000000000001 0.1188
+1 AGS seul 0.1671 0.19625
+1 memetique 0.17315 7.883850000000001
+1 AGS>RS>TABOU 0.1684 5.53445
+1 RS>AGS>TABOU 0.00365 0.2695
+=== i_temps.py 18:50:12
+Traceback (most recent call last):
+  File "/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/i_temps.py", line 113, in <module>
+    main()
+    ~~~~^^
+  File "/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/i_temps.py", line 77, in main
+    for l_ in lire_csv(SORTIE / "saturation_resultats.csv"):
+              ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/commun_rapport.py", line 65, in lire_csv
+    with open(chemin, encoding="utf-8") as f:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/saturation_resultats.csv'
+ECHEC i_temps.py
+=== fin 18:50:17
+=== campagne 18:50:38
+406 exécutions, budget cumulé 3666 s, durée estimée ≈ 15 min sur 4 processus
+  20/406 (55 s)
+  40/406 (108 s)
+  60/406 (157 s)
+  80/406 (201 s)
+  100/406 (248 s)
+  120/406 (297 s)
+  140/406 (339 s)
+  160/406 (390 s)
+  180/406 (436 s)
+  200/406 (479 s)
+  220/406 (531 s)
+  240/406 (584 s)
+  260/406 (629 s)
+  280/406 (672 s)
+  300/406 (713 s)
+  320/406 (764 s)
+  340/406 (818 s)
+  360/406 (872 s)
+  380/406 (929 s)
+  400/406 (976 s)
+Terminé en 991 s
+=== e_analyse
+{'comparaison': 'memetique - RS seul', 'critere': 'score_recherche', 'n_paires': 10, 'difference_mediane': 1897.8862111769604, 'difference_moyenne': 1860.2151189192919, 'premiere_meilleure': 0, 'statistique_W': np.float64(0.0), 'p_brute': np.float64(0.001953125), 'p_holm': np.float64(0.005859375), 'significatif_5pct': np.True_, 'statut': 'confirmatoire'}
+{'comparaison': 'memetique - TABOU seul', 'critere': 'score_recherche', 'n_paires': 10, 'difference_mediane': -1314.9848838353937, 'difference_moyenne': -1190.816151219567, 'premiere_meilleure': 10, 'statistique_W': np.float64(0.0), 'p_brute': np.float64(0.001953125), 'p_holm': np.float64(0.005859375), 'significatif_5pct': np.True_, 'statut': 'confirmatoire'}
+{'comparaison': 'memetique - AGS seul', 'critere': 'score_recherche', 'n_paires': 9, 'difference_mediane': -13087.758921020204, 'difference_moyenne': -13019.402632620862, 'premiere_meilleure': 9, 'statistique_W': np.float64(0.0), 'p_brute': np.float64(0.00390625), 'p_holm': np.float64(0.005859375), 'significatif_5pct': np.True_, 'statut': 'confirmatoire'}
+{'comparaison': 'AGS>RS>TABOU - RS seul', 'critere': 'score_recherche', 'n_paires': 10, 'difference_mediane': 542.8018060823688, 'difference_moyenne': 637.5912965302487, 'premiere_meilleure': 0, 'statistique_W': np.float64(0.0), 'p_brute': np.float64(0.001953125), 'p_holm': None, 'significatif_5pct': np.True_, 'statut': 'exploratoire'}
+{'comparaison': 'memetique - RS seul', 'critere': 'score_commun', 'n_paires': 10, 'difference_mediane': 511.54384748157645, 'difference_moyenne': 540.2151189192921, 'premiere_meilleure': 0, 'statistique_W': np.float64(0.0), 'p_brute': np.float64(0.001953125), 'p_holm': np.float64(0.005859375), 'significatif_5pct': np.True_, 'statut': 'confirmatoire'}
+{'comparaison': 'memetique - TABOU seul', 'critere': 'score_commun', 'n_paires': 10, 'difference_mediane': -17.092152587558076, 'difference_moyenne': -80.8161512195663, 'premiere_meilleure': 6, 'statistique_W': np.float64(19.0), 'p_brute': np.float64(0.431640625), 'p_holm': np.float64(0.431640625), 'significatif_5pct': np.False_, 'statut': 'confirmatoire'}
+{'comparaison': 'memetique - AGS seul', 'critere': 'score_commun', 'n_paires': 9, 'difference_mediane': -2036.0863141902232, 'difference_moyenne': -2063.8470770653043, 'premiere_meilleure': 9, 'statistique_W': np.float64(0.0), 'p_brute': np.float64(0.00390625), 'p_holm': np.float64(0.0078125), 'significatif_5pct': np.True_, 'statut': 'confirmatoire'}
+{'comparaison': 'AGS>RS>TABOU - RS seul', 'critere': 'score_commun', 'n_paires': 10, 'difference_mediane': 134.46117713469698, 'difference_moyenne': 197.5912965302485, 'premiere_meilleure': 1, 'statistique_W': np.float64(1.0), 'p_brute': np.float64(0.00390625), 'p_holm': None, 'significatif_5pct': np.True_, 'statut': 'exploratoire'}
+=== f_ressources
+ressources : 8 méthodes
+=== g_saturation
+robustesse : 1586 lignes (4 s)
+  saturation site (30 lits dont 3 réserve, 20 places) : 432 opérés (12 s)
+  saturation site, graine 43 : 437 opérés (4 s)
+  saturation site, graine 44 : 426 opérés (4 s)
+  saturation lits réduits (20 dont 3 réserve) : 440 opérés (4 s)
+  saturation places réduites (10) : 429 opérés (4 s)
+  saturation réserve 6 lits : 433 opérés (4 s)
+  saturation patients acceptant un confrère : 426 opérés (34 s)
+Terminé en 73 s
+=== l_figures
+2 RS seul 3.40305 9.44115
+2 TABOU seul 0.0425 9.634350000000001
+2 AGS seul 0.6297999999999999 10.105599999999999
+2 memetique 0.6012 9.8485
+2 AGS>RS>TABOU 0.6357999999999999 8.8842
+2 RS>AGS>TABOU 0.32275 9.278749999999999
+1 RS seul 0.00375 1.14195
+1 TABOU seul 0.0053 0.13805
+1 AGS seul 0.18245 0.2122
+1 memetique 0.18309999999999998 0.54425
+1 AGS>RS>TABOU 0.1805 5.54835
+1 RS>AGS>TABOU 0.0043 0.35124999999999995
+=== i_temps
+{'methode': 'RS seul', 'seuil_score_recherche': 7603.467511897679, 'executions': 10, 'atteint': 3, 'temps_median_s': 9.0889}
+{'methode': 'TABOU seul', 'seuil_score_recherche': 7603.467511897679, 'executions': 10, 'atteint': 0, 'temps_median_s': None}
+{'methode': 'AGS seul', 'seuil_score_recherche': 7603.467511897679, 'executions': 10, 'atteint': 0, 'temps_median_s': None}
+{'methode': 'memetique', 'seuil_score_recherche': 7603.467511897679, 'executions': 10, 'atteint': 0, 'temps_median_s': None}
+{'methode': 'AGS>RS>TABOU', 'seuil_score_recherche': 7603.467511897679, 'executions': 10, 'atteint': 0, 'temps_median_s': None}
+{'methode': 'RS>AGS>TABOU', 'seuil_score_recherche': 7603.467511897679, 'executions': 10, 'atteint': 0, 'temps_median_s': None}
+=== fin 19:08:34

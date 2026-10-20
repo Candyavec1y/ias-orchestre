@@ -1,0 +1,6 @@
+composant,mesure,valeur,n
+ML préparation des données,temps réel (s),0.3074474580353126,1
+ML évaluation (entraînement 4 copies + prédiction du test),temps réel (s),1.9835491250269115,1
+ML chargement des 4 modèles déployés,temps réel (s),0.06402208399958909,1
+ML prédiction unitaire (4 modèles),médiane (s),0.014525979524478316,50
+ML prédiction unitaire (4 modèles),P95 (s),0.01879648349713534,50

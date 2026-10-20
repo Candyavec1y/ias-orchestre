@@ -1,0 +1,854 @@
+{
+  "mode": "rapide",
+  "facteurs": [
+    0.5,
+    2.0
+  ],
+  "bruit": {
+    "modifiees": 0.0,
+    "urgences": 0.0,
+    "perturbes": 0.0
+  },
+  "coefficients": {
+    "c_decalage_min": {
+      "valeur": 1.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.20354754289036991,
+            "ratio": 6.9999999999998215,
+            "significatif": true
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 4.0,
+            "ratio": 4.0,
+            "significatif": true
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.4361733061936657,
+            "ratio": 15.000000000000163,
+            "significatif": true
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": -7.0,
+            "ratio": -7.0,
+            "significatif": true
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "journee_chargee": 0.0,
+        "rattrapage": 0.5524861878453025,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "lits_indisponibles": 0.0,
+        "chirurgien_absent": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 2.7624309392265234
+      },
+      "influence": 15.000000000000163,
+      "decisif": true,
+      "sort_urgences_change": false
+    },
+    "c_avance_min": {
+      "valeur": 0.5,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.17446932247746627,
+            "ratio": 6.000000000000066,
+            "significatif": true
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "rattrapage": 0.0,
+        "journee_chargee": 1.6574585635359074,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "chirurgien_absent": 0.0,
+        "lits_indisponibles": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 0.5524861878453025
+      },
+      "influence": 6.000000000000066,
+      "decisif": true,
+      "sort_urgences_change": false
+    },
+    "c_report_jour": {
+      "valeur": 100.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.17446932247746627,
+            "ratio": 6.000000000000066,
+            "significatif": true
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.7851119511485871,
+            "ratio": 26.99999999999991,
+            "significatif": true
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": -1.0,
+            "ratio": -1.0,
+            "significatif": true
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "journee_chargee": 4.972375690607733,
+        "rattrapage": 0.0,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "lits_indisponibles": 2.7624309392265234,
+        "chirurgien_absent": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 2.3941068139963217
+      },
+      "influence": 26.99999999999991,
+      "decisif": true,
+      "sort_urgences_change": false
+    },
+    "c_deprogrammation": {
+      "valeur": 2000.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.8432683919744166,
+            "ratio": 29.00000000000019,
+            "significatif": true
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": -6.0,
+            "ratio": -6.0,
+            "significatif": true
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "journee_chargee": 4.972375690607733,
+        "rattrapage": 0.0,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "lits_indisponibles": 2.7624309392265234,
+        "chirurgien_absent": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 2.7624309392265234
+      },
+      "influence": 29.00000000000019,
+      "decisif": true,
+      "sort_urgences_change": false
+    },
+    "c_stabilite": {
+      "valeur": 20.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "journee_chargee": 0.0,
+        "rattrapage": 0.0,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "chirurgien_absent": 0.0,
+        "lits_indisponibles": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 0.0
+      },
+      "influence": 0.0,
+      "decisif": false,
+      "sort_urgences_change": false
+    },
+    "c_retention_sspi_min": {
+      "valeur": 2.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "journee_chargee": 0.0,
+        "rattrapage": 0.0,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "lits_indisponibles": 0.0,
+        "chirurgien_absent": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 0.0
+      },
+      "influence": 0.0,
+      "decisif": false,
+      "sort_urgences_change": false
+    },
+    "c_changement_chirurgien": {
+      "valeur": 300.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.05815644082581839,
+            "ratio": 1.9999999999998945,
+            "significatif": true
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.029078220412914746,
+            "ratio": 1.0000000000001381,
+            "significatif": true
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "journee_chargee": 0.0,
+        "rattrapage": 0.5524861878453025,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "lits_indisponibles": 0.0,
+        "chirurgien_absent": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 0.36832412523020164
+      },
+      "influence": 1.9999999999998945,
+      "decisif": true,
+      "sort_urgences_change": false
+    },
+    "c_astreinte": {
+      "valeur": 500.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "rattrapage": 0.0,
+        "journee_chargee": 0.0,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "chirurgien_absent": 0.0,
+        "lits_indisponibles": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 0.0
+      },
+      "influence": 0.0,
+      "decisif": false,
+      "sort_urgences_change": false
+    },
+    "c_lit_reserve": {
+      "valeur": 300.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "rattrapage": 0.0,
+        "journee_chargee": 0.0,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "chirurgien_absent": 0.0,
+        "lits_indisponibles": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 0.0
+      },
+      "influence": 0.0,
+      "decisif": false,
+      "sort_urgences_change": false
+    },
+    "c_lit_depassement": {
+      "valeur": 5000.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "journee_chargee": 0.0,
+        "rattrapage": 0.0,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "lits_indisponibles": 0.0,
+        "chirurgien_absent": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 0.0
+      },
+      "influence": 0.0,
+      "decisif": false,
+      "sort_urgences_change": false
+    },
+    "attente:vitale": {
+      "valeur": 100.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "journee_chargee": 0.0,
+        "rattrapage": 0.0,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "lits_indisponibles": 0.0,
+        "chirurgien_absent": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 0.0
+      },
+      "influence": 0.0,
+      "decisif": false,
+      "sort_urgences_change": false
+    },
+    "attente:urgente": {
+      "valeur": 10.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": -1.0,
+            "ratio": -1.0,
+            "significatif": true
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "journee_chargee": 0.0,
+        "rattrapage": 0.0,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "lits_indisponibles": 0.0,
+        "chirurgien_absent": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 0.0
+      },
+      "influence": 1.0,
+      "decisif": true,
+      "sort_urgences_change": false
+    },
+    "attente:differable": {
+      "valeur": 1.0,
+      "essais": {
+        "0.5": {
+          "modifiees": {
+            "ecart": 0.4361733061936657,
+            "ratio": 15.000000000000163,
+            "significatif": true
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": -6.0,
+            "ratio": -6.0,
+            "significatif": true
+          }
+        },
+        "2.0": {
+          "modifiees": {
+            "ecart": 0.2617039837161994,
+            "ratio": 9.000000000000098,
+            "significatif": true
+          },
+          "urgences": {
+            "ecart": 0.0,
+            "ratio": 0.0,
+            "significatif": false
+          },
+          "perturbes": {
+            "ecart": 2.0,
+            "ratio": 2.0,
+            "significatif": true
+          }
+        }
+      },
+      "par_scenario": {
+        "insertion_simple": 0.0,
+        "fracture_panne": 0.0,
+        "gravite_vitale": 0.0,
+        "gravite_differable": 0.0,
+        "urgences_simultanees": 0.0,
+        "panne_matinale": 0.0,
+        "journee_chargee": 0.0,
+        "rattrapage": 0.0,
+        "panne_sans_effet": 0.0,
+        "prolongation_intervention": 0.0,
+        "absence_chirurgien": 0.0,
+        "chirurgien_absent": 0.0,
+        "lits_indisponibles": 0.0,
+        "semaine_normale": 0.0,
+        "semaine_surcharge": 2.7624309392265234
+      },
+      "influence": 15.000000000000163,
+      "decisif": true,
+      "sort_urgences_change": false
+    }
+  },
+  "scenarios": [
+    "insertion_simple",
+    "fracture_panne",
+    "gravite_vitale",
+    "gravite_differable",
+    "urgences_simultanees",
+    "journee_chargee",
+    "panne_matinale",
+    "chirurgien_absent",
+    "rattrapage",
+    "panne_sans_effet",
+    "absence_chirurgien",
+    "prolongation_intervention",
+    "lits_indisponibles",
+    "semaine_normale",
+    "semaine_surcharge"
+  ],
+  "graines": [
+    1,
+    2,
+    3
+  ],
+  "comparaison_valeurs": {
+    "hierarchie": [
+      {
+        "de": "décaler 1 h (p max)",
+        "a": "lit de réserve",
+        "respectee": true
+      },
+      {
+        "de": "lit de réserve",
+        "a": "changer de chirurgien",
+        "respectee": true
+      },
+      {
+        "de": "changer de chirurgien",
+        "a": "astreinte",
+        "respectee": true
+      },
+      {
+        "de": "astreinte",
+        "a": "déprogrammer (p = 1)",
+        "respectee": true
+      },
+      {
+        "de": "déprogrammer (p = 1)",
+        "a": "lit hors capacité",
+        "respectee": true
+      }
+    ],
+    "priorites_ou_deprogrammer_coute_plus_qu_un_lit": [
+      3,
+      4
+    ],
+    "ecart_c_lit_depassement_vs_poids_n2_lit": 0.0
+  },
+  "decisifs": [
+    "c_decalage_min",
+    "c_avance_min",
+    "c_report_jour",
+    "c_deprogrammation",
+    "c_changement_chirurgien",
+    "attente:urgente",
+    "attente:differable"
+  ],
+  "sans_effet": [
+    "c_stabilite",
+    "c_retention_sspi_min",
+    "c_astreinte",
+    "c_lit_reserve",
+    "c_lit_depassement",
+    "attente:vitale"
+  ]
+}
