@@ -433,12 +433,12 @@ def consequences_urgences() -> list[dict]:
 
 
 def garantir_programme() -> Optional[P.Programme]:
-    """Au premier lancement : calcule le programme initial de la semaine en cours (hybride mémétique)."""
+    """Au premier lancement : calcule le programme initial de la semaine en cours (méthode retenue : RS seul)."""
     if config_programme():
         return programme()
-    with st.spinner("Premier lancement : calcul du programme opératoire initial par l'hybridation "
-                    f"AGS + RS + Tabou (environ {P.BUDGET_OPTIMISATION_S:.0f} s)…"):
-        prog = P.calculer_programme(maintenant().date(), "memetique", P.BUDGET_OPTIMISATION_S,
+    with st.spinner("Premier lancement : calcul du programme opératoire initial (recuit simulé, "
+                    f"environ {P.BUDGET_OPTIMISATION_S:.0f} s)…"):
+        prog = P.calculer_programme(maintenant().date(), P.MODE_PROGRAMME, P.BUDGET_OPTIMISATION_S,
                                     hebergement=hebergement())
         enregistrer_programme(prog, "système")
     return programme()

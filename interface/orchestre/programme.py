@@ -32,13 +32,18 @@ from parametres import (  # noqa: E402,F401  (ré-exportés pour l'interface : P
 # Hébergement : SC.HEBERGEMENT_SITE (commun/parametres.py), modifiable par l'administrateur.
 
 
+# Méthodes retenues (campagne v3, resultats_rapport/RESUME.md) : RS seul pour le programme opératoire (meilleur objectif
+# F2 + report à tous les budgets) ; AGS>RS>TABOU comme hybridation de référence ; N1 : RS seul ou RS>AGS>TABOU.
+MODE_PROGRAMME = "RS seul"
+MODES_PLANNING_N1 = ("RS seul", "RS>AGS>TABOU")
+
 MODES_HYBRIDES = {
-    "memetique": "Mémétique (AGS + polissage Tabou, finale RS→Tabou)",
-    "AGS>RS>TABOU": "Séquentiel AGS → RS → Tabou",
+    "RS seul": "Recuit simulé seul (méthode retenue)",
+    "AGS>RS>TABOU": "Séquentiel AGS → RS → Tabou (hybridation de référence)",
     "RS>AGS>TABOU": "Séquentiel RS → AGS → Tabou",
-    "RS seul": "Recuit simulé seul (référence)",
-    "TABOU seul": "Recherche taboue seule (référence)",
-    "AGS seul": "Algorithme génétique seul (référence)",
+    "memetique": "Mémétique (AGS + polissage Tabou, finale RS→Tabou)",
+    "TABOU seul": "Recherche taboue seule",
+    "AGS seul": "Algorithme génétique seul",
     "glouton": "Glouton multi-départ (sans métaheuristique)",
 }
 
@@ -99,12 +104,13 @@ class ResultatNiveau1:
     journal: str = ""
 
 
-def recalculer_planning_niveau1(modes: list[str], temps_s: float, graine: int = SC.GRAINE_ETUDE
-                                ) -> ResultatNiveau1:
+def recalculer_planning_niveau1(modes: Optional[list[str]] = None, temps_s: float = BUDGET_OPTIMISATION_S,
+                                graine: int = SC.GRAINE_ETUDE) -> ResultatNiveau1:
     """Niveau 1 de hybridation.py (AGS+RS+TABOU) sur l'instance d'étude commune (8 chirurgiens,
     3 salles, créneaux de 2 h). Le planning v28 réel n'est pas découpé en créneaux de 2 h : il ne peut
     pas être ré-optimisé tel quel au niveau 1 (voir CHOIX.md)."""
     H = chemins.module("hybridation")
+    modes = list(modes or MODES_PLANNING_N1)
     inst1 = SC.construire_instance_etude()
     tampon = io.StringIO()
     with contextlib.redirect_stdout(tampon):
@@ -165,7 +171,7 @@ class Programme:
     validation: dict = field(default_factory=dict)   # validateur indépendant (commun/validation.py)
 
 
-def calculer_programme(lundi: date, mode: str = "memetique", temps_s: float = BUDGET_OPTIMISATION_S,
+def calculer_programme(lundi: date, mode: str = MODE_PROGRAMME, temps_s: float = BUDGET_OPTIMISATION_S,
                        nb_semaines: int = NB_SEMAINES_HORIZON, graine: int = SC.GRAINE_ETUDE,
                        hebergement=SC.HEBERGEMENT_SITE) -> Programme:
     i1, i2 = construire_instances(lundi, nb_semaines, hebergement=hebergement)

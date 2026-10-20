@@ -132,10 +132,12 @@ au SMA, aux indicateurs, à l'étude de saturation et au validateur :
 * **Vacations des chirurgiens** : planning fixe `planning_vacations_v28.py` (comme demandé pour la
   première version), avec la parité automatique (cycle impaire A / paire / impaire B / paire) et les
   plages URGENCES / LIBRE.
-* **Programme opératoire** (niveau 2 : patients → vacations) calculé par **`hybridation.py`**
-  (AGS + RS + Tabou), mode « mémétique » par défaut. Tous les modes de l'hybridation (mémétique,
-  AGS>RS>TABOU, RS>AGS>TABOU, et les références RS / Tabou / AGS seuls) et le glouton commun sont
-  proposés, avec le même départ et le même budget.
+* **Programme opératoire** (niveau 2 : patients → vacations) calculé par **`hybridation.py`**, méthode
+  **RS seul** par défaut (`programme.MODE_PROGRAMME`) : meilleur objectif à tous les budgets dans la campagne v3
+  (`resultats_rapport/RESUME.md`) ; AGS>RS>TABOU est l'hybridation de référence. Tous les modes (RS / Tabou / AGS
+  seuls, mémétique, AGS>RS>TABOU, RS>AGS>TABOU) et le glouton commun restent proposés, avec le même départ et le
+  même budget. Planning des vacations (N1) : RS seul ou RS>AGS>TABOU. SMA : aucune optimisation locale des salles ;
+  réoptimisation globale par le mémétique (1 s), à la demande de l'administrateur sur le site.
 * **Une seule implémentation par algorithme** : celle de `hybridation.py`, qui s'appuie uniquement sur
   `structures_communes.py` et `sorties.py`. Les anciennes versions autonomes (recherche taboue avec ses
   propres classes, recuit simulé et AGS seuls) ont été retirées du dépôt (voir NETTOYAGE.md).

@@ -34,11 +34,13 @@ Architecture HYBRIDE (optimisation_sma.py, metaheuristiques_sma.py -> metaheuris
 --------------------
     Cas B, réaction immédiate : chaque AgentSalle chiffre ses propositions par un glouton, puis les améliore
         localement (ordre de passage + patients reportés dans son créneau) par une métaheuristique courte
-        (`methode_locale`, `budget_local_s`) ; il garde le glouton si la recherche ne fait pas mieux.
+        (`methode_locale`, `budget_local_s`) ; il garde le glouton si la recherche ne fait pas mieux. Par défaut :
+        aucune (règle gloutonne seule), l'optimisation locale n'ayant eu aucun effet mesurable (campagne v3).
     Cas A, qualité globale : après chaque aléa, la Régulation envoie l'état du programme à l'AgentOptimisation
         (`optimisation_globale`, `budget_global_s`), qui réaffecte les patients non gelés aux créneaux en démarrage
         à chaud ; le plan n'est appliqué que s'il améliore le score ET passe le contrôle GROUPÉ des agents
-        Chirurgien et Hébergement (retraits puis ajouts, en deux phases).
+        Chirurgien et Hébergement (retraits puis ajouts, en deux phases). Par défaut : memetique, 1 s (meilleur
+        programme parmi memetique, AGS>RS>TABOU et RS seul sur les 21 scénarios, campagne v3).
     Sur le site, les deux optimisations sont désactivées (rejeu de tous les événements à chaque affichage) ;
     l'optimisation globale y reste disponible à la demande (Administration).
 
@@ -268,9 +270,10 @@ class ParametresSMA:
     garde_permanente: bool = False      # True : la salle de garde fonctionne aussi pendant la journée
     # --- architecture hybride : vos métaheuristiques (metaheuristiques/hybridation.py) ---
     # modes : "RS seul" | "TABOU seul" | "AGS seul" | "memetique" | "AGS>RS>TABOU" | "RS>AGS>TABOU"
-    methode_locale: Optional[str] = "TABOU seul"  # cas B, agents Salle ("glouton" ou None : pas d'optimisation locale)
+    methode_locale: Optional[str] = None          # cas B, agents Salle : aucune (règle gloutonne) — l'optimisation
+                                                  # locale (ex. "TABOU seul") n'a eu aucun effet mesurable (campagne v3)
     budget_local_s: float = BUDGET_LOCAL_SMA_S    # secondes par créneau et par appel d'offres (temps réel)
-    optimisation_globale: Optional[str] = "memetique"  # cas A, agent Optimisation (None : pas de réoptimisation)
+    optimisation_globale: Optional[str] = "memetique"  # cas A, agent Optimisation : meilleur programme en 1 s (v3)
     budget_global_s: float = BUDGET_GLOBAL_SMA_S  # secondes par réoptimisation globale
     gain_min_global: float = 50.0                 # gain minimal pour modifier le programme
     gel_optimisation_min: int = 60                # patients qui commencent dans l'heure : gelés (déjà convoqués)

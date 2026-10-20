@@ -60,7 +60,7 @@ def _capacites() -> None:
                                       "inscriptions, replacements). Avec recalcul, l'hybridation AGS + RS + Tabou "
                                       "réaffecte les patients de démonstration en respectant les nouvelles capacités.")
         mode = st.selectbox("Méthode de calcul du programme (si recalcul)", modes, format_func=P.MODES_HYBRIDES.get,
-                            index=modes.index(cfg["mode"]) if cfg.get("mode") in modes else 0,
+                            index=modes.index(P.MODE_PROGRAMME),
                             help=f"Toutes les méthodes (hybrides et références RS / Tabou / AGS seuls) tournent "
                                  f"{P.BUDGET_OPTIMISATION_S:.0f} s.")
         motif = st.text_input("Motif (obligatoire, tracé)", placeholder="ex. capacités réelles du service")
@@ -239,7 +239,7 @@ def _appliquer_planning(nouveau: dict, effet: date, fin_optimise: date, action: 
         if recalcul:
             cfg = C.config_programme()
             prog = P.calculer_programme(date.fromisoformat(cfg["lundi"]) if cfg else C.maintenant().date(),
-                                        (cfg or {}).get("mode") or "memetique", P.BUDGET_OPTIMISATION_S,
+                                        P.MODE_PROGRAMME, P.BUDGET_OPTIMISATION_S,
                                         hebergement=C.hebergement())
             C.enregistrer_programme(prog, C.utilisateur()["login"])
 
