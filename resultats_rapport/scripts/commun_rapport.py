@@ -94,7 +94,7 @@ def fr(x, decimales: int = 1) -> str:
 
 def sauver_figure(fig, nom: str) -> list[str]:
     fichiers = []
-    for ext in ("png", "pdf"):
+    for ext in ("png",):                     # PNG 300 dpi uniquement
         p = FIGURES / f"{nom}.{ext}"
         fig.savefig(p, dpi=300, bbox_inches="tight")
         fichiers.append(str(p.relative_to(SORTIE)))

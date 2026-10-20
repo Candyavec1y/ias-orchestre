@@ -1,6 +1,10 @@
 # Branche v3 — corrections du score, de la faisabilité et de l'étude de sensibilité
 
-Base : branche `test` (travail de calibrage) + `v2`. Les campagnes de `v2` (fichiers `n2_*.csv`, `RESUME.md`…) ont été
+Base : branche `test` (travail de calibrage) + `v2`. Note : lors du nettoyage du dossier, les fichiers de l'étude de
+sensibilité (`sensibilite_poids/`), de `v3_pilote/pilote_v3.csv` et de `donnees_agregees/v2/` ont été retirés ; ils
+restent dans l'historique git (commit `d06aad8`) et `python metaheuristiques/sensibilite_poids.py` les régénère. Note : lors du nettoyage du dossier, les fichiers de l'étude de
+sensibilité (`sensibilite_poids/`), de `v3_pilote/pilote_v3.csv` et de `donnees_agregees/v2/` ont été retirés ; ils
+restent dans l'historique git (commit `d06aad8`) et `python metaheuristiques/sensibilite_poids.py` les régénère. Les campagnes de `v2` (fichiers `n2_*.csv`, `RESUME.md`…) ont été
 produites **avant** ces corrections ; elles ne sont pas relancées ici. Les chiffres ci-dessous viennent de pilotes
 courts (`donnees_agregees/v3_pilote/`, `sensibilite_poids/`).
 

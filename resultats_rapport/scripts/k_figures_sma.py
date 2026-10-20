@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Figure F11 (stratégies SMA : urgences dans le délai contre perturbations) et compléments du manifeste."""
+"""Figure sma_strategies : stratégies du SMA (urgences dans le délai, perturbations, temps de calcul)."""
 from __future__ import annotations
 
 import matplotlib
@@ -35,19 +35,7 @@ def main():
     figs = sauver_figure(fig, "sma_strategies")
     plt.close(fig)
     enregistrer_manifeste("F11 stratégies SMA", ["sma_scenarios.csv"], SCRIPT, note=", ".join(figs))
-    enregistrer_manifeste("F9/F10 Gantt SMA avant / après", ["sma_scenarios.csv"], "scripts/h_sma.py",
-                          note="figures/sma_gantt_urgence_panne_1310_*, sma_gantt_surcharge_1510_*, "
-                               "sma_gantt_prolongation_1310_*, sma_gantt_lits_1310_* / _1410_* (PNG seulement)")
-    for nom, statut, note in (
-            ("F8 lits matin / soir", "NON DISPONIBLE", "pas d'heure d'admission dans le modèle ; remplacé par "
-                                                        "figures/ressources_lits_rotation (sorties à midi, admissions du jour)"),
-            ("Stratégies SMA programme figé / régulation simple", "NON DISPONIBLE", "voir QUESTIONS.md"),
-            ("Gap d'optimalité", "NON DISPONIBLE", "aucune borne valide"),
-            ("P2 (front non dominé, ablations, poids)", "NON EXÉCUTÉ (coût/temps)", "voir QUESTIONS.md"),
-            ("Pilote", "NON UTILISÉ", "donnees_agregees/pilote/ : calibrage de la chaîne, hors résultats"),
-            ("Textes", "CALCULÉ À PARTIR DE MESURES", "RESUME.md, INTERPRETATION.md, *_resume.md, parametres.md")):
-        enregistrer_manifeste(nom, [], "—", statut=statut, note=note)
-    print("F11 et manifeste complétés")
+    print("sma_strategies écrite")
 
 
 if __name__ == "__main__":

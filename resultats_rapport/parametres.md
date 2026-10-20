@@ -1,8 +1,7 @@
 # Paramètres réellement exécutés (commit `d8fbf35`)
 
 Valeurs lues dans le code (`commun/parametres.py`, `commun/structures_communes.py`,
-`metaheuristiques/hybridation.py`, `sma/sma_urgences.py`). Les tailles d'instances mesurées sont dans
-`instances.csv`.
+`metaheuristiques/hybridation.py`, `sma/sma_urgences.py`). Les tailles d'instances mesurées (cohorte 43) sont reprises ci-dessous.
 
 ## 1. Instances
 
@@ -10,10 +9,10 @@ Valeurs lues dans le code (`commun/parametres.py`, `commun/structures_communes.p
 |---|---|---|
 | N1 | instance d'étude **fictive** (`construire_instance_etude`) | 8 chirurgiens, 3 salles, semaine du 21/09/2026, créneaux de 2 h (8-10, 10-12, 13-15, 15-17) ; 60 plages (3 salles × 20 créneaux), dont 5 réservées aux urgences (salle 3, 8-10 h) ; 45 blocs de 2 h à placer (besoins 14 + 14 + 8 + 8 + 14 + 8 + 8 + 16 = 90 h) ; disponibilités élargies (version Tabou) |
 | N2 | planning **réel v28**, 4 semaines à partir du 12/10/2026 (`hybridation.instance_v28`) | 144 vacations régulières, 23 chirurgiens, 4 salles, cycle de parité des semaines ; + 3 semaines de report ajoutées après l'horizon (`etendre_horizon`, vacations du planning v28) ; capacité utile = 90 % de chaque vacation (marge de 10 %) ; 30 lits dont 3 de réserve (27 programmables), 20 places ambulatoires par demi-journée |
-| N2 charges | même planning, charge du générateur `c` constante sur les 4 semaines | 70 / 85 / 100 / 115 % de la capacité utile visés → `c` = 0,63 / 0,765 / 0,90 / 1,035 (le générateur exprime la charge en fraction des heures de vacation ; ratio réellement obtenu dans `instances.csv`) |
+| N2 charges | même planning, charge du générateur `c` constante sur les 4 semaines | 70 / 85 / 100 / 115 % de la capacité utile visés → `c` = 0,63 / 0,765 / 0,90 / 1,035 (le générateur exprime la charge en fraction des heures de vacation ; ratio obtenu : 69 / 84 / 99 / 113 % pour la cohorte 43) |
 | SMA | planning v28, 2 semaines (scénarios) | `sma_urgences.construire_instances_v28`, capacités 30 / 3 / 20, programme initial glouton |
 | Saturation | planning v28, programme initialement vide | patients au profil de séjours réels (`saturation.tirer_patients_profils_reels`) inscrits un par un et placés par le SMA |
-| ML | `donnees_hospitalieres.csv` | voir `ml_resume.md` |
+| ML | `donnees_hospitalieres.csv` | étude retirée de ce dossier (historique git, commit `d06aad8`) |
 
 ## 2. Patients
 

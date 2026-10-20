@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Analyse des campagnes D (N1) et E (N2) : résumés statistiques, test confirmatoire fixé a priori
-(PREPARATION_EXPERIENCES.md), gains et contreparties, figures F2-F5 et F7. Lit uniquement les sorties agrégées.
+(Wilcoxon apparié, Holm), figures conservées : scores N1 / N2, convergence N1 / N2, composantes N2, qualité
+selon le budget (PNG). Lit uniquement les sorties agrégées.
 
 Règle de l'équipe (réponse à QUESTIONS.md, point 1) : pendant la recherche, les dépassements sont seulement
 pénalisés ; à la fin, SEULES les solutions faisables sont proposées (contrainte dure). Une exécution dont la
@@ -43,8 +44,7 @@ def charger():
     n1 = lire_csv(SORTIE / "n1_resultats.csv")
     n2 = lire_csv(SORTIE / "n2_resultats.csv")
     conv = json.loads((AGREGEES / "convergence.json").read_text(encoding="utf-8"))
-    sols = json.loads((AGREGEES / "solutions_synthetiques.json").read_text(encoding="utf-8"))
-    return n1, n2, conv, sols
+    return n1, n2, conv
 
 
 def _gain(depart, final):
@@ -73,7 +73,7 @@ def resume(lignes, cles, metriques):
     return out
 
 
-def analyse_n1(n1, conv, sols):
+def analyse_n1(n1, conv):
     for l_ in n1:
         l_["gain_vs_depart_pct"] = _gain(_f(l_["score_depart"]), _f(l_["score_commun"]))
     best = min(_f(l_["score_commun"]) for l_ in n1 if _vrai(l_["faisable"]))
@@ -111,38 +111,7 @@ def analyse_n1(n1, conv, sols):
     f_conv = sauver_figure(fig, "n1_convergence")
     plt.close(fig)
 
-    # Gantt d'une solution faisable de meilleur score (méthode / graine indiquées)
-    import hybridation as H
-    inst1 = H.charger_instances("etude")[0]
-    meil = min((l_ for l_ in n1 if _vrai(l_["faisable"])), key=lambda l_: (_f(l_["score_commun"]), l_["methode"]))
-    sol = next(s["solution"] for s in sols if s["niveau"] == 1 and s["methode"] == meil["methode"]
-               and int(s["graine"]) == int(meil["graine"]))
-    jours = sorted({c.jour for c in inst1.creneaux.values()})
-    fig, axes = plt.subplots(1, len(jours), figsize=(15, 3.6), sharey=True, layout="constrained")
-    cmap = plt.get_cmap("tab10")
-    for bloc, plage in sol.items():
-        pl = inst1.plages_bloc[plage]
-        c = inst1.creneaux[pl.creneau_id]
-        chir = inst1.blocs_a_placer[int(bloc)].chirurgien_id
-        ax = axes[jours.index(c.jour)]
-        d0 = c.heure_debut.hour + c.heure_debut.minute / 60
-        d1 = c.heure_fin.hour + c.heure_fin.minute / 60
-        ax.barh(pl.salle_id, d1 - d0, left=d0, color=cmap(chir % 10), edgecolor="k")
-        ax.text((d0 + d1) / 2, pl.salle_id, inst1.chirurgiens[chir].nom.replace("Dr ", ""), ha="center", va="center", fontsize=8)
-    for p in inst1.plages_bloc.values():
-        if p.type_plage == "URGENCE":
-            c = inst1.creneaux[p.creneau_id]
-            axes[jours.index(c.jour)].barh(p.salle_id, 2, left=c.heure_debut.hour, color="none", hatch="///", edgecolor="r")
-    for ax, j in zip(axes, jours):
-        ax.set(title=f"{['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'][j.weekday()]} {j:%d/%m}", xlim=(8, 17), xticks=[8, 10, 12, 13, 15, 17])
-    axes[0].set(yticks=sorted(inst1.salles), yticklabels=[f"Salle {s}" for s in sorted(inst1.salles)])
-    fig.suptitle(f"N1 : planning faisable de meilleur F1 ({meil['methode']}, graine {meil['graine']}, "
-                 f"F1 = {_f(meil['score_commun']):.0f}) ; hachures rouges : plages réservées aux urgences")
-    f_gantt = sauver_figure(fig, "n1_gantt")
-    plt.close(fig)
     enregistrer_manifeste("T3 n1_resume.csv", ["n1_resultats.csv"], SCRIPT)
-    enregistrer_manifeste("F2 Gantt N1", ["donnees_agregees/solutions_synthetiques.json", "n1_resultats.csv"], SCRIPT,
-                          note=", ".join(f_gantt))
     enregistrer_manifeste("N1 scores / convergence", ["n1_resultats.csv", "donnees_agregees/convergence.json"], SCRIPT,
                           note=", ".join(f_scores + f_conv))
     return res
@@ -212,19 +181,7 @@ def analyse_n2(n2, conv):
         tests += famille + [expl]
     ecrire_csv(AGREGEES / "n2_tests_confirmatoires.csv", tests)
 
-    # --- gains et contreparties (cohorte de référence, moyennes sur les graines) ---
-    gc = []
-    for r in res_ref:
-        gc.append({"methode": r["methode"], "executions": r["executions"], "solutions_proposees": r["solutions_proposees"],
-                   "taux_faisable_pct": r["taux_faisable_pct"],
-                   "proposees_grace_tolerance": r.get("proposees_grace_tolerance"),
-                   **{k: r.get(f"{k}_moyenne") for k in ("score_recherche", "score_commun", "gain_vs_depart_pct",
-                                                         "score_bloc", "score_lits", "score_places", "penalite_report", "taux_occupation_bloc_pct", "temps_inoccupe_min",
-                                                         "pic_lits", "jours_lits_pleins", "pic_places",
-                                                         "jours_places_pleines", "patients_reportes",
-                                                         "semaines_report_total", "delai_moyen_j", "delai_moyen_j_p4",
-                                                         "temps_reel_s")}})
-    ecrire_csv(SORTIE / "gains_contreparties.csv", gc)
+
 
     figs = []
     # F3 scores (référence)
@@ -295,45 +252,15 @@ def analyse_n2(n2, conv):
     figs += sauver_figure(fig, "n2_convergence")
     plt.close(fig)
 
-    # F7 faisabilité et score selon la charge
-    fig, axes = plt.subplots(1, 2, figsize=(13, 4.5), layout="constrained")
-    for m in ORDRE:
-        pts = sorted((int(r["charge_pct"]), r["taux_faisable_pct"], r.get("non_places_moyenne"), r.get("patients_reportes_moyenne"))
-                     for r in res_ch if r["methode"] == m)
-        if not pts:
-            continue
-        axes[0].plot([p[0] for p in pts], [p[1] for p in pts], marker=MARQUEURS[m], color=COULEURS[m], label=m)
-        axes[1].plot([p[0] for p in pts], [p[3] for p in pts], marker=MARQUEURS[m], color=COULEURS[m], label=m)
-    axes[0].set(xlabel="Charge (% de la capacité utile visée)", ylabel="Exécutions avec une solution proposée (%)",
-                title="Solutions proposées (faisables), 3 cohortes × 3 graines")
-    axes[1].set(xlabel="Charge (% de la capacité utile visée)", ylabel="Patients reportés (moyenne)",
-                title="Patients reportés après l'horizon (solutions proposées)")
-    axes[0].legend(fontsize=8)
-    figs += sauver_figure(fig, "n2_charges")
-    plt.close(fig)
-
-    # délai par priorité
-    fig, ax = plt.subplots(figsize=(10, 4.5), layout="constrained")
-    for i, prio in enumerate((1, 2, 3, 4)):
-        moy = [resume_stat([_f(l_.get(f"delai_moyen_j_p{prio}")) for l_ in ref if l_["methode"] == m
-                            and (m == "glouton" or _vrai(l_["faisable"]))]).get("moyenne") or 0
-               for m in meth]
-        ax.bar(np.arange(len(meth)) + (i - 1.5) * 0.2, moy, 0.2, label=f"priorité {prio}",
-               color=["0.85", "0.6", "0.35", "0.1"][i], edgecolor="k")
-    ax.set_xticks(range(len(meth)), meth, rotation=20)
-    ax.set(ylabel="Délai moyen date au plus tôt → intervention (jours)", title="N2 référence : délai par priorité (solutions proposées ; glouton = départ)")
-    ax.legend()
-    figs += sauver_figure(fig, "n2_delai_priorite")
-    plt.close(fig)
-    for p in ("T4 n2_resume.csv", "T5 gains_contreparties.csv", "F3-F5, F7 figures N2"):
+    for p in ("n2_resume.csv", "figures N2 (scores, composantes, budget, convergence)"):
         enregistrer_manifeste(p, ["n2_resultats.csv", "donnees_agregees/convergence.json"], SCRIPT,
                               note=", ".join(figs) if p.startswith("F") else "")
     return res_ref, tests
 
 
 if __name__ == "__main__":
-    n1, n2, conv, sols = charger()
-    analyse_n1(n1, conv, sols)
+    n1, n2, conv = charger()
+    analyse_n1(n1, conv)
     r, t = analyse_n2(n2, conv)
     for x in t:
         print(x)

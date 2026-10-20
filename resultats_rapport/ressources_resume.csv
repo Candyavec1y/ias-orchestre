@@ -1,9 +1,0 @@
-methode,graine,faisable,score_recherche,occupation_bloc_moyenne_pct,jours_bloc_au_dela_capacite_utile,pic_lits_horizon,nuits_lits_au_cap_programmable,lits_programmables,reserve,pic_places_matin,pic_places_apres_midi,demi_journees_places_pleines,sorties_a_midi,admissions,jours_avec_sortie_et_admission,lits_reutilises_le_jour_de_sortie_max,occupation_lits_au_dela_horizon
-glouton,1,False,31565.236530470916,83.66536252352638,0,25,2,27,3,11,8,0,247,247,31,154,158
-RS seul,7,True,7632.455040175311,92.73304025142228,0,26,0,27,3,7,6,0,247,247,28,170,40
-AGS>RS>TABOU,4,True,8200.508503401361,92.1336565429065,0,25,0,27,3,6,6,0,247,247,28,169,42
-RS>AGS>TABOU,2,True,9109.723668721212,91.23038427365918,0,25,0,27,3,6,6,0,247,247,29,176,35
-memetique,1,True,9405.595904593447,91.00546550059171,0,25,0,27,3,6,7,0,247,247,29,175,43
-TABOU seul,8,True,10415.089844570468,90.93567763945134,0,24,0,27,3,6,5,0,247,247,26,169,50
-premier créneau,1,True,13784.290146502837,87.98406407042677,0,27,2,27,3,9,6,0,247,247,29,151,46
-AGS seul,10,True,22314.945725438913,84.83241751198122,0,25,0,27,3,7,7,0,247,247,32,150,122

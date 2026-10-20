@@ -22,7 +22,6 @@ import multiprocessing as mp
 import random
 import sys
 import time
-from datetime import timedelta
 from functools import lru_cache
 
 from commun_rapport import AGREGEES, METHODES, SORTIE, commit_git, ecrire_csv, ecrire_json
@@ -210,8 +209,6 @@ def main(mode: str):
                 print(f"  {k}/{len(taches)} ({time.perf_counter() - t0:.0f} s)", flush=True)
     conv = [{k: r[k] for k in ("campagne", "niveau", "methode", "graine", "budget_s", "charge_pct", "cohorte",
                                "convergence") if k in r} for r in resultats]
-    sols = [{k: r[k] for k in ("campagne", "niveau", "methode", "graine", "budget_s", "charge_pct", "cohorte",
-                               "solution") if k in r} for r in resultats]
     lignes = [{k: v for k, v in r.items() if k not in ("convergence", "solution")} for r in resultats]
     for niv, nom in ((1, "n1_resultats.csv"), (2, "n2_resultats.csv")):
         ecrire_csv(SORTIE / f"{prefixe}{nom}", sorted([l_ for l_ in lignes if l_["niveau"] == niv],
@@ -219,7 +216,6 @@ def main(mode: str):
                                                                      str(l_.get("cohorte")), l_["methode"],
                                                                      l_["graine"], l_["budget_s"])))
     ecrire_json(AGREGEES / f"{prefixe}convergence.json", conv)
-    ecrire_json(AGREGEES / f"{prefixe}solutions_synthetiques.json", sols)
     ecrire_json(AGREGEES / f"{prefixe}campagne_meta.json",
                 {"commit": commit_git(), "mode": mode, "executions": len(taches), "processus": 4,
                  "duree_totale_s": time.perf_counter() - t0, "charges": CHARGES, "cohorte_reference": COHORTE_REF})

@@ -21,9 +21,9 @@ import statistics
 import sys
 import time
 from dataclasses import replace
-from datetime import date, datetime, timedelta
+from datetime import date
 
-from commun_rapport import AGREGEES, FIGURES, SORTIE, ecrire_csv, ecrire_json, enregistrer_manifeste
+from commun_rapport import FIGURES, SORTIE, ecrire_csv, enregistrer_manifeste
 
 import scenarios_sma as SC_SMA
 import sma_urgences as SMA
@@ -196,23 +196,12 @@ def main():
         print(f"  {nom} ({time.perf_counter() - t0:.0f} s)", flush=True)
     ecrire_csv(SORTIE / "sma_scenarios.csv", [{k: (str(v) if isinstance(v, dict) else v) for k, v in l_.items()}
                                              for l_ in lignes])
-    # agrégats par type d'événement et stratégie (temps réel de régulation)
-    agg = []
-    for s in STRATEGIES:
-        for t in sorted({e["type"] for e in temps_evts}):
-            v = [e["temps_s"] for e in temps_evts if e["strategie"] == s and e["type"] == t]
-            if v:
-                agg.append({"strategie": s, "type_evenement": t, "n": len(v), "median_s": statistics.median(v),
-                            "p95_s": _quantile(v, 0.95), "max_s": max(v)})
-    ecrire_csv(SORTIE / "sma_evenements_agreges.csv", agg)
-    # Gantt avant / après (configuration du site, patients synthétiques)
-    gantts()
-    enregistrer_manifeste("T6/T7 sma_scenarios.csv", ["sma_scenarios.csv", "sma_evenements_agreges.csv"], SCRIPT)
+    enregistrer_manifeste("sma_scenarios.csv", ["sma_scenarios.csv"], SCRIPT)
     print(f"SMA : {len(lignes)} exécutions en {time.perf_counter() - t0:.0f} s")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "gantt":
+    if len(sys.argv) > 1 and sys.argv[1] == "gantt":          # Gantt avant / après (non conservés dans figures/)
         gantts()
     elif len(sys.argv) > 1 and sys.argv[1] == "pilote":
         l_, d = jouer("fracture_panne", "S_LOC_GLOB")

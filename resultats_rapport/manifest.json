@@ -1,41 +1,6 @@
 {
- "commit": "d8fbf35abd6e8db531420b6bcaf9b3704957e95a",
+ "commit": "d06aad86fa9ad33b532de9734e18a114d854aa41",
  "produits": {
-  "F1 réel/prédit": {
-   "sources": [
-    "ml_resultats.csv",
-    "donnees_agregees/ml_calibration.csv"
-   ],
-   "script": "scripts/c_ml.py",
-   "statut": "MESURÉ",
-   "note": "figures/ml_reel_predit.png, figures/ml_reel_predit.pdf"
-  },
-  "F1 résidus + confusion": {
-   "sources": [
-    "ml_resultats.csv",
-    "donnees_agregees/ml_calibration.csv"
-   ],
-   "script": "scripts/c_ml.py",
-   "statut": "MESURÉ",
-   "note": "figures/ml_residus_confusion.png, figures/ml_residus_confusion.pdf"
-  },
-  "F1 calibration": {
-   "sources": [
-    "ml_resultats.csv",
-    "donnees_agregees/ml_calibration.csv"
-   ],
-   "script": "scripts/c_ml.py",
-   "statut": "MESURÉ",
-   "note": "figures/ml_calibration.png, figures/ml_calibration.pdf"
-  },
-  "T2 / ml_resultats.csv": {
-   "sources": [
-    "ml_resultats.csv"
-   ],
-   "script": "scripts/c_ml.py",
-   "statut": "MESURÉ",
-   "note": ""
-  },
   "T3 n1_resume.csv": {
    "sources": [
     "n1_resultats.csv"
@@ -44,15 +9,6 @@
    "statut": "MESURÉ",
    "note": ""
   },
-  "F2 Gantt N1": {
-   "sources": [
-    "donnees_agregees/solutions_synthetiques.json",
-    "n1_resultats.csv"
-   ],
-   "script": "scripts/e_analyse.py",
-   "statut": "MESURÉ",
-   "note": "figures/n1_gantt.png, figures/n1_gantt.pdf"
-  },
   "N1 scores / convergence": {
    "sources": [
     "n1_resultats.csv",
@@ -60,9 +16,9 @@
    ],
    "script": "scripts/e_analyse.py",
    "statut": "MESURÉ",
-   "note": "figures/n1_scores.png, figures/n1_scores.pdf, figures/n1_convergence.png, figures/n1_convergence.pdf"
+   "note": "figures/n1_scores.png, figures/n1_convergence.png"
   },
-  "T4 n2_resume.csv": {
+  "n2_resume.csv": {
    "sources": [
     "n2_resultats.csv",
     "donnees_agregees/convergence.json"
@@ -71,7 +27,7 @@
    "statut": "MESURÉ",
    "note": ""
   },
-  "T5 gains_contreparties.csv": {
+  "figures N2 (scores, composantes, budget, convergence)": {
    "sources": [
     "n2_resultats.csv",
     "donnees_agregees/convergence.json"
@@ -79,125 +35,6 @@
    "script": "scripts/e_analyse.py",
    "statut": "MESURÉ",
    "note": ""
-  },
-  "F3-F5, F7 figures N2": {
-   "sources": [
-    "n2_resultats.csv",
-    "donnees_agregees/convergence.json"
-   ],
-   "script": "scripts/e_analyse.py",
-   "statut": "MESURÉ",
-   "note": "figures/n2_scores.png, figures/n2_scores.pdf, figures/n2_composantes.png, figures/n2_composantes.pdf, figures/n2_qualite_budget.png, figures/n2_qualite_budget.pdf, figures/n2_convergence.png, figures/n2_convergence.pdf, figures/n2_charges.png, figures/n2_charges.pdf, figures/n2_delai_priorite.png, figures/n2_delai_priorite.pdf"
-  },
-  "F6/F8/F13 ressources": {
-   "sources": [
-    "ressources_resume.csv",
-    "donnees_agregees/solutions_synthetiques.json",
-    "n2_resultats.csv"
-   ],
-   "script": "scripts/f_ressources.py",
-   "statut": "MESURÉ",
-   "note": "figures/ressources_profils.png, figures/ressources_profils.pdf, figures/ressources_lits_rotation.png, figures/ressources_lits_rotation.pdf, figures/ressources_compromis.png, figures/ressources_compromis.pdf"
-  },
-  "T6/T7 sma_scenarios.csv": {
-   "sources": [
-    "sma_scenarios.csv",
-    "sma_evenements_agreges.csv"
-   ],
-   "script": "scripts/h_sma.py",
-   "statut": "MESURÉ",
-   "note": ""
-  },
-  "saturation": {
-   "sources": [
-    "saturation_resultats.csv",
-    "donnees_agregees/saturation_courbes.json"
-   ],
-   "script": "scripts/g_saturation_robustesse.py",
-   "statut": "MESURÉ",
-   "note": "figures/saturation_courbes.png, figures/saturation_courbes.pdf"
-  },
-  "F12 robustesse": {
-   "sources": [
-    "robustesse_resultats.csv"
-   ],
-   "script": "scripts/g_saturation_robustesse.py",
-   "statut": "MESURÉ",
-   "note": "figures/robustesse_durees.png, figures/robustesse_durees.pdf"
-  },
-  "temps.csv": {
-   "sources": [
-    "temps.csv",
-    "donnees_agregees/temps_pour_seuil.csv"
-   ],
-   "script": "scripts/i_temps.py",
-   "statut": "MESURÉ",
-   "note": "figures/temps_debit_n2.png, figures/temps_debit_n2.pdf"
-  },
-  "tableaux.tex T1-T7": {
-   "sources": [
-    "instances.csv",
-    "ml_resultats.csv",
-    "n1_resume.csv",
-    "n2_resume.csv",
-    "gains_contreparties.csv",
-    "sma_scenarios.csv"
-   ],
-   "script": "scripts/j_tableaux.py",
-   "statut": "MESURÉ",
-   "note": ""
-  },
-  "F11 stratégies SMA": {
-   "sources": [
-    "sma_scenarios.csv"
-   ],
-   "script": "scripts/k_figures_sma.py",
-   "statut": "MESURÉ",
-   "note": "figures/sma_strategies.png, figures/sma_strategies.pdf"
-  },
-  "F9/F10 Gantt SMA avant / après": {
-   "sources": [
-    "sma_scenarios.csv"
-   ],
-   "script": "scripts/h_sma.py",
-   "statut": "MESURÉ",
-   "note": "figures/sma_gantt_urgence_panne_1310_*, sma_gantt_surcharge_1510_*, sma_gantt_prolongation_1310_*, sma_gantt_lits_1310_* / _1410_* (PNG seulement)"
-  },
-  "F8 lits matin / soir": {
-   "sources": [],
-   "script": "—",
-   "statut": "NON DISPONIBLE",
-   "note": "pas d'heure d'admission dans le modèle ; remplacé par figures/ressources_lits_rotation (sorties à midi, admissions du jour)"
-  },
-  "Stratégies SMA programme figé / régulation simple": {
-   "sources": [],
-   "script": "—",
-   "statut": "NON DISPONIBLE",
-   "note": "voir QUESTIONS.md"
-  },
-  "Gap d'optimalité": {
-   "sources": [],
-   "script": "—",
-   "statut": "NON DISPONIBLE",
-   "note": "aucune borne valide"
-  },
-  "P2 (front non dominé, ablations, poids)": {
-   "sources": [],
-   "script": "—",
-   "statut": "NON EXÉCUTÉ (coût/temps)",
-   "note": "voir QUESTIONS.md"
-  },
-  "Pilote": {
-   "sources": [],
-   "script": "—",
-   "statut": "NON UTILISÉ",
-   "note": "donnees_agregees/pilote/ : calibrage de la chaîne, hors résultats"
-  },
-  "Textes": {
-   "sources": [],
-   "script": "—",
-   "statut": "CALCULÉ À PARTIR DE MESURES",
-   "note": "RESUME.md, INTERPRETATION.md, *_resume.md, parametres.md"
   },
   "vitesse_convergence": {
    "sources": [
@@ -206,7 +43,7 @@
    ],
    "script": "scripts/l_figures_messages.py",
    "statut": "MESURÉ",
-   "note": "figures/vitesse_convergence.png, figures/vitesse_convergence.pdf"
+   "note": "figures/vitesse_convergence.png"
   },
   "memetique_comparaisons": {
    "sources": [
@@ -215,7 +52,15 @@
    ],
    "script": "scripts/l_figures_messages.py",
    "statut": "MESURÉ",
-   "note": "figures/memetique_comparaisons.png, figures/memetique_comparaisons.pdf"
+   "note": "figures/memetique_comparaisons.png"
+  },
+  "F11 stratégies SMA": {
+   "sources": [
+    "sma_scenarios.csv"
+   ],
+   "script": "scripts/k_figures_sma.py",
+   "statut": "MESURÉ",
+   "note": "figures/sma_strategies.png"
   }
  }
 }
