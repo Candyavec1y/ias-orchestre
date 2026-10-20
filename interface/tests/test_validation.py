@@ -118,14 +118,17 @@ def test_n2_chaque_violation_est_detectee(mini_n2):
 
 
 def test_n2_tolerance_de_depassement_des_vacations(mini_n2):
-    """Quelques minutes au-delà de la capacité utile restent faisables (TOLERANCE_DEPASSEMENT_VACATION_MIN), au-delà
-    non ; l'état incrémental des métaheuristiques juge comme le validateur."""
+    """Tolérance = min(5 min, 25 % de la marge de la vacation) au-delà de la capacité utile ; au-delà, non faisable ;
+    l'état incrémental des métaheuristiques juge comme le validateur ; option stricte sans tolérance."""
     inst, sol = mini_n2
-    tol = VA.TOLERANCE_DEPASSEMENT_VACATION_MIN
-    for duree, attendu in ((108 - 60 + tol - 3, True), (108 - 60 + tol + 2, False)):     # 60 min déjà dans la vacation
+    vac = inst.vacations[1]                                  # 2 h : marge 12 min -> tolérance min(5, 25 % x 12) = 3 min
+    assert vac.tolerance_depassement_minutes == pytest.approx(3.0)
+    assert SC.Vacation(9, 1, 1, LUNDI, time(8), time(13)).tolerance_depassement_minutes == pytest.approx(5.0)
+    for duree, attendu, strict in ((108 - 60, True, True), (108 - 60 + 2, True, False), (108 - 60 + 4, False, False)):
         i2 = SC.InstanceNiveau2({**inst.patients, 2: SC.Patient(2, 1, duree, ambulatoire=True)}, inst.vacations,
-                                inst.hebergement)
+                                inst.hebergement)                # 60 min déjà dans la vacation
         assert VA.valider_niveau2(i2, sol).faisable is attendu
+        assert VA.valider_niveau2(i2, sol, avec_tolerance=False).faisable is strict
         assert SC.EtatNiveau2(i2, sol.affectations).faisable() is attendu
 
 

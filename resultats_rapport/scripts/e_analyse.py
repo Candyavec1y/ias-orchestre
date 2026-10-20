@@ -62,6 +62,8 @@ def resume(lignes, cles, metriques):
         ligne["executions"] = len(ls)
         ligne["solutions_proposees"] = len(proposees) if g[-1] != "glouton" else "départ"
         ligne["taux_faisable_pct"] = 100 * sum(_vrai(l_["faisable"]) for l_ in ls) / len(ls)
+        if "faisable_strict" in ls[0]:                    # N2 : faisables seulement grâce à la tolérance
+            ligne["proposees_grace_tolerance"] = sum(_vrai(l_["faisable"]) and not _vrai(l_["faisable_strict"]) for l_ in ls)
         for m in metriques:
             s = resume_stat([_f(l_.get(m)) for l_ in proposees])
             for k, v in s.items():
@@ -147,23 +149,28 @@ def analyse_n1(n1, conv, sols):
 
 
 def analyse_n2(n2, conv):
+    """Classement et résumés sur le critère OPTIMISÉ par les méthodes : score_recherche = F2 commun + pénalité de
+    report (« objectif ») ; F2 commun et ses composantes sont publiés à côté."""
+    depart_obj = {(l_["charge_pct"], l_["cohorte"]): _f(l_["score_recherche"]) for l_ in n2 if l_["methode"] == "glouton"}
     for l_ in n2:
-        l_["gain_vs_depart_pct"] = _gain(_f(l_["score_depart"]), _f(l_["score_commun"]))
-        for comp in ("bloc", "lits", "places"):
-            pass
+        l_["gain_vs_depart_pct"] = _gain(depart_obj.get((l_["charge_pct"], l_["cohorte"])), _f(l_["score_recherche"]))
+        l_["gain_f2_vs_depart_pct"] = _gain(_f(l_["score_depart"]), _f(l_["score_commun"]))
+        l_["grace_tolerance"] = int(_vrai(l_["faisable"]) and not _vrai(l_.get("faisable_strict", l_["faisable"])))
     ref = [l_ for l_ in n2 if l_["campagne"] == "N2_reference"]
-    # écart à la meilleure solution FAISABLE observée sur la même instance (budget 10 s)
+    # écart à la meilleure solution FAISABLE observée sur la même instance (budget 10 s), sur l'objectif et sur F2
     par_inst = defaultdict(list)
     for l_ in n2:
         if l_["campagne"] != "N2_budgets":
             par_inst[(l_["charge_pct"], l_["cohorte"])].append(l_)
     for ls in par_inst.values():
-        faisables = [_f(l_["score_commun"]) for l_ in ls if _vrai(l_["faisable"])]
-        best = min(faisables) if faisables else None
-        for l_ in ls:
-            l_["ecart_meilleur_faisable_pct"] = (100 * (_f(l_["score_commun"]) - best) / abs(best)) if best else None
-    met = ["score_commun", "score_recherche", "penalite_report", "score_bloc", "score_lits", "score_places",
-           "gain_vs_depart_pct", "ecart_meilleur_faisable_pct", "non_places", "patients_reportes",
+        for cle, sortie in (("score_recherche", "ecart_meilleur_faisable_pct"), ("score_commun", "ecart_meilleur_faisable_f2_pct")):
+            faisables = [_f(l_[cle]) for l_ in ls if _vrai(l_["faisable"])]
+            best = min(faisables) if faisables else None
+            for l_ in ls:
+                l_[sortie] = (100 * (_f(l_[cle]) - best) / abs(best)) if best else None
+    met = ["score_recherche", "score_commun", "penalite_report", "score_bloc", "score_lits", "score_places",
+           "gain_vs_depart_pct", "gain_f2_vs_depart_pct", "ecart_meilleur_faisable_pct",
+           "ecart_meilleur_faisable_f2_pct", "non_places", "patients_reportes",
            "semaines_report_total", "delai_moyen_j", "delai_max_j", "delai_moyen_j_p4", "delai_moyen_j_p1",
            "taux_occupation_bloc_pct", "temps_inoccupe_min", "depassement_bloc_min", "vacations_vides",
            "pic_lits", "jours_lits_pleins", "taux_occupation_lits_pct", "pic_places", "jours_places_pleines",
@@ -175,27 +182,34 @@ def analyse_n2(n2, conv):
     res_ch = resume(charges, ["charge_pct", "methode"], met)
     budgets = [l_ for l_ in n2 if l_["campagne"] == "N2_budgets"] + \
               [l_ for l_ in ref if int(l_["graine"]) <= 3 and l_["methode"] in METHODES]
-    res_b = resume(budgets, ["budget_s", "methode"], ["score_commun", "temps_reel_s", "evaluations"])
+    res_b = resume(budgets, ["budget_s", "methode"], ["score_recherche", "score_commun", "temps_reel_s", "evaluations"])
     ecrire_csv(SORTIE / "n2_resume.csv", [dict(groupe="reference", **r) for r in res_ref]
                + [dict(groupe="charges", **r) for r in res_ch] + [dict(groupe="budgets", **r) for r in res_b])
 
-    # --- test confirmatoire fixé a priori : memetique vs chaque méthode seule, apparié par graine ---
-    tests = []
-    for m in ("RS seul", "TABOU seul", "AGS seul"):
-        a = {int(l_["graine"]): _f(l_["score_commun"]) for l_ in ref if l_["methode"] == "memetique" and _vrai(l_["faisable"])}
-        b = {int(l_["graine"]): _f(l_["score_commun"]) for l_ in ref if l_["methode"] == m and _vrai(l_["faisable"])}
+    # --- tests appariés par graine (solutions proposées), sur l'objectif puis sur F2 commun ---
+    # famille confirmatoire (fixée a priori, Holm) : memetique contre chaque méthode seule ; exploratoire :
+    # AGS>RS>TABOU (hybridation de référence retenue après le pilote) contre RS seul
+    def apparie(m1, m2, cle):
+        a = {int(l_["graine"]): _f(l_[cle]) for l_ in ref if l_["methode"] == m1 and _vrai(l_["faisable"])}
+        b = {int(l_["graine"]): _f(l_[cle]) for l_ in ref if l_["methode"] == m2 and _vrai(l_["faisable"])}
         g = sorted(set(a) & set(b))
         d = [a[k] - b[k] for k in g]
         w = stats.wilcoxon([a[k] for k in g], [b[k] for k in g]) if any(d) else None
-        tests.append({"comparaison": f"memetique - {m}", "n_paires": len(g), "difference_mediane": float(np.median(d)),
-                      "difference_moyenne": float(np.mean(d)), "memetique_meilleur": sum(x < 0 for x in d),
-                      "statistique_W": w.statistic if w else None, "p_brute": w.pvalue if w else 1.0})
-    ordre = sorted(range(len(tests)), key=lambda i: tests[i]["p_brute"])
-    pmax = 0.0
-    for rang, i in enumerate(ordre):
-        pmax = max(pmax, min(1.0, tests[i]["p_brute"] * (len(tests) - rang)))
-        tests[i]["p_holm"] = pmax
-        tests[i]["significatif_5pct"] = pmax < 0.05
+        return {"comparaison": f"{m1} - {m2}", "critere": cle, "n_paires": len(g),
+                "difference_mediane": float(np.median(d)) if d else None, "difference_moyenne": float(np.mean(d)) if d else None,
+                "premiere_meilleure": sum(x < 0 for x in d), "statistique_W": w.statistic if w else None,
+                "p_brute": w.pvalue if w else 1.0}
+    tests = []
+    for cle in ("score_recherche", "score_commun"):
+        famille = [apparie("memetique", m, cle) for m in ("RS seul", "TABOU seul", "AGS seul")]
+        ordre = sorted(range(len(famille)), key=lambda i: famille[i]["p_brute"])
+        pmax = 0.0
+        for rang, i in enumerate(ordre):
+            pmax = max(pmax, min(1.0, famille[i]["p_brute"] * (len(famille) - rang)))
+            famille[i].update(p_holm=pmax, significatif_5pct=pmax < 0.05, statut="confirmatoire")
+        expl = apparie("AGS>RS>TABOU", "RS seul", cle)
+        expl.update(p_holm=None, significatif_5pct=expl["p_brute"] < 0.05, statut="exploratoire")
+        tests += famille + [expl]
     ecrire_csv(AGREGEES / "n2_tests_confirmatoires.csv", tests)
 
     # --- gains et contreparties (cohorte de référence, moyennes sur les graines) ---
@@ -203,8 +217,9 @@ def analyse_n2(n2, conv):
     for r in res_ref:
         gc.append({"methode": r["methode"], "executions": r["executions"], "solutions_proposees": r["solutions_proposees"],
                    "taux_faisable_pct": r["taux_faisable_pct"],
-                   **{k: r.get(f"{k}_moyenne") for k in ("score_commun", "gain_vs_depart_pct", "score_bloc", "score_lits",
-                                                         "score_places", "taux_occupation_bloc_pct", "temps_inoccupe_min",
+                   "proposees_grace_tolerance": r.get("proposees_grace_tolerance"),
+                   **{k: r.get(f"{k}_moyenne") for k in ("score_recherche", "score_commun", "gain_vs_depart_pct",
+                                                         "score_bloc", "score_lits", "score_places", "penalite_report", "taux_occupation_bloc_pct", "temps_inoccupe_min",
                                                          "pic_lits", "jours_lits_pleins", "pic_places",
                                                          "jours_places_pleines", "patients_reportes",
                                                          "semaines_report_total", "delai_moyen_j", "delai_moyen_j_p4",
@@ -219,17 +234,17 @@ def analyse_n2(n2, conv):
     for k, m in enumerate(meth):
         ls = [l_ for l_ in ref if l_["methode"] == m]
         if m == "glouton":                           # départ commun : affiché pour référence, non proposé
-            ax.scatter([k], [_f(ls[0]["score_commun"])], facecolors="none", edgecolors="r", s=40, marker="o")
+            ax.scatter([k], [_f(ls[0]["score_recherche"])], facecolors="none", edgecolors="r", s=40, marker="o")
             etiquettes.append("départ\n(non faisable)" if not _vrai(ls[0]["faisable"]) else "départ")
             continue
-        v = [_f(l_["score_commun"]) for l_ in ls if _vrai(l_["faisable"])]
+        v = [_f(l_["score_recherche"]) for l_ in ls if _vrai(l_["faisable"])]
         if v:
             ax.boxplot([v], positions=[k], widths=0.6, patch_artist=True,
                        boxprops=dict(facecolor=COULEURS[m], alpha=0.5), medianprops=dict(color="k"), showfliers=False)
             ax.scatter(np.full(len(v), k) + np.linspace(-0.15, 0.15, len(v)), v, c="k", s=14, marker="o")
         etiquettes.append(f"{m}\n{len(v)}/{len(ls)} proposées")
     ax.set_xticks(range(len(meth)), etiquettes, rotation=20, fontsize=8)
-    ax.set(ylabel="F2 commun des solutions proposées (à minimiser)",
+    ax.set(ylabel="Objectif F2 + report des solutions proposées (à minimiser)",
            title="N2 v28, cohorte de référence (charge 100 %) : 10 graines, budget 10 s ; "
                  "seules les solutions faisables sont proposées")
     figs += sauver_figure(fig, "n2_scores")
@@ -237,15 +252,16 @@ def analyse_n2(n2, conv):
 
     # F4a composantes
     fig, ax = plt.subplots(figsize=(10, 4.5), layout="constrained")
-    larg = 0.27
-    for i, comp in enumerate(("score_bloc", "score_lits", "score_places")):
+    larg = 0.2
+    for i, comp in enumerate(("score_bloc", "score_lits", "score_places", "penalite_report")):
         moy = [next(r for r in res_ref if r["methode"] == m).get(f"{comp}_moyenne") or 0 for m in meth]
         et = [next(r for r in res_ref if r["methode"] == m).get(f"{comp}_ecart_type") or 0 for m in meth]
-        ax.bar(np.arange(len(meth)) + (i - 1) * larg, moy, larg, yerr=et, capsize=2,
-               label={"score_bloc": "bloc", "score_lits": "lits", "score_places": "places"}[comp],
-               color=["0.2", "0.55", "0.85"][i], edgecolor="k")
+        ax.bar(np.arange(len(meth)) + (i - 1.5) * larg, moy, larg, yerr=et, capsize=2,
+               label={"score_bloc": "bloc", "score_lits": "lits", "score_places": "places",
+                      "penalite_report": "report"}[comp], color=["0.2", "0.5", "0.75", "0.95"][i], edgecolor="k")
     ax.set_xticks(range(len(meth)), meth, rotation=20)
-    ax.set(ylabel="Composante pondérée de F2 (moyenne ± écart-type)", title="N2 référence : composantes bloc / lits / places")
+    ax.set(ylabel="Composante pondérée (moyenne ± écart-type)",
+           title="N2 référence : composantes de l'objectif (F2 = bloc + lits + places ; + report)")
     ax.legend()
     figs += sauver_figure(fig, "n2_composantes")
     plt.close(fig)
@@ -253,12 +269,12 @@ def analyse_n2(n2, conv):
     # F4b qualité vs budget
     fig, ax = plt.subplots(figsize=(8, 4.5), layout="constrained")
     for m in METHODES:
-        pts = sorted((float(r["budget_s"]), r.get("score_commun_moyenne", math.nan), r.get("score_commun_ecart_type", 0.0),
+        pts = sorted((float(r["budget_s"]), r.get("score_recherche_moyenne", math.nan), r.get("score_recherche_ecart_type", 0.0),
                       r["taux_faisable_pct"]) for r in res_b if r["methode"] == m)        # NaN : aucune solution proposée
         ax.errorbar([p[0] for p in pts], [p[1] for p in pts], yerr=[p[2] for p in pts], color=COULEURS[m],
                     marker=MARQUEURS[m], capsize=3, label=m)
     ax.set(xscale="log", xticks=[2, 5, 10, 20], xticklabels=["2", "5", "10", "20"], xlabel="Budget (s, temps réel)",
-           ylabel="F2 commun des solutions proposées (moy. ± é.-t.)",
+           ylabel="Objectif F2 + report des solutions proposées (moy. ± é.-t.)",
            title="N2 référence : qualité selon le budget (point absent : aucune solution proposée)")
     ax.legend(fontsize=8)
     figs += sauver_figure(fig, "n2_qualite_budget")

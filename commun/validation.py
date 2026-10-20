@@ -20,8 +20,8 @@ Contraintes vérifiées
        disponibilités, au plus un bloc par salle et par créneau, un chirurgien dans une seule salle à la fois,
        besoins horaires couverts exactement.
   N2 : patient affecté, vacation existante, vacation du chirurgien du patient, date au plus tôt respectée,
-       charge de chaque vacation dans sa capacité utile (durée moins la marge pour aléas) + une tolérance de
-       TOLERANCE_DEPASSEMENT_VACATION_MIN minutes, lits et places
+       charge de chaque vacation dans sa capacité utile (durée moins la marge pour aléas) + sa tolérance
+       (min(5 min, 25 % de la marge), Vacation.tolerance_depassement_minutes ; `avec_tolerance=False` : stricte), lits et places
        ambulatoires dans la capacité de chaque jour.
 """
 from __future__ import annotations
@@ -31,7 +31,6 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any, Union
 
-from parametres import TOLERANCE_DEPASSEMENT_VACATION_MIN
 from structures_communes import (InstanceNiveau2, InstanceProbleme, SolutionPatients, SolutionPlanning,
                                  periodes_occupation)
 
@@ -132,7 +131,7 @@ def valider_niveau1(instance: InstanceProbleme, solution: SolutionPlanning) -> V
 # Niveau 2 : patients -> vacations
 # =============================================================================
 
-def valider_niveau2(instance: InstanceNiveau2, solution: SolutionPatients) -> Validation:
+def valider_niveau2(instance: InstanceNiveau2, solution: SolutionPatients, avec_tolerance: bool = True) -> Validation:
     v = Validation(2)
     charge: dict[int, float] = defaultdict(float)
     lits: dict = defaultdict(int)
@@ -160,10 +159,10 @@ def valider_niveau2(instance: InstanceNiveau2, solution: SolutionPatients) -> Va
 
     for vid, minutes in sorted(charge.items()):
         vac = instance.vacations.get(vid)
-        if vac is not None and minutes > vac.capacite_utile_minutes + TOLERANCE_DEPASSEMENT_VACATION_MIN + 1e-9:
+        limite = vac.capacite_utile_minutes + (vac.tolerance_depassement_minutes if avec_tolerance else 0.0) if vac else 0
+        if vac is not None and minutes > limite + 1e-9:
             v.violations.append(Violation("capacité de vacation", f"vacation {vid} ({vac.jour:%d/%m}, salle "
-                                          f"{vac.salle_id})", minutes,
-                                          vac.capacite_utile_minutes + TOLERANCE_DEPASSEMENT_VACATION_MIN))
+                                          f"{vac.salle_id})", minutes, limite))
     h = instance.hebergement
     for jour, n in sorted(lits.items()):
         if n > h.cap_lits:

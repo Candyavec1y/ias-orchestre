@@ -144,6 +144,9 @@ def jouer(nom: str, strategie: str, graine: int = 1, gantt: str | None = None, p
              "messages_par_performatif": b["messages_par_performatif"],
              "optimisations_locales": b["optimisations_locales"], "reoptimisations_globales": b["reoptimisations_globales"],
              "reoptimisations_appliquees": b["reoptimisations_appliquees"], "score_programme": b["score_programme"],
+             "reoptimisations_rejetees_non_faisables": sum(t.motif_rejet.startswith("plan hors")
+                                                           for t in m.optimisation.historique),
+             "gain_optimisation_globale": b["gain_optimisation_globale"],
              "erreurs_coherence": b["erreurs_de_coherence"],
              "lits_pic_jours_scenario_avant": max((occ_avant[0].get(j, 0) for j in jours), default=0),
              "lits_pic_jours_scenario_apres": max((occ_apres[0].get(j, 0) for j in jours), default=0),

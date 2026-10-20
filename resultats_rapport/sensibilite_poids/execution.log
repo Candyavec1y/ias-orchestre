@@ -1,0 +1,55 @@
+366 essais de 5 s sur 4 cœurs : ≈ 7.6 min
+{
+ "jeux_testes": 61,
+ "jeux_viables": 46,
+ "jeux_non_domines": 5,
+ "actuel_viable": true,
+ "actuel_non_domine": false,
+ "actuel_domine_par": [
+  {
+   "jeu": "t003",
+   "reportes": 12.833333333333334,
+   "occupation_pct": 88.01688543785049,
+   "prio_reportes": 0.0
+  },
+  {
+   "jeu": "t004",
+   "reportes": 12.5,
+   "occupation_pct": 88.01688543785049,
+   "prio_reportes": 0.0
+  },
+  {
+   "jeu": "t009",
+   "reportes": 11.666666666666666,
+   "occupation_pct": 88.37123312996857,
+   "prio_reportes": 0.0
+  },
+  {
+   "jeu": "t035",
+   "reportes": 12.833333333333334,
+   "occupation_pct": 88.7101744006902,
+   "prio_reportes": 0.0
+  },
+  {
+   "jeu": "t050",
+   "reportes": 12.333333333333334,
+   "occupation_pct": 88.2633881801935,
+   "prio_reportes": 0.0
+  }
+ ],
+ "lits_places_en_trop_toutes_solutions": 0,
+ "poids_fixes": {
+  "lit": 5000.0,
+  "place": 5000.0
+ },
+ "dominance": "Pareto : reportés <= et occupation >=, strictement meilleur sur l'un, prioritaires <=",
+ "tirages": 60,
+ "graines": 3,
+ "budget_s": 5.0,
+ "facteur_max": 10.0,
+ "instances": {
+  "reference_100": 0.9,
+  "charge_85": 0.765
+ },
+ "duree_s": 505.2175294579938
+}

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Tâche F : profils d'occupation bloc / lits / places sur les 4 semaines v28 (cohorte de référence, première graine
-faisable de chaque méthode), sorties à midi et admissions du même jour, et nuage des compromis taux d'occupation du bloc / pic
+Tâche F : profils d'occupation bloc / lits / places sur les 4 semaines v28 (cohorte de référence, solution proposée
+médiane sur l'objectif F2 + report de chaque méthode), sorties à midi et admissions du même jour, et nuage des compromis taux d'occupation du bloc / pic
 de lits sur toutes les exécutions à 100 % de charge. Lit les solutions synthétiques enregistrées par la campagne E.
 
 Le modèle ne contient pas d'heure d'admission : les « admissions du soir » ne sont pas mesurables ; on compte les
@@ -31,16 +31,19 @@ def main():
     from parametres import LUNDI_REFERENCE as L0
     inst = H.etendre_horizon(H.instance_v28(L0, 4, graine=43, charge=0.90), H.NB_SEMAINES_REPORT)
     sols = json.loads((AGREGEES / "solutions_synthetiques.json").read_text(encoding="utf-8"))
-    # règle de l'équipe : seules les solutions faisables sont proposées -> pour chaque méthode, la plus petite graine
-    # dont la solution est faisable (le glouton est le départ commun, montré pour référence)
-    faisable = {(r["methode"], int(r["graine"])): r["faisable"] == "True"
-                for r in lire_csv(SORTIE / "n2_resultats.csv") if r["campagne"] == "N2_reference"}
-    ref, graine_retenue = {}, {}
-    for s in sorted((s for s in sols if s["campagne"] == "N2_reference"), key=lambda s: int(s["graine"])):
-        m = s["methode"]
-        if m not in ref and (m == "glouton" or faisable.get((m, int(s["graine"])))):
-            ref[m] = {int(k): v for k, v in s["solution"].items()}
-            graine_retenue[m] = int(s["graine"])
+    # règle de l'équipe : seules les solutions faisables sont proposées -> pour chaque méthode, la solution proposée
+    # REPRÉSENTATIVE : graine dont l'objectif (F2 + report) est le médian des solutions faisables (glouton = départ)
+    lignes_ref = [r for r in lire_csv(SORTIE / "n2_resultats.csv") if r["campagne"] == "N2_reference"]
+    faisable = {(r["methode"], int(r["graine"])): r["faisable"] == "True" for r in lignes_ref}
+    objectif = {(r["methode"], int(r["graine"])): float(r["score_recherche"]) for r in lignes_ref}
+    graine_retenue = {}
+    for m in {r["methode"] for r in lignes_ref}:
+        cands = sorted((objectif[(m, int(r["graine"]))], int(r["graine"])) for r in lignes_ref
+                       if r["methode"] == m and (m == "glouton" or faisable[(m, int(r["graine"]))]))
+        if cands:
+            graine_retenue[m] = cands[(len(cands) - 1) // 2][1]
+    ref = {s["methode"]: {int(k): v for k, v in s["solution"].items()} for s in sols
+           if s["campagne"] == "N2_reference" and graine_retenue.get(s["methode"]) == int(s["graine"])}
     jours = [L0 + timedelta(days=k) for k in range(28 + 21)]
     V, P, h = inst.vacations, inst.patients, inst.hebergement
     cap_jour = defaultdict(float)
@@ -48,11 +51,12 @@ def main():
         if not v.supplementaire:
             cap_jour[v.jour] += v.capacite_utile_minutes
     lignes, profils = [], {}
-    for m in [x for x in ORDRE if x in ref]:
+    ordre = sorted(ref, key=lambda m: (m != "glouton", objectif[(m, graine_retenue[m])]))   # classement sur l'objectif
+    for m in ordre:
         aff = ref[m]
         sol = SC.SolutionPatients(aff)
         lits, places = SC.calculer_occupation(inst, sol)
-        lj, pj = SC.par_jour(lits), SC.par_jour(places)
+        lj = SC.par_jour(lits)
         charge = defaultdict(float)
         sorties, admissions = Counter(), Counter()
         for pid, vid in aff.items():
@@ -70,7 +74,8 @@ def main():
         apm = {j: places.get(SC.DemiJournee(j, True), 0) for j in jours}
         profils[m] = {"bloc": bloc, "lits": lj, "matin": matin, "apm": apm, "sorties": sorties, "admissions": admissions}
         horizon = [j for j in jours if j < L0 + timedelta(days=28)]
-        lignes.append({"methode": m, "graine": graine_retenue[m], "faisable": faisable.get((m, graine_retenue[m])), "occupation_bloc_moyenne_pct": float(np.mean(list(bloc.values()))),
+        lignes.append({"methode": m, "graine": graine_retenue[m], "faisable": faisable.get((m, graine_retenue[m])),
+                       "score_recherche": objectif[(m, graine_retenue[m])], "occupation_bloc_moyenne_pct": float(np.mean(list(bloc.values()))),
                        "jours_bloc_au_dela_capacite_utile": sum(x > 100 for x in bloc.values()),
                        "pic_lits_horizon": max((lj.get(j, 0) for j in horizon), default=0),
                        "nuits_lits_au_cap_programmable": sum(lj.get(j, 0) >= h.cap_lits for j in jours),
@@ -85,7 +90,7 @@ def main():
 
     figs = []
     fig, axes = plt.subplots(3, 1, figsize=(14, 9), sharex=True, layout="constrained")
-    montrer = [m for m in ("glouton", "premier créneau", "TABOU seul", "memetique") if m in profils]
+    montrer = [m for m in ("glouton", "RS seul", "AGS>RS>TABOU", "memetique") if m in profils]   # AGS>RS>TABOU : hybridation de référence
     for m in montrer:
         pr = profils[m]
         xs = sorted(pr["bloc"])
@@ -100,12 +105,12 @@ def main():
     axes[1].set(ylabel="Lits occupés (nuit)", title="pointillé noir : 27 lits programmables ; rouge : 30 avec la réserve")
     axes[2].set(ylabel="Places (pic de la journée)", xlabel="Jour (4 semaines + 3 semaines de report)")
     axes[0].legend(fontsize=8, ncol=4)
-    fig.suptitle("Profils d'occupation, cohorte de référence (première graine faisable ; glouton = départ)")
+    fig.suptitle("Profils d'occupation, cohorte de référence (solution proposée médiane sur l'objectif ; glouton = départ)")
     figs += sauver_figure(fig, "ressources_profils")
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(14, 3.8), layout="constrained")
-    m = "memetique" if "memetique" in profils else montrer[0]
+    m = next(x for x in ordre if x != "glouton")              # meilleure méthode sur l'objectif
     pr = profils[m]
     ax.bar(jours, [pr["sorties"][j] for j in jours], width=0.4, align="edge", color="0.3", label="sorties à midi")
     ax.bar(jours, [-pr["admissions"][j] for j in jours], width=0.4, align="edge", color="0.7", label="admissions (négatif)")

@@ -1,4 +1,9 @@
-comparaison,n_paires,difference_mediane,difference_moyenne,memetique_meilleur,statistique_W,p_brute,p_holm,significatif_5pct
-memetique - RS seul,10,463.4411616161617,479.502789909401,0,0.0,0.001953125,0.005859375,True
-memetique - TABOU seul,9,-99.02927066614302,-124.42327170107426,5,12.0,0.25,0.25,False
-memetique - AGS seul,7,-1801.7769146610935,-1830.7125526737257,7,0.0,0.015625,0.03125,True
+comparaison,critere,n_paires,difference_mediane,difference_moyenne,premiere_meilleure,statistique_W,p_brute,p_holm,significatif_5pct,statut
+memetique - RS seul,score_recherche,10,1866.0351251838965,1881.7059293181962,0,0.0,0.001953125,0.005859375,True,confirmatoire
+memetique - TABOU seul,score_recherche,10,-1125.8478637148137,-995.8885084011132,9,1.0,0.00390625,0.0078125,True,confirmatoire
+memetique - AGS seul,score_recherche,9,-12803.65431614612,-12760.180474789233,9,0.0,0.00390625,0.0078125,True,confirmatoire
+AGS>RS>TABOU - RS seul,score_recherche,10,534.9110973910565,538.6109038312175,0,0.0,0.001953125,,True,exploratoire
+memetique - RS seul,score_commun,10,601.0432924689067,591.7059293181959,0,0.0,0.001953125,0.005859375,True,confirmatoire
+memetique - TABOU seul,score_commun,10,-2.9501266051158836,14.111491598887005,5,27.0,1.0,1.0,False,confirmatoire
+memetique - AGS seul,score_commun,9,-2038.6566000918274,-2004.6249192336752,9,0.0,0.00390625,0.0078125,True,confirmatoire
+AGS>RS>TABOU - RS seul,score_commun,10,178.10531840762837,178.61090383121683,0,0.0,0.001953125,,True,exploratoire

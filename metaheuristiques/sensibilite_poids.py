@@ -8,7 +8,7 @@ ses incohérences :
   * les poids varient ENSEMBLE (tirage aléatoire log-uniforme, facteur entre 1/FACTEUR_MAX et FACTEUR_MAX sur chaque
     poids), et non un par un ; le jeu actuel est toujours évalué ;
   * un jeu de poids est VIABLE si la solution proposée est faisable pour le VALIDATEUR du projet (commun/validation.py,
-    tolérance TOLERANCE_DEPASSEMENT_VACATION_MIN comprise) : plus de critère propre de 60 minutes de dépassement ;
+    tolérance de dépassement comprise : min(5 min, 25 % de la marge)) : plus de critère propre de 60 minutes de dépassement ;
   * les instances sont la cohorte de RÉFÉRENCE des campagnes (planning v28, 4 semaines + report, capacités du site
     30 / 3 / 20, cohorte 43) à 100 % et 85 % de la capacité utile — pas une instance à capacités réduites ;
   * les poids « lit » et « place » ne sont PAS calibrés : lits et places sont des contraintes dures du validateur, et
@@ -17,13 +17,14 @@ ses incohérences :
   * pas de valeur « recommandée » au bord de la grille : on publie les jeux NON DOMINÉS (moins de patients reportés,
     moins de patients prioritaires reportés, meilleure occupation du bloc) et, pour chaque poids, la plage des
     facteurs qu'ils contiennent ; une plage qui touche le bord testé est signalée comme ouverte (« ≤ » ou « ≥ ») ;
-  * le jeu actuel est jugé par dominance NETTE (au moins TOL_REPORTS patients reportés en moins ET TOL_OCC points
-    d'occupation en plus, sans plus de prioritaires reportés), sur la moyenne des graines.
+  * dominance au sens de PARETO, sur la moyenne des instances et des graines : un jeu en domine un autre s'il est au
+    moins aussi bon sur les patients reportés ET sur l'occupation du bloc, strictement meilleur sur l'un des deux,
+    sans reporter plus de patients prioritaires (priorité 3-4) ; le jeu actuel est jugé de la même façon.
 Méthode d'optimisation : RS seul de metaheuristiques/hybridation.py (solution proposée = meilleure faisable
 rencontrée), même départ et même budget pour tous les jeux.
 
-    python metaheuristiques/sensibilite_poids.py                       # 30 tirages, 2 graines, 5 s : ≈ 3 min
-    python metaheuristiques/sensibilite_poids.py --tirages 60 --budget 10 --graines 3
+    python metaheuristiques/sensibilite_poids.py                       # 60 tirages, 3 graines, 5 s : ≈ 8 min
+    python metaheuristiques/sensibilite_poids.py --tirages 30 --graines 2   # ≈ 3 min
 Sorties (resultats_rapport/sensibilite_poids/) : essais.csv, jeux.csv, sensibilite.json, compromis.png, plages.png
 """
 from __future__ import annotations
@@ -63,7 +64,6 @@ POIDS = [("non_place", "patient non placé", POIDS_N2.non_place),
 FIXES = {"lit": COUT_LIT_EN_TROP, "place": POIDS_N2.place}          # contraintes dures, échelle commune avec le SMA
 INSTANCES = {"reference_100": 0.90, "charge_85": 0.765}             # charge du générateur (cohorte 43)
 FACTEUR_MAX = 10.0
-TOL_REPORTS, TOL_OCC = 2.0, 3.0
 SORTIE = _ICI.parent / "resultats_rapport" / "sensibilite_poids"
 
 
@@ -114,16 +114,12 @@ def essai(args) -> dict:
             "depassement_min": ev.depassement_bloc_minutes}
 
 
-def domine(a: dict, b: dict, net: bool = False) -> bool:
-    """a domine b (moyennes) : pas pire sur les 3 critères et meilleur sur au moins un ; `net` : nettement."""
-    if net:
-        return (a["reportes"] <= b["reportes"] - TOL_REPORTS and a["occupation_pct"] >= b["occupation_pct"] + TOL_OCC
-                and a["prio_reportes"] <= b["prio_reportes"])
-    pas_pire = (a["reportes"] <= b["reportes"] and a["prio_reportes"] <= b["prio_reportes"]
-                and a["occupation_pct"] >= b["occupation_pct"])
-    mieux = (a["reportes"] < b["reportes"] or a["prio_reportes"] < b["prio_reportes"]
-             or a["occupation_pct"] > b["occupation_pct"])
-    return pas_pire and mieux
+def domine(a: dict, b: dict) -> bool:
+    """Dominance de Pareto (moyennes) : a est au moins aussi bon que b sur les patients reportés ET sur l'occupation
+    du bloc, strictement meilleur sur l'un des deux, sans reporter plus de patients prioritaires."""
+    aussi_bon = a["reportes"] <= b["reportes"] and a["occupation_pct"] >= b["occupation_pct"]
+    strict = a["reportes"] < b["reportes"] or a["occupation_pct"] > b["occupation_pct"]
+    return aussi_bon and strict and a["prio_reportes"] <= b["prio_reportes"]
 
 
 def analyser(essais: list[dict], tirages: dict) -> tuple[list[dict], dict]:
@@ -140,7 +136,7 @@ def analyser(essais: list[dict], tirages: dict) -> tuple[list[dict], dict]:
     for j in jeux:
         j["non_domine"] = j["viable"] and not any(domine(o, j) for o in viables if o is not j)
     actuel = next(j for j in jeux if j["jeu"] == "actuel")
-    nets = [o for o in viables if o is not actuel and domine(o, actuel, net=True)]
+    dominants = [o for o in viables if o is not actuel and domine(o, actuel)]
     pareto = [j for j in jeux if j["non_domine"]]
     plages = {}
     for n, lib, v in POIDS:
@@ -156,10 +152,11 @@ def analyser(essais: list[dict], tirages: dict) -> tuple[list[dict], dict]:
                      "actuelle_dans_plage": lo <= 1 <= hi}
     bilan = {"jeux_testes": len(jeux), "jeux_viables": len(viables), "jeux_non_domines": len(pareto),
              "actuel_viable": actuel["viable"], "actuel_non_domine": actuel["non_domine"],
-             "actuel_nettement_domine_par": [o["jeu"] for o in nets],
+             "actuel_domine_par": [{"jeu": o["jeu"], "reportes": o["reportes"], "occupation_pct": o["occupation_pct"],
+                                    "prio_reportes": o["prio_reportes"]} for o in dominants],
              "lits_places_en_trop_toutes_solutions": sum(j["lits_ou_places_en_trop"] for j in jeux),
              "plages_des_jeux_non_domines": plages, "poids_fixes": FIXES,
-             "tolerances": {"reportes": TOL_REPORTS, "occupation_pts": TOL_OCC}}
+             "dominance": "Pareto : reportés <= et occupation >=, strictement meilleur sur l'un, prioritaires <="}
     return jeux, bilan
 
 
@@ -197,8 +194,8 @@ def figures(jeux: list[dict], bilan: dict, sortie: Path):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Sensibilité des poids de la fonction score N2 (poids variés ensemble)")
-    ap.add_argument("--tirages", type=int, default=30, help="jeux de poids tirés (en plus du jeu actuel)")
-    ap.add_argument("--graines", type=int, default=2)
+    ap.add_argument("--tirages", type=int, default=60, help="jeux de poids tirés (en plus du jeu actuel)")
+    ap.add_argument("--graines", type=int, default=3)
     ap.add_argument("--budget", type=float, default=5.0, help="secondes de RS par essai")
     ap.add_argument("--coeurs", type=int, default=min(4, os.cpu_count() or 1))
     ap.add_argument("--graine-tirage", type=int, default=2026)

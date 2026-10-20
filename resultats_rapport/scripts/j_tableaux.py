@@ -5,10 +5,8 @@ mesurées. Aucune valeur n'est saisie à la main.
 """
 from __future__ import annotations
 
-import json
-from collections import defaultdict
 
-from commun_rapport import AGREGEES, METHODES, SORTIE, ecrire_csv, enregistrer_manifeste, fr, lire_csv
+from commun_rapport import METHODES, SORTIE, ecrire_csv, enregistrer_manifeste, fr, lire_csv
 
 SCRIPT = "scripts/j_tableaux.py"
 ORDRE = ["glouton", "premier créneau"] + METHODES
@@ -16,7 +14,6 @@ ORDRE = ["glouton", "premier créneau"] + METHODES
 
 def instances():
     import hybridation as H
-    import structures_communes as SC
     from parametres import LUNDI_REFERENCE as L0
     import scenarios_sma as SC_SMA
     lignes = []
@@ -117,27 +114,33 @@ def tableaux():
     # T4 N2
     r2 = [l_ for l_ in lire_csv(SORTIE / "n2_resume.csv") if l_["groupe"] == "reference"]
     l4 = []
-    for l_ in sorted(r2, key=lambda x: ORDRE.index(x["methode"])):
-        l4.append([l_["methode"] + (" (départ)" if l_["methode"] == "glouton" else ""),
-                   "—" if l_["methode"] == "glouton" else f"{l_['solutions_proposees']} / {l_['executions']}",
-                   f"{fr(_f(l_, 'score_commun_moyenne'), 0)} $\\pm$ {fr(_f(l_, 'score_commun_ecart_type'), 0)}",
-                   fr(_f(l_, "score_commun_mediane"), 0), fr(_f(l_, "gain_vs_depart_pct_moyenne")),
-                   fr(_f(l_, "ecart_meilleur_faisable_pct_moyenne")), fr(_f(l_, "patients_reportes_moyenne")),
-                   fr(_f(l_, "temps_reel_s_moyenne"), 1)])
-    tex.append(_tab(["Méthode", "Proposées", "F2 moy. $\\pm$ é.-t.", "F2 méd.", "Gain vs départ (\\%)",
-                     "Écart meill. faisable (\\%)", "Reportés", "Temps (s)"], l4,
-                    "N2 sur v28, cohorte de référence (charge 100~\\% de la capacité utile), budget 10~s. Seules les solutions faisables sont proposées (règle de l'équipe) : statistiques calculées sur les solutions proposées ; F2 commun sans pénalité de report. Le glouton est le départ commun (non faisable). Écart à la meilleure solution faisable observée, pas un gap d'optimalité.",
-                    "tab:n2", "lrrrrrrr"))
+    # classement sur l'objectif optimisé (F2 + report), F2 commun publié à côté
+    def _cle(x):
+        return (x["methode"] != "glouton", _f(x, "score_recherche_moyenne") or float("inf"))
+    for l_ in sorted(r2, key=_cle):
+        glouton = l_["methode"] == "glouton"
+        l4.append([l_["methode"] + (" (départ)" if glouton else ""),
+                   "—" if glouton else f"{l_['solutions_proposees']} / {l_['executions']}",
+                   "—" if glouton else str(l_.get("proposees_grace_tolerance", "—")),
+                   f"{fr(_f(l_, 'score_recherche_moyenne'), 0)} $\\pm$ {fr(_f(l_, 'score_recherche_ecart_type'), 0)}",
+                   fr(_f(l_, "score_commun_moyenne"), 0), fr(_f(l_, "penalite_report_moyenne"), 0),
+                   fr(_f(l_, "gain_vs_depart_pct_moyenne")), fr(_f(l_, "ecart_meilleur_faisable_pct_moyenne")),
+                   fr(_f(l_, "patients_reportes_moyenne")), fr(_f(l_, "temps_reel_s_moyenne"), 1)])
+    tex.append(_tab(["Méthode", "Proposées", "dont tolérance", "Objectif moy. $\\pm$ é.-t.", "F2 commun", "Report",
+                     "Gain vs départ (\\%)", "Écart meill. faisable (\\%)", "Reportés", "Temps (s)"], l4,
+                    "N2 sur v28, cohorte de référence (charge 100~\\% de la capacité utile), budget 10~s, classée sur l'objectif optimisé (F2 commun + pénalité de report). Seules les solutions faisables sont proposées (tolérance de min(5~min, 25~\\% de la marge) ; « dont tolérance » : faisables seulement grâce à elle). Le glouton est le départ commun. Gain et écart calculés sur l'objectif ; écart à la meilleure solution faisable observée, pas un gap d'optimalité.",
+                    "tab:n2", "lrrrrrrrrr"))
     # T5 gains / contreparties
     gc = lire_csv(SORTIE / "gains_contreparties.csv")
-    l5 = [[g["methode"], fr(_f(g, "score_bloc"), 0), fr(_f(g, "score_lits"), 0), fr(_f(g, "score_places"), 0),
+    l5 = [[g["methode"], fr(_f(g, "score_recherche"), 0), fr(_f(g, "score_bloc"), 0), fr(_f(g, "score_lits"), 0),
+           fr(_f(g, "score_places"), 0), fr(_f(g, "penalite_report"), 0),
            fr(_f(g, "taux_occupation_bloc_pct")), fr(_f(g, "pic_lits")), fr(_f(g, "pic_places")),
            fr(_f(g, "patients_reportes")), fr(_f(g, "delai_moyen_j")), fr(_f(g, "delai_moyen_j_p4"))]
-          for g in sorted(gc, key=lambda x: ORDRE.index(x["methode"]))]
-    tex.append(_tab(["Méthode", "Bloc", "Lits", "Places", "Occ. bloc (\\%)", "Pic lits", "Pic places", "Reportés",
-                     "Délai (j)", "Délai prio. 4 (j)"], l5,
-                    "Gains et contreparties (moyennes sur les solutions proposées, cohorte de référence ; glouton = départ) : composantes pondérées de F2 et indicateurs opérationnels",
-                    "tab:compromis", "lrrrrrrrrr"))
+          for g in sorted(gc, key=lambda x: (x["methode"] != "glouton", _f(x, "score_recherche") or float("inf")))]
+    tex.append(_tab(["Méthode", "Objectif", "Bloc", "Lits", "Places", "Report", "Occ. bloc (\\%)", "Pic lits", "Pic places",
+                     "Reportés", "Délai (j)", "Délai prio. 4 (j)"], l5,
+                    "Gains et contreparties (moyennes sur les solutions proposées, cohorte de référence, classées sur l'objectif F2 + report ; glouton = départ) : composantes pondérées et indicateurs opérationnels",
+                    "tab:compromis", "lrrrrrrrrrrr"))
     # T6 SMA stratégies (moyennes sur tous les scénarios déterministes)
     sma = lire_csv(SORTIE / "sma_scenarios.csv")
     l6 = []

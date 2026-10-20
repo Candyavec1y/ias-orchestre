@@ -74,7 +74,10 @@ def _metriques_n2(r, inst2) -> dict:
     ind = r.indicateurs
     V, P = inst2.vacations, inst2.patients
     h = inst2.hebergement
+    import validation as VA
+    import structures_communes as SC
     d = {"score_commun": r.score_final, "score_depart": r.score_initial,
+         "faisable_strict": VA.valider_niveau2(inst2, SC.SolutionPatients(dict(r.solution)), avec_tolerance=False).faisable,
          "score_recherche": r.score_recherche, "penalite_report": r.detail_score.get("report"),
          "score_bloc": r.detail_score.get("score_blocs"), "score_lits": r.detail_score.get("score_lits"),
          "score_places": r.detail_score.get("score_places"), "faisable": r.faisable,

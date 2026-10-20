@@ -81,6 +81,7 @@ def optimiser(pb, mode: str, temps_s: Optional[float] = None, iterations: Option
     pb.journal = H.Journal(suivi)
     if hasattr(pb, "_cache"):
         pb._cache.clear()
+    pb.meilleur_faisable, pb.score_meilleur_faisable = None, float("inf")
     rl = rl or H.ParametresRechercheLocale()
     moteur_rl = H.RechercheLocaleMixte(2, pb, rl)
     depart = list(depart if depart is not None else pb.individu_courant())
@@ -96,6 +97,8 @@ def optimiser(pb, mode: str, temps_s: Optional[float] = None, iterations: Option
             if ags is not None:
                 p = replace(p, ags=ags)
             ind, c, _ = H.resoudre(pb, moteur_rl, depart, p)
+        ind = pb.solution_finale(ind)               # meilleure solution FAISABLE rencontrée (sinon la meilleure)
+        c = pb.cout(ind)
     if c0 < c:                                        # le moteur garde son meilleur ; on ne régresse jamais
         ind, c = depart, c0
     return ResultatOptimisation(mode, ind, c, c0, suivi.nb_evaluations, suivi.temps_s, suivi)

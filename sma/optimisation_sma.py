@@ -84,7 +84,9 @@ class _ProblemeMoteur(H.ProblemeHybrideN2):
         if s is None:
             if len(self._cache) > 200_000:
                 self._cache.clear()
-            s = self._cache[cle] = self.etat(individu).score()
+            etat = self.etat(individu)
+            s = self._cache[cle] = etat.score()
+            self.noter_si_faisable(etat, s)              # meilleure solution faisable rencontrée (hybridation.py)
             if self.journal is not None:
                 self.journal.suivi.compter_evaluation()
         return s
@@ -135,6 +137,10 @@ class _EtatLocal:
 
     def score(self) -> float:
         return self.pb._score(tuple(self.aff[p] for p in self.pb.pids))
+
+    def faisable(self) -> bool:
+        """Plan applicable par la salle : aucune valeur interdite (même règle que ProblemeLocalSalle.valide)."""
+        return self.score() < PENALITE_INVALIDE
 
 
 class ProblemeLocalSalle(_ProblemeMoteur):
@@ -244,6 +250,7 @@ class _EtatResiduel:
         self.aff = {p: None for p in pb.pids}
         self.membres: dict[int, set] = defaultdict(set)
         self.cout_creneau: dict[int, float] = {}
+        self.hors_heures: set[int] = set()          # créneaux dont la séquence sort des heures du programme
         self.sales: set[int] = set()
         self.total_creneaux = 0.0
         self.cout_attente = sum(pb.cout_np[p] for p in pb.pids)
@@ -284,15 +291,21 @@ class _EtatResiduel:
         pb, w = self.pb, self.pb.w
         for v in self.sales:
             ordre = tuple(sorted(self.membres[v], key=pb.cle.__getitem__))
-            c = pb._sequencer(pb.cles[v], ordre)[0] if ordre else 0.0
+            c, _, ok = pb._sequencer(pb.cles[v], ordre) if ordre else (0.0, [], True)
             self.total_creneaux += c - self.cout_creneau.get(v, 0.0)
             self.cout_creneau[v] = c
+            (self.hors_heures.discard if ok else self.hors_heures.add)(v)
         self.sales.clear()
         return (self.total_creneaux + self.cout_attente
                 + self.invalides * PENALITE_INVALIDE
                 + (self.lits.exces + self.places.exces) * PENALITE_LIT_PLAFOND
                 + self.lits.violation * w.lit + self.lits.variance() * w.var_lits
                 + self.places.violation * w.place + self.places.variance() * w.var_places)
+
+
+    def faisable(self) -> bool:
+        """Plan applicable (même règle que ProblemeResiduel.mouvements) ; à appeler après score()."""
+        return self.invalides == 0 and self.lits.exces == 0 and self.places.exces == 0 and not self.hors_heures
 
 
 class ProblemeResiduel(_ProblemeMoteur):

@@ -114,6 +114,8 @@ class ParametresRechercheLocale:
     force_perturbation: tuple[int, int] = (15, 30)     # N2 : nb de mouvements aléatoires d'une perturbation
     # --- enchaînement RS -> Tabou ---
     iterations_par_enfant: int = 15            # budget TABOU appliqué à un enfant (mode mémétique)
+    polissage_enfant: str = "tabou"            # "tabou" (défaut) ou "rs" : recherche locale appliquée aux enfants
+    iterations_rs_enfant: int = 600            # budget RS (mouvements) d'un enfant si polissage_enfant == "rs"
     part_rs_depart: float = 0.70               # RL de départ : 70 % RS puis 30 % Tabou
     part_rs_finale: float = 0.50               # intensification finale : 50 % RS puis 50 % Tabou
 
@@ -466,6 +468,8 @@ class RechercheLocaleMixte:
 
     def __call__(self, ind, rng, iterations=None, duree=None, phase="depart"):
         if phase == "enfant" or duree is None:
+            if self.p.polissage_enfant == "rs":         # RS court : une évaluation par mouvement
+                return self.rs(ind, rng, iterations=self.p.iterations_rs_enfant, phase="enfant")
             return self.tabou(ind, rng, iterations=iterations or self.p.iterations_par_enfant, phase="enfant")
         part = self.p.part_rs_finale if phase == "finale" else self.p.part_rs_depart
         ind1, c1 = self.rs(ind, rng, duree=duree * part, phase=phase)
@@ -730,7 +734,8 @@ class ProblemeHybrideN2(ProblemeGenetique):
     def solution_finale(self, individu: Individu) -> Individu:
         """Solution proposée : la meilleure faisable rencontrée ; sinon `individu` (non valide)."""
         etat = self.etat(individu)
-        if etat.faisable() and etat.score() <= self.score_meilleur_faisable + EPS:
+        s = etat.score()                         # (certains états ne sont à jour qu'après score())
+        if etat.faisable() and s <= self.score_meilleur_faisable + EPS:
             return individu
         return list(self.meilleur_faisable) if self.meilleur_faisable is not None else individu
 

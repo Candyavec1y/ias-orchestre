@@ -51,10 +51,10 @@ Méthode & Faisable (\%) & F1 moy. $\pm$ é.-t. & F1 min & Gain vs départ (\%) 
 glouton & 100 & 1 750,0 $\pm$ 0,0 & 1 750 & 0,0 & 25,0 & 5,0 & 0,02 \\
 RS seul & 100 & 900,0 $\pm$ 0,0 & 900 & 48,6 & 16,2 & 0,9 & 10,00 \\
 TABOU seul & 100 & 960,0 $\pm$ 31,6 & 950 & 45,1 & 17,0 & 1,1 & 10,00 \\
-AGS seul & 100 & 1 005,0 $\pm$ 49,7 & 950 & 42,6 & 16,9 & 1,6 & 10,16 \\
-memetique & 100 & 920,0 $\pm$ 48,3 & 900 & 47,4 & 16,6 & 0,9 & 10,16 \\
-AGS\textgreater{}RS\textgreater{}TABOU & 100 & 925,0 $\pm$ 48,6 & 900 & 47,1 & 16,3 & 1,1 & 10,17 \\
-RS\textgreater{}AGS\textgreater{}TABOU & 100 & 900,0 $\pm$ 0,0 & 900 & 48,6 & 16,2 & 0,9 & 10,18 \\
+AGS seul & 100 & 1 005,0 $\pm$ 49,7 & 950 & 42,6 & 16,9 & 1,6 & 10,17 \\
+memetique & 100 & 940,0 $\pm$ 61,5 & 900 & 46,3 & 16,6 & 1,1 & 10,17 \\
+AGS\textgreater{}RS\textgreater{}TABOU & 100 & 925,0 $\pm$ 35,4 & 900 & 47,1 & 16,5 & 1,0 & 10,17 \\
+RS\textgreater{}AGS\textgreater{}TABOU & 100 & 900,0 $\pm$ 0,0 & 900 & 48,6 & 16,4 & 0,8 & 10,19 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -62,41 +62,41 @@ RS\textgreater{}AGS\textgreater{}TABOU & 100 & 900,0 $\pm$ 0,0 & 900 & 48,6 & 16
 \begin{table}[htbp]
 \centering
 \small
-\caption{N2 sur v28, cohorte de référence (charge 100~\% de la capacité utile), budget 10~s. Seules les solutions faisables sont proposées (règle de l'équipe) : statistiques calculées sur les solutions proposées ; F2 commun sans pénalité de report. Le glouton est le départ commun (non faisable). Écart à la meilleure solution faisable observée, pas un gap d'optimalité.}
+\caption{N2 sur v28, cohorte de référence (charge 100~\% de la capacité utile), budget 10~s, classée sur l'objectif optimisé (F2 commun + pénalité de report). Seules les solutions faisables sont proposées (tolérance de min(5~min, 25~\% de la marge) ; « dont tolérance » : faisables seulement grâce à elle). Le glouton est le départ commun. Gain et écart calculés sur l'objectif ; écart à la meilleure solution faisable observée, pas un gap d'optimalité.}
 \label{tab:n2}
-\begin{tabular}{lrrrrrrr}
-\toprule
-Méthode & Proposées & F2 moy. $\pm$ é.-t. & F2 méd. & Gain vs départ (\%) & Écart meill. faisable (\%) & Reportés & Temps (s) \\
-\midrule
-glouton (départ) & — & 8 265 $\pm$ 0 & 8 265 & 0,0 & 167,3 & 82,0 & 0,5 \\
-premier créneau & 1 / 1 & 5 484 $\pm$ 0 & 5 484 & 33,6 & 77,4 & 36,0 & 0,5 \\
-RS seul & 10 / 10 & 3 344 $\pm$ 173 & 3 355 & 59,5 & 8,1 & 23,2 & 10,0 \\
-TABOU seul & 9 / 10 & 3 923 $\pm$ 163 & 3 874 & 52,5 & 26,9 & 33,8 & 10,0 \\
-AGS seul & 7 / 10 & 5 643 $\pm$ 147 & 5 730 & 31,7 & 82,5 & 65,4 & 10,3 \\
-memetique & 10 / 10 & 3 823 $\pm$ 178 & 3 814 & 53,7 & 23,7 & 28,2 & 10,3 \\
-AGS\textgreater{}RS\textgreater{}TABOU & 8 / 10 & 3 555 $\pm$ 150 & 3 600 & 57,0 & 15,0 & 25,1 & 10,4 \\
-RS\textgreater{}AGS\textgreater{}TABOU & 9 / 10 & 3 898 $\pm$ 108 & 3 916 & 52,8 & 26,1 & 28,0 & 10,4 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[htbp]
-\centering
-\small
-\caption{Gains et contreparties (moyennes sur les solutions proposées, cohorte de référence ; glouton = départ) : composantes pondérées de F2 et indicateurs opérationnels}
-\label{tab:compromis}
 \begin{tabular}{lrrrrrrrrr}
 \toprule
-Méthode & Bloc & Lits & Places & Occ. bloc (\%) & Pic lits & Pic places & Reportés & Délai (j) & Délai prio. 4 (j) \\
+Méthode & Proposées & dont tolérance & Objectif moy. $\pm$ é.-t. & F2 commun & Report & Gain vs départ (\%) & Écart meill. faisable (\%) & Reportés & Temps (s) \\
 \midrule
-glouton & 7 107 & 1 044 & 114 & 83,6 & 27,0 & 11,0 & 82,0 & 6,7 & 6,7 \\
-premier créneau & 3 894 & 1 487 & 103 & 88,0 & 27,0 & 9,0 & 36,0 & 3,6 & 1,6 \\
-RS seul & 2 318 & 982 & 44 & 92,9 & 25,2 & 6,9 & 23,2 & 3,5 & 2,6 \\
-TABOU seul & 3 042 & 847 & 34 & 90,6 & 25,0 & 6,3 & 33,8 & 4,0 & 2,8 \\
-AGS seul & 4 820 & 770 & 53 & 85,1 & 22,7 & 7,6 & 65,4 & 5,6 & 4,4 \\
-memetique & 2 900 & 891 & 33 & 91,1 & 25,0 & 6,5 & 28,2 & 3,7 & 2,8 \\
-AGS\textgreater{}RS\textgreater{}TABOU & 2 572 & 954 & 29 & 92,1 & 25,1 & 6,5 & 25,1 & 3,6 & 2,7 \\
-RS\textgreater{}AGS\textgreater{}TABOU & 2 974 & 888 & 36 & 90,8 & 24,8 & 6,4 & 28,0 & 3,7 & 2,9 \\
+glouton (départ) & — & — & 31 565 $\pm$ 0 & 8 265 & 23 300 & 0,0 & 340,1 & 82,0 & 0,5 \\
+RS seul & 10 / 10 & 0 & 7 702 $\pm$ 298 & 3 422 & 4 280 & 75,6 & 7,4 & 23,3 & 10,0 \\
+AGS\textgreater{}RS\textgreater{}TABOU & 10 / 10 & 1 & 8 241 $\pm$ 208 & 3 601 & 4 640 & 73,9 & 14,9 & 24,9 & 10,4 \\
+RS\textgreater{}AGS\textgreater{}TABOU & 10 / 10 & 1 & 9 153 $\pm$ 447 & 3 893 & 5 260 & 71,0 & 27,6 & 27,5 & 10,5 \\
+memetique & 10 / 10 & 0 & 9 584 $\pm$ 596 & 4 014 & 5 570 & 69,6 & 33,6 & 29,1 & 10,4 \\
+TABOU seul & 10 / 10 & 2 & 10 580 $\pm$ 356 & 4 000 & 6 580 & 66,5 & 47,5 & 33,9 & 10,0 \\
+premier créneau & 1 / 1 & 0 & 13 784 $\pm$ 0 & 5 484 & 8 300 & 56,3 & 92,2 & 36,0 & 0,5 \\
+AGS seul & 9 / 10 & 5 & 22 331 $\pm$ 701 & 6 020 & 16 311 & 29,3 & 211,3 & 70,0 & 10,4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Gains et contreparties (moyennes sur les solutions proposées, cohorte de référence, classées sur l'objectif F2 + report ; glouton = départ) : composantes pondérées et indicateurs opérationnels}
+\label{tab:compromis}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Méthode & Objectif & Bloc & Lits & Places & Report & Occ. bloc (\%) & Pic lits & Pic places & Reportés & Délai (j) & Délai prio. 4 (j) \\
+\midrule
+glouton & 31 565 & 7 107 & 1 044 & 114 & 23 300 & 83,6 & 27,0 & 11,0 & 82,0 & 6,7 & 6,7 \\
+RS seul & 7 702 & 2 386 & 991 & 44 & 4 280 & 92,6 & 25,6 & 7,0 & 23,3 & 3,6 & 2,7 \\
+AGS\textgreater{}RS\textgreater{}TABOU & 8 241 & 2 631 & 938 & 31 & 4 640 & 91,9 & 24,6 & 6,3 & 24,9 & 3,6 & 2,7 \\
+RS\textgreater{}AGS\textgreater{}TABOU & 9 153 & 2 948 & 909 & 36 & 5 260 & 91,0 & 24,7 & 6,6 & 27,5 & 3,7 & 2,8 \\
+memetique & 9 584 & 3 098 & 882 & 34 & 5 570 & 90,5 & 24,8 & 6,4 & 29,1 & 3,8 & 2,9 \\
+TABOU seul & 10 580 & 3 117 & 850 & 33 & 6 580 & 90,5 & 24,7 & 6,2 & 33,9 & 4,0 & 2,8 \\
+premier créneau & 13 784 & 3 894 & 1 487 & 103 & 8 300 & 88,0 & 27,0 & 9,0 & 36,0 & 3,6 & 1,6 \\
+AGS seul & 22 331 & 5 108 & 848 & 63 & 16 311 & 84,6 & 23,2 & 8,2 & 70,0 & 6,0 & 4,9 \\
 \bottomrule
 \end{tabular}
 \end{table}

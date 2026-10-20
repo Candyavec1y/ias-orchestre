@@ -76,7 +76,7 @@ if str(Path(__file__).resolve().parent) not in sys.path:      # commun/parametre
 from parametres import (  # noqa: E402  (valeurs partagées : définies une seule fois dans commun/parametres.py)
     CHARGE_GENERATEUR, COUT_LIT_EN_TROP, DECALAGE_GRAINE_PRIORITES, DUREE_REMISE_EN_ETAT_LIT_MIN,
     DUREE_REMISE_EN_ETAT_PLACE_MIN, GRAINE_ETUDE, GRAINE_PATIENTS, HEURE_DEBUT_APRES_MIDI_AMBULATOIRE,
-    HEURE_SORTIE_HOSPITALISATION, TOLERANCE_DEPASSEMENT_VACATION_MIN,
+    HEURE_SORTIE_HOSPITALISATION, PART_MARGE_TOLEREE, TOLERANCE_DEPASSEMENT_MAX_MIN,
     LITS_INSTANCE_ETUDE_N1, LITS_SITE,
     PLACES_AMBULATOIRES_INSTANCE_ETUDE_N1, PLACES_AMBULATOIRES_SITE, RESERVE_LITS_INSTANCE_ETUDE_N1,
     RESERVE_LITS_SITE, TAUX_MARGE_VACATION,
@@ -196,6 +196,11 @@ class Vacation:
     @property
     def capacite_utile_minutes(self) -> float:
         return max(0.0, self.duree_minutes * (1 - self.taux_marge) - self.marge_minutes)
+
+    @property
+    def tolerance_depassement_minutes(self) -> float:
+        """Minutes au-delà de la capacité utile encore jugées faisables : min(5 min, 25 % de la marge)."""
+        return min(TOLERANCE_DEPASSEMENT_MAX_MIN, PART_MARGE_TOLEREE * (self.duree_minutes - self.capacite_utile_minutes))
 
     @property
     def debut(self) -> datetime:
@@ -881,6 +886,7 @@ class EtatNiveau2:
         self.lits = SuiviOccupation(h.cap_lits)
         self.places = SuiviOccupation(h.cap_places)
         self.cap = {vid: v.capacite_utile_minutes for vid, v in self.vacations.items()}
+        self.limite = {vid: v.capacite_utile_minutes + v.tolerance_depassement_minutes for vid, v in self.vacations.items()}
         self.charge = {vid: 0.0 for vid in self.vacations}
         self.supp = {vid for vid, v in self.vacations.items() if v.supplementaire}
         self.depassement = 0.0
@@ -904,7 +910,7 @@ class EtatNiveau2:
     def _charge(self, vid, delta):
         cap, ancien = self.cap[vid], self.charge[vid]
         nouveau = ancien + delta
-        limite = cap + TOLERANCE_DEPASSEMENT_VACATION_MIN
+        limite = self.limite[vid]
         self.vacations_hors_tolerance += (nouveau > limite + 1e-9) - (ancien > limite + 1e-9)
         regulier = vid not in self.supp
         if ancien > cap:
@@ -945,7 +951,7 @@ class EtatNiveau2:
 
     def faisable(self) -> bool:
         """Mêmes contraintes de capacité que le validateur indépendant (commun/validation.py) : tous les patients
-        placés, aucune vacation au-delà de sa capacité utile + TOLERANCE_DEPASSEMENT_VACATION_MIN, aucun lit ni
+        placés, aucune vacation au-delà de sa capacité utile + sa tolérance (Vacation.tolerance_depassement_minutes), aucun lit ni
         place en trop. Chirurgien, vacation et date au plus tôt sont garantis par les mouvements autorisés."""
         return (self.non_places == 0 and self.vacations_hors_tolerance == 0 and self.lits.violation == 0
                 and self.places.violation == 0)

@@ -70,3 +70,11 @@ résultats : une exécution sans solution finale faisable compte comme « aucune
 confirmatoire porte sur les graines où les deux méthodes comparées proposent une solution (10, 9 et 7 paires au lieu
 de 10). Les conclusions du test sont inchangées (memetique moins bon que RS seul, meilleur qu'AGS seul, non
 distinguable de TABOU seul). Les données brutes (`n2_resultats.csv`) contiennent toutes les exécutions.
+
+## Second amendement (branche v3, 20/10/2026)
+
+Sur demande de l'équipe : tolérance de dépassement min(5 min, 25 % de la marge), solution proposée = meilleure
+solution faisable rencontrée (dans le code des métaheuristiques), et classement sur le **critère optimisé** (objectif
+F2 + pénalité de report) au lieu de F2 commun. La famille confirmatoire (memetique contre chaque méthode seule, Holm)
+est testée sur l'objectif puis, pour comparaison, sur F2 commun ; AGS>RS>TABOU contre RS seul est ajouté à titre
+exploratoire (hybridation de référence choisie après le pilote du mémétique). La campagne N2 a été relancée en entier.
