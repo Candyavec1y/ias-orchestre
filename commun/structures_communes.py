@@ -76,7 +76,7 @@ if str(Path(__file__).resolve().parent) not in sys.path:      # commun/parametre
 from parametres import (  # noqa: E402  (valeurs partagées : définies une seule fois dans commun/parametres.py)
     CHARGE_GENERATEUR, COUT_LIT_EN_TROP, DECALAGE_GRAINE_PRIORITES, DUREE_REMISE_EN_ETAT_LIT_MIN,
     DUREE_REMISE_EN_ETAT_PLACE_MIN, GRAINE_ETUDE, GRAINE_PATIENTS, HEURE_DEBUT_APRES_MIDI_AMBULATOIRE,
-    HEURE_SORTIE_HOSPITALISATION,
+    HEURE_SORTIE_HOSPITALISATION, TOLERANCE_DEPASSEMENT_VACATION_MIN,
     LITS_INSTANCE_ETUDE_N1, LITS_SITE,
     PLACES_AMBULATOIRES_INSTANCE_ETUDE_N1, PLACES_AMBULATOIRES_SITE, RESERVE_LITS_INSTANCE_ETUDE_N1,
     RESERVE_LITS_SITE, TAUX_MARGE_VACATION,
@@ -884,6 +884,7 @@ class EtatNiveau2:
         self.charge = {vid: 0.0 for vid in self.vacations}
         self.supp = {vid for vid, v in self.vacations.items() if v.supplementaire}
         self.depassement = 0.0
+        self.vacations_hors_tolerance = 0       # vacations au-delà de capacité utile + tolérance (validateur)
         self.inoccupe = sum(c for vid, c in self.cap.items() if vid not in self.supp)
         self.non_places = len(self.patients)
         self.aff: dict[int, Optional[int]] = {pid: None for pid in self.patients}
@@ -903,6 +904,8 @@ class EtatNiveau2:
     def _charge(self, vid, delta):
         cap, ancien = self.cap[vid], self.charge[vid]
         nouveau = ancien + delta
+        limite = cap + TOLERANCE_DEPASSEMENT_VACATION_MIN
+        self.vacations_hors_tolerance += (nouveau > limite + 1e-9) - (ancien > limite + 1e-9)
         regulier = vid not in self.supp
         if ancien > cap:
             self.depassement -= ancien - cap
@@ -939,6 +942,13 @@ class EtatNiveau2:
             return False
         res = self.places if p.ambulatoire else self.lits
         return res.peut_ajouter(self._jours_de(pid, vid))
+
+    def faisable(self) -> bool:
+        """Mêmes contraintes de capacité que le validateur indépendant (commun/validation.py) : tous les patients
+        placés, aucune vacation au-delà de sa capacité utile + TOLERANCE_DEPASSEMENT_VACATION_MIN, aucun lit ni
+        place en trop. Chirurgien, vacation et date au plus tôt sont garantis par les mouvements autorisés."""
+        return (self.non_places == 0 and self.vacations_hors_tolerance == 0 and self.lits.violation == 0
+                and self.places.violation == 0)
 
     def score_blocs(self) -> float:
         w = self.poids

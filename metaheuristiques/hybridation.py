@@ -243,6 +243,7 @@ def recuit_niveau2(pb: "ProblemeHybrideN2", individu: Individu, rng: random.Rand
     etat = pb.etat(individu)                # évaluation INCRÉMENTALE (EtatNiveau2 commun)
     s = etat.score()
     meilleur, s_meilleur = pb.depuis_etat(etat), s
+    pb.noter_si_faisable(etat, s)
 
     if p.temperature_initiale:
         t0 = p.temperature_initiale
@@ -274,6 +275,7 @@ def recuit_niveau2(pb: "ProblemeHybrideN2", individu: Individu, rng: random.Rand
         d = s2 - s
         if d <= 0 or rng.random() < math.exp(-d / T):
             s = s2
+            pb.noter_si_faisable(etat, s)
             if s < s_meilleur - 1e-9:
                 meilleur, s_meilleur = pb.depuis_etat(etat), s
         else:
@@ -401,6 +403,7 @@ def tabou_niveau2(pb: "ProblemeHybrideN2", individu: Individu, rng: random.Rando
     etat = pb.etat(individu)                # évaluation INCRÉMENTALE (EtatNiveau2 commun)
     s = etat.score()
     meilleur, s_meilleur = pb.depuis_etat(etat), s
+    pb.noter_si_faisable(etat, s)
     tabou: dict = {}
     debut, it, derniere_amelioration = chrono.perf_counter(), 0, 0
     while True:
@@ -421,6 +424,7 @@ def tabou_niveau2(pb: "ProblemeHybrideN2", individu: Individu, rng: random.Rando
             continue
         pb.appliquer(etat, mv)
         s = s2
+        pb.noter_si_faisable(etat, s)
         for pid, old, _ in mv:
             if old is not None:
                 tabou[(pid, old)] = it + _duree_taboue(p, rng)
@@ -699,7 +703,12 @@ class ProblemeHybrideN1(ProblemeGenetique):
 # Évaluation : EtatNiveau2 commun (même score que evaluer_niveau2).
 
 class ProblemeHybrideN2(ProblemeGenetique):
+    """Pendant la recherche, les dépassements ne sont que pénalisés ; la solution PROPOSÉE à la fin est la meilleure
+    solution FAISABLE rencontrée (mêmes contraintes que le validateur, tolérance comprise), à défaut la meilleure
+    trouvée, signalée non valide par le validateur."""
     niveau = 2
+    meilleur_faisable: Optional[Individu] = None
+    score_meilleur_faisable: float = float("inf")
 
     def __init__(self, instance2: InstanceNiveau2, journal: Journal):
         self.inst, self.journal = instance2, journal
@@ -712,6 +721,18 @@ class ProblemeHybrideN2(ProblemeGenetique):
         for i, c in enumerate(self.chir):
             self.indices_par_chir[c].append(i)
         self._cache: dict[tuple, float] = {}
+
+    def noter_si_faisable(self, etat, score: float) -> None:
+        """Retient la meilleure solution faisable rencontrée (score de recherche)."""
+        if score < self.score_meilleur_faisable - EPS and getattr(etat, "faisable", lambda: False)():
+            self.meilleur_faisable, self.score_meilleur_faisable = self.depuis_etat(etat), score
+
+    def solution_finale(self, individu: Individu) -> Individu:
+        """Solution proposée : la meilleure faisable rencontrée ; sinon `individu` (non valide)."""
+        etat = self.etat(individu)
+        if etat.faisable() and etat.score() <= self.score_meilleur_faisable + EPS:
+            return individu
+        return list(self.meilleur_faisable) if self.meilleur_faisable is not None else individu
 
     def echange_possible(self, i: int, vi, j: int, vj) -> bool:
         """Deux patients du même chirurgien peuvent échanger leurs vacations si chacun peut recevoir celle de
@@ -740,7 +761,9 @@ class ProblemeHybrideN2(ProblemeGenetique):
         if s is None:
             if len(self._cache) > 200_000:
                 self._cache.clear()
-            s = self._cache[cle] = self.etat(individu).score()
+            etat = self.etat(individu)
+            s = self._cache[cle] = etat.score()
+            self.noter_si_faisable(etat, s)
             self.journal.suivi.compter_evaluation()
         return s
 
@@ -1123,6 +1146,8 @@ def _executer_niveau(niveau: int, instance, modes, temps: float, graine: int,
         p = ParametresHybride.pour_mode(mode, temps, graine, rl=rl_params)
         with suivi:
             ind, _, info = resoudre(pb, rl, depart, p)
+            if niveau == 2:
+                ind = pb.solution_finale(ind)            # meilleure solution faisable rencontrée
         sol = pb.vers_solution(ind)
         suivi.compteurs["generations"] = info["generations"]
         fabrique = resultat_niveau1 if niveau == 1 else resultat_niveau2
@@ -1144,7 +1169,9 @@ def _meilleur_hybride(resultats: list[ResultatMetaheuristique]) -> ResultatMetah
     indépendant, puis le meilleur score. Si aucune n'est faisable, la meilleure est renvoyée marquée non valide
     (r.faisable == False, r.validation["violations"]) : elle n'est jamais présentée comme un programme valide."""
     hybrides = [r for r in resultats if r.variante in MODES]
-    meilleur = min(hybrides, key=lambda r: (not r.faisable, r.score_final))
+    # classement sur le critère OPTIMISÉ (N2 : F2 commun + pénalité de report), après la faisabilité
+    meilleur = min(hybrides, key=lambda r: (not r.faisable, r.score_recherche if r.score_recherche is not None
+                                            else r.score_final))
     if not meilleur.faisable:
         print(f"  ⚠ N{meilleur.niveau} : AUCUNE solution faisable ; meilleure solution NON VALIDE ({meilleur.variante}) : "
               + ", ".join(f"{n} {t}" for t, n in meilleur.validation.get("par_type", {}).items()))

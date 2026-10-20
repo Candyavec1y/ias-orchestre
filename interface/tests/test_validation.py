@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Validateur de faisabilité indépendant (commun/validation.py, D9) : une solution faisable connue est validée, chaque
-type de contrainte violée volontairement est détecté, la sélection préfère une solution faisable, et le cas
-« aucune solution faisable » est signalé.
+type de contrainte violée volontairement est détecté, tolérance de dépassement des vacations, solution proposée =
+meilleure solution faisable rencontrée, la sélection préfère une solution faisable, et le cas « aucune solution
+faisable » est signalé.
 """
 import contextlib
 import io
@@ -114,6 +115,28 @@ def test_n2_chaque_violation_est_detectee(mini_n2):
     deux_places = SC.InstanceNiveau2({**inst.patients, 3: SC.Patient(3, 1, 30, ambulatoire=True)}, inst.vacations,
                                      inst.hebergement)
     assert "places ambulatoires" in _types(VA.valider_niveau2(deux_places, SC.SolutionPatients({1: 1, 2: 1, 3: 1})))
+
+
+def test_n2_tolerance_de_depassement_des_vacations(mini_n2):
+    """Quelques minutes au-delà de la capacité utile restent faisables (TOLERANCE_DEPASSEMENT_VACATION_MIN), au-delà
+    non ; l'état incrémental des métaheuristiques juge comme le validateur."""
+    inst, sol = mini_n2
+    tol = VA.TOLERANCE_DEPASSEMENT_VACATION_MIN
+    for duree, attendu in ((108 - 60 + tol - 3, True), (108 - 60 + tol + 2, False)):     # 60 min déjà dans la vacation
+        i2 = SC.InstanceNiveau2({**inst.patients, 2: SC.Patient(2, 1, duree, ambulatoire=True)}, inst.vacations,
+                                inst.hebergement)
+        assert VA.valider_niveau2(i2, sol).faisable is attendu
+        assert SC.EtatNiveau2(i2, sol.affectations).faisable() is attendu
+
+
+def test_n2_la_solution_proposee_est_la_meilleure_faisable_rencontree():
+    """Règle de l'équipe : les dépassements ne sont que pénalisés pendant la recherche, mais la solution proposée
+    est faisable dès qu'une solution faisable a été rencontrée (le départ de l'instance v28 ne l'est pas)."""
+    inst = H.etendre_horizon(H.instance_v28(LUNDI, 4, charge=0.90), H.NB_SEMAINES_REPORT)
+    for mode in ("TABOU seul", "RS seul"):
+        with contextlib.redirect_stdout(io.StringIO()):
+            r = H._executer_niveau(2, inst, [mode], 1.0, 1, H.ParametresRechercheLocale())[0]
+        assert r.faisable, (mode, r.validation.get("par_type"))
 
 
 def test_n2_le_programme_du_site_est_valide_pour_toutes_les_methodes():

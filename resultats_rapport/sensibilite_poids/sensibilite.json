@@ -1,0 +1,94 @@
+{
+ "jeux_testes": 31,
+ "jeux_viables": 25,
+ "jeux_non_domines": 3,
+ "actuel_viable": true,
+ "actuel_non_domine": false,
+ "actuel_nettement_domine_par": [],
+ "lits_places_en_trop_toutes_solutions": 0,
+ "plages_des_jeux_non_domines": {
+  "non_place": {
+   "libelle": "patient non placé",
+   "valeur_actuelle": 8000.0,
+   "facteur_min": 1.0863617596115251,
+   "facteur_max": 7.940925539419106,
+   "valeur_min": 8690.894076892202,
+   "valeur_max": 63527.40431535285,
+   "ouverte_en_bas": false,
+   "ouverte_en_haut": true,
+   "actuelle_dans_plage": false
+  },
+  "depassement_vac": {
+   "libelle": "minute de dépassement",
+   "valeur_actuelle": 100.0,
+   "facteur_min": 0.11239636754483597,
+   "facteur_max": 1.2975319000234586,
+   "valeur_min": 11.239636754483596,
+   "valeur_max": 129.75319000234586,
+   "ouverte_en_bas": true,
+   "ouverte_en_haut": false,
+   "actuelle_dans_plage": true
+  },
+  "bloc_inoccupe": {
+   "libelle": "minute de bloc inoccupé",
+   "valeur_actuelle": 1.0,
+   "facteur_min": 0.28122228815543326,
+   "facteur_max": 3.6876251221256604,
+   "valeur_min": 0.28122228815543326,
+   "valeur_max": 3.6876251221256604,
+   "ouverte_en_bas": false,
+   "ouverte_en_haut": false,
+   "actuelle_dans_plage": true
+  },
+  "report": {
+   "libelle": "semaine de report (x priorité)",
+   "valeur_actuelle": 100.0,
+   "facteur_min": 0.18113305158286036,
+   "facteur_max": 1.2463009030391536,
+   "valeur_min": 18.113305158286035,
+   "valeur_max": 124.63009030391537,
+   "ouverte_en_bas": false,
+   "ouverte_en_haut": false,
+   "actuelle_dans_plage": true
+  },
+  "var_lits": {
+   "libelle": "variance des lits",
+   "valeur_actuelle": 20.0,
+   "facteur_min": 0.12524933076991662,
+   "facteur_max": 2.891198998762501,
+   "valeur_min": 2.5049866153983325,
+   "valeur_max": 57.82397997525002,
+   "ouverte_en_bas": true,
+   "ouverte_en_haut": false,
+   "actuelle_dans_plage": true
+  },
+  "var_places": {
+   "libelle": "variance des places",
+   "valeur_actuelle": 20.0,
+   "facteur_min": 1.499232660589575,
+   "facteur_max": 3.437404537658391,
+   "valeur_min": 29.9846532117915,
+   "valeur_max": 68.74809075316782,
+   "ouverte_en_bas": false,
+   "ouverte_en_haut": false,
+   "actuelle_dans_plage": false
+  }
+ },
+ "poids_fixes": {
+  "lit": 5000.0,
+  "place": 5000.0
+ },
+ "tolerances": {
+  "reportes": 2.0,
+  "occupation_pts": 3.0
+ },
+ "tirages": 30,
+ "graines": 2,
+ "budget_s": 5.0,
+ "facteur_max": 10.0,
+ "instances": {
+  "reference_100": 0.9,
+  "charge_85": 0.765
+ },
+ "duree_s": 175.30924783402588
+}

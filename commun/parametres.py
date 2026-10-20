@@ -81,5 +81,7 @@ DUREE_REMISE_EN_ETAT_PLACE_MIN = 60        # remise en état d'une place entre l
 # Bloc et coûts partagés
 # =============================================================================
 TAUX_MARGE_VACATION = 0.10        # part de chaque vacation réservée aux aléas (capacité utile = 90 %)
+TOLERANCE_DEPASSEMENT_VACATION_MIN = 10   # minutes au-delà de la capacité utile encore jugées FAISABLES (validateur
+                                          # et choix final des métaheuristiques) ; F2 pénalise toujours chaque minute
 COUT_LIT_EN_TROP = 5000.0         # par lit x jour au-delà de la capacité : MÊME valeur dans la fonction objectif
                                   # N2 (PoidsNiveau2.lit) et dans les coûts du SMA (ParametresSMA.c_lit_depassement)

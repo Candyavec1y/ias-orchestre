@@ -81,7 +81,9 @@ Les capacités du site restent à remplacer par les capacités réelles (§ 10).
 **Validateur de faisabilité (D9, `commun/validation.py`).** Indépendant des fonctions objectif et des algorithmes,
 il contrôle au niveau 1 l'affectation, les plages, les salles autorisées, les disponibilités, les conflits de salle
 et de chirurgien, et au niveau 2 l'affectation, la vacation, le chirurgien, la date au plus tôt, la capacité utile
-des vacations, les lits et les places. Chaque résultat de métaheuristique et le programme de l'interface portent
+des vacations (avec une tolérance de `TOLERANCE_DEPASSEMENT_VACATION_MIN` = 10 min au-delà de la capacité utile),
+les lits et les places. Pendant la recherche, les dépassements ne sont que pénalisés ; chaque méthode propose la
+meilleure solution **faisable** rencontrée. Chaque résultat de métaheuristique et le programme de l'interface portent
 leur validation ; la meilleure solution retenue est une solution faisable, et une solution non faisable est
 signalée « NON VALIDE » dans les sorties de l'hybridation. Le résultat de validation est enregistré avec le
 programme du site, mais n'est plus affiché dans l'onglet Planning (choix de l'équipe).

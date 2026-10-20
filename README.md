@@ -118,6 +118,9 @@ python sma/scenarios_sma.py insertion_simple       # un scénario (--messages : 
 python sma/scenarios_sma.py --tous                 # tous les scénarios, tableau récapitulatif
 
 python machine_learning/modele_prediction_rapide.py --evaluer-seulement     # métriques, sans réécrire les modèles
+
+python metaheuristiques/sensibilite_poids.py       # sensibilité des poids du score N2 (≈ 3 min)
+python sma/sma_sensibilite.py                      # sensibilité des coefficients du SMA
 ```
 
 Toutes les commandes acceptent `--graine` ; capacités, budget, graines et horizons par défaut sont dans
