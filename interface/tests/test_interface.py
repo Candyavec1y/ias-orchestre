@@ -2,7 +2,7 @@
 """
 Interface Streamlit sans navigateur (streamlit.testing.AppTest), sur une base isolée : connexion, chaque page pour
 chaque rôle, onglets selon le rôle, déclaration d'une urgence (proposition puis validation), d'une absence, d'une prolongation d'intervention et de
-lits indisponibles, alertes temporaires.
+lits indisponibles, alertes dans leur onglet.
 """
 from datetime import date, datetime, timedelta
 
@@ -69,7 +69,7 @@ def test_connexion(site):
 
 def test_onglets_selon_le_role(site):
     assert [t.label for t in page("urgences", "dr.ct").tabs] == ["Déclarer une urgence", "Incident logistique",
-                                                                 "Mes absences"]
+                                                                 "Mes absences", "Alertes"]
     assert "Absence d'un chirurgien" in [t.label for t in page("urgences", "regulation").tabs]
     assert "Bloc" not in [t.label for t in page("planning", "admin").tabs]
     assert "Bloc" in [t.label for t in page("planning", "regulation").tabs]
@@ -116,15 +116,23 @@ def test_un_chirurgien_declare_sa_propre_absence_et_ne_voit_pas_celle_des_autres
     assert not any("Chirurgien" in d.value.columns for d in autre.dataframe)
 
 
-def test_une_alerte_disparait_du_bandeau_apres_10_minutes(site):
+def _onglet_alertes(at: AppTest):
+    return next(t for t in at.tabs if t.label.startswith("Alertes"))
+
+
+def test_les_alertes_sont_dans_un_onglet_et_non_encadrees_en_rouge(site):
     at = page("urgences", "regulation")
+    assert any("Aucune alerte" in c.value for c in _onglet_alertes(at).caption)
     for _ in range(12):                                                    # sature la plage d'urgence : alerte
         at = _declarer_urgence(at, "vitale")
-    assert page("urgences", "regulation").error, "alerte visible juste après"
-    site.regler_horloge(HORLOGE + timedelta(minutes=11))
     at = page("urgences", "regulation")
-    assert not at.error
-    assert any(x.label.startswith("Alertes du jour") for x in at.expander)
+    assert not at.error                                                    # plus d'alerte encadrée en rouge
+    onglet = _onglet_alertes(at)
+    assert onglet.label != "Alertes"                                       # nombre d'alertes du jour affiché
+    assert any("nouvelle" in m.value for m in onglet.markdown)
+    site.regler_horloge(HORLOGE + timedelta(minutes=11))
+    onglet = _onglet_alertes(page("urgences", "regulation"))
+    assert onglet.markdown and not any("nouvelle" in m.value for m in onglet.markdown)   # toujours listée
 
 
 def test_un_chirurgien_declare_la_prolongation_de_sa_propre_intervention(site):
