@@ -1,4 +1,4 @@
-# Paramètres réellement exécutés (commit `d8fbf35`)
+# Paramètres réellement exécutés (branche v3)
 
 Valeurs lues dans le code (`commun/parametres.py`, `commun/structures_communes.py`,
 `metaheuristiques/hybridation.py`, `sma/sma_urgences.py`). Les tailles d'instances mesurées (cohorte 43) sont reprises ci-dessous.
@@ -12,7 +12,6 @@ Valeurs lues dans le code (`commun/parametres.py`, `commun/structures_communes.p
 | N2 charges | même planning, charge du générateur `c` constante sur les 4 semaines | 70 / 85 / 100 / 115 % de la capacité utile visés → `c` = 0,63 / 0,765 / 0,90 / 1,035 (le générateur exprime la charge en fraction des heures de vacation ; ratio obtenu : 69 / 84 / 99 / 113 % pour la cohorte 43) |
 | SMA | planning v28, 2 semaines (scénarios) | `sma_urgences.construire_instances_v28`, capacités 30 / 3 / 20, programme initial glouton |
 | Saturation | planning v28, programme initialement vide | patients au profil de séjours réels (`saturation.tirer_patients_profils_reels`) inscrits un par un et placés par le SMA |
-| ML | `donnees_hospitalieres.csv` | étude retirée de ce dossier (historique git, commit `d06aad8`) |
 
 ## 2. Patients
 
@@ -43,8 +42,10 @@ priorités 1 / 2 / 3 / 4) × semaines après la fin de l'horizon. Les méthodes 
 `penalite_report`).
 
 **Faisabilité N2** (validateur indépendant `valider_niveau2`) : affectation, vacation existante, bon chirurgien,
-date au plus tôt, capacité utile de chaque vacation, lits par nuit, places par demi-journée. Le dépassement de la
-capacité utile d'une vacation est une **pénalité** dans F2 mais une **violation** pour le validateur.
+date au plus tôt, capacité utile de chaque vacation **+ tolérance min(5 min, 25 % de sa marge)**, lits par nuit,
+places par demi-journée. Pendant la recherche, le dépassement d'une vacation n'est qu'une **pénalité** dans F2 ;
+chaque méthode **propose la meilleure solution faisable rencontrée**. Les méthodes sont classées sur l'objectif
+optimisé F2 + pénalité de report.
 
 ## 4. Méthodes
 
@@ -57,19 +58,24 @@ Départ commun : N1 = solution initiale du problème (graine) ; N2 = glouton bes
 | RS seul | T0 calibré pour accepter 30 % des dégradations typiques, T_fin = T0 × 10⁻³, refroidissement géométrique sur le budget |
 | TABOU seul | durée taboue 25 + aléa 0-5, patience 40 itérations avant perturbation (N2 : 15-30 mouvements ; N1 : 2-5), voisinage N1 150 voisins ; N2 300 échanges + 80 insertions avec éjection par itération |
 | AGS seul | population 30, tournoi 3, croisement 0,9, mutation 0,4, 2 élites, doublons re-mutés, générations bornées par le temps, aucune recherche locale |
-| memetique | AGS + Tabou (15 itérations) sur les 2 meilleurs enfants de chaque génération ; 25 % du temps final : RS (50 %) puis Tabou |
+| memetique | AGS + Tabou (15 itérations) sur les 2 meilleurs enfants de chaque génération ; 25 % du temps final : RS (50 %) puis Tabou (option `polissage_enfant="rs"` testée en pilote, non retenue) |
 | AGS>RS>TABOU | AGS sans recherche locale sur 50 % du temps, puis RS > Tabou sur le meilleur |
 | RS>AGS>TABOU | 40 % du temps : 4 recherches locales RS > Tabou depuis 4 départs différents (population initiale) ; puis AGS mémétique ; 25 % final RS > Tabou |
 | glouton | départ commun (aucune recherche) |
 | premier créneau | adaptateur isolé du script de campagne : patients par date au plus tôt puis priorité décroissante, dans la première vacation compatible qui respecte capacité utile, lits et places ; sinon non placé |
 
+Méthodes par défaut du site : **RS seul** pour le programme opératoire (`programme.MODE_PROGRAMME`), RS seul et
+RS>AGS>TABOU pour le planning des vacations (`programme.MODES_PLANNING_N1`).
+
 ## 5. SMA
 
 Paramètres par défaut de `ParametresSMA` : pas de 5 min ; brancardage 20 min ; salle de réveil 60 min ; gravités
 vitale / urgente / différable : délai 60 / 360 / 1 440 min, tolérance 60 / 180 / 240 min ; garde 18 h - 8 h ;
-optimisation locale « TABOU seul » 0,02 s par créneau ; optimisation globale « memetique » 1 s, gain minimal 50 ;
-prévenance d'absence 2 jours ; alerte de report au-delà de 3 jours. **Configuration du site** : optimisations
-locale et globale désactivées (`ParametresSMA(optimisation_globale=None, methode_locale=None)`).
+**aucune optimisation locale** des salles (`methode_locale=None`, règle gloutonne) ; optimisation globale
+« memetique » 1 s, gain minimal 50 ; prévenance d'absence 2 jours ; alerte de report au-delà de 3 jours.
+**Configuration du site** : réoptimisation globale non automatique (rejeu des événements à chaque affichage),
+lancée à la demande par l'administrateur (mémétique par défaut). Campagne SMA : les stratégies S_LOC / S_LOC_GLOB
+ajoutent l'optimisation locale « TABOU seul » (0,02 s par créneau) pour comparaison.
 
 ## 6. Occupation
 

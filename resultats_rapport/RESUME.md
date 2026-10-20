@@ -1,8 +1,8 @@
 # OR'CHESTRE — Choix des métaheuristiques (branche v3)
 
 Mesures sur Apple M2, budget en temps réel. Les chiffres viennent des fichiers de ce dossier ; les études retirées
-(ML, saturation, robustesse, ressources, temps, tableaux LaTeX, sensibilité des poids) restent disponibles dans
-l'historique git (commit `d06aad8`). *Résultats provisoires : l'équipe refait la fonction de score.*
+(ML, saturation, robustesse, ressources, temps, tableaux LaTeX, sensibilité des poids) et les anciens documents de
+travail restent disponibles dans l'historique git (commit `d06aad8`). *Résultats provisoires : l'équipe refait la fonction de score.*
 
 **Règles de v3** : pendant la recherche, un dépassement de capacité n'est que pénalisé ; chaque méthode propose la
 meilleure solution **faisable** rencontrée (tolérance min(5 min, 25 % de la marge de la vacation)) ; les méthodes sont
@@ -86,3 +86,10 @@ Réoptimisation globale seule, 1 s (`donnees_agregees/v3_pilote/sma_reoptimisati
 
 Une seule instance réelle (planning v28), patients synthétiques, une graine Mesa pour le SMA, fonction de score en
 cours de refonte : ces choix sont à revérifier après la refonte du score.
+
+**Point encore ouvert** : dans la semaine de surcharge aléatoire, 3 graines sur 5 font échouer le SMA
+(`KeyError: 'chir_7'`, pour toutes les stratégies) : un chirurgien du service sans vacation sur l'horizon de 2
+semaines est proposé comme compétent alors qu'aucun agent n'existe pour lui. Ces exécutions sont marquées ÉCHEC dans
+`sma_scenarios.csv` (colonne `echec`). Correction à faire : ne proposer que les chirurgiens qui ont un agent.
+
+Commandes pour régénérer ces résultats : section 7 du [README](../README.md).

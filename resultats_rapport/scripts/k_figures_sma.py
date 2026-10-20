@@ -7,7 +7,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from commun_rapport import SORTIE, enregistrer_manifeste, lire_csv, sauver_figure  # noqa: E402
+from commun_rapport import SORTIE, lire_csv, sauver_figure  # noqa: E402
 
 SCRIPT = "scripts/k_figures_sma.py"
 STRAT = ["S_CN", "S_LOC", "S_GLOB", "S_LOC_GLOB"]
@@ -32,9 +32,8 @@ def main():
     axes[1].set_xticks(x, STRAT)
     axes[1].set(ylabel="Temps réel de calcul cumulé (s)", title="Coût de calcul de la régulation")
     fig.suptitle("SMA : stratégies comparées à événements identiques (programme figé et régulation simple : non disponibles)")
-    figs = sauver_figure(fig, "sma_strategies")
+    sauver_figure(fig, "sma_strategies")
     plt.close(fig)
-    enregistrer_manifeste("F11 stratégies SMA", ["sma_scenarios.csv"], SCRIPT, note=", ".join(figs))
     print("sma_strategies écrite")
 
 

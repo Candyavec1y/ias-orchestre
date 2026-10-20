@@ -99,14 +99,3 @@ def sauver_figure(fig, nom: str) -> list[str]:
         fig.savefig(p, dpi=300, bbox_inches="tight")
         fichiers.append(str(p.relative_to(SORTIE)))
     return fichiers
-
-
-MANIFESTE = SORTIE / "manifest.json"
-
-
-def enregistrer_manifeste(produit: str, sources: list[str], script: str, statut: str = "MESURÉ", note: str = ""):
-    """Relie chaque figure / tableau aux fichiers agrégés et au script qui l'ont produit."""
-    m = json.loads(MANIFESTE.read_text(encoding="utf-8")) if MANIFESTE.exists() else {"commit": commit_git(),
-                                                                                       "produits": {}}
-    m["produits"][produit] = {"sources": sources, "script": script, "statut": statut, "note": note}
-    ecrire_json(MANIFESTE, m)

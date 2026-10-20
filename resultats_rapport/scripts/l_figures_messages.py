@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from scipy import stats  # noqa: E402
 
-from commun_rapport import (AGREGEES, COULEURS, MARQUEURS, METHODES, SORTIE, ecrire_csv, enregistrer_manifeste,  # noqa: E402
+from commun_rapport import (AGREGEES, COULEURS, MARQUEURS, METHODES, SORTIE, ecrire_csv,  # noqa: E402
                             lire_csv, sauver_figure)
 
 SCRIPT = "scripts/l_figures_messages.py"
@@ -127,12 +127,8 @@ def main():
     n2 = lire_csv(SORTIE / "n2_resultats.csv")
     depart_n2 = next(float(l_["score_recherche"]) for l_ in n2 if l_["campagne"] == "N2_reference" and l_["methode"] == "glouton")
     depart_n1 = next(float(l_["score_depart"]) for l_ in lire_csv(SORTIE / "n1_resultats.csv"))
-    f1, lignes = vitesse(conv, depart_n2, depart_n1)
-    f2 = comparaisons_memetique()
-    enregistrer_manifeste("vitesse_convergence", ["donnees_agregees/convergence.json", "donnees_agregees/vitesse_convergence.csv"],
-                          SCRIPT, note=", ".join(f1))
-    enregistrer_manifeste("memetique_comparaisons", ["n2_resultats.csv", "donnees_agregees/v3_pilote/sma_reoptimisation_globale.csv"],
-                          SCRIPT, note=", ".join(f2))
+    _, lignes = vitesse(conv, depart_n2, depart_n1)
+    comparaisons_memetique()
     for l_ in lignes:
         print(l_["niveau"], l_["methode"], l_["temps_premiere_amelioration_median_s"], l_["temps_plateau_1pct_median_s"])
 

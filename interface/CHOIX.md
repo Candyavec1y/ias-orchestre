@@ -140,7 +140,7 @@ au SMA, aux indicateurs, à l'étude de saturation et au validateur :
   réoptimisation globale par le mémétique (1 s), à la demande de l'administrateur sur le site.
 * **Une seule implémentation par algorithme** : celle de `hybridation.py`, qui s'appuie uniquement sur
   `structures_communes.py` et `sorties.py`. Les anciennes versions autonomes (recherche taboue avec ses
-  propres classes, recuit simulé et AGS seuls) ont été retirées du dépôt (voir NETTOYAGE.md).
+  propres classes, recuit simulé et AGS seuls) ont été retirées du dépôt (historique git).
 * **Niveau 1 (chirurgiens → plages)** : l'hybridation N1 travaille sur des blocs de 2 h. Le planning v28
   a des horaires irréguliers (7 h 45, 15 h 30…) et n'est donc pas ré-optimisable tel quel. L'onglet lance
   le niveau 1 sur l'**instance d'étude fictive** (8 chirurgiens, 3 salles) et affiche le planning obtenu (D6).
@@ -243,14 +243,7 @@ fuite de données de santé ; voir § 10.
 
 ## 9. Lancer, tester
 
-```bash
-python -m pip install -r interface/requirements.txt
-python -m streamlit run interface/app.py          # depuis la racine du dépôt
-python -m pytest interface/tests -m "not lent"    # tests rapides
-```
-Les autres commandes (hybridation, scénarios du SMA, modèles, saturation) sont dans le [README](../README.md).
-Au premier lancement : comptes de démonstration dans `interface/donnees/comptes_demo.txt`
-(admin, regulation, dr.ct, dr.cl, dr.lz), mot de passe à changer à la première connexion.
+Installation, lancement, comptes, tests et commandes : voir le [README](../README.md) à la racine du dépôt.
 
 ## 10. Questions ouvertes (à arbitrer par l'équipe)
 

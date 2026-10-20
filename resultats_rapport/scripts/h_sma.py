@@ -23,7 +23,7 @@ import time
 from dataclasses import replace
 from datetime import date
 
-from commun_rapport import FIGURES, SORTIE, ecrire_csv, enregistrer_manifeste
+from commun_rapport import FIGURES, SORTIE, ecrire_csv
 
 import scenarios_sma as SC_SMA
 import sma_urgences as SMA
@@ -196,7 +196,6 @@ def main():
         print(f"  {nom} ({time.perf_counter() - t0:.0f} s)", flush=True)
     ecrire_csv(SORTIE / "sma_scenarios.csv", [{k: (str(v) if isinstance(v, dict) else v) for k, v in l_.items()}
                                              for l_ in lignes])
-    enregistrer_manifeste("sma_scenarios.csv", ["sma_scenarios.csv"], SCRIPT)
     print(f"SMA : {len(lignes)} exécutions en {time.perf_counter() - t0:.0f} s")
 
 

@@ -4,7 +4,7 @@ Analyse des campagnes D (N1) et E (N2) : résumés statistiques, test confirmato
 (Wilcoxon apparié, Holm), figures conservées : scores N1 / N2, convergence N1 / N2, composantes N2, qualité
 selon le budget (PNG). Lit uniquement les sorties agrégées.
 
-Règle de l'équipe (réponse à QUESTIONS.md, point 1) : pendant la recherche, les dépassements sont seulement
+Règle de l'équipe : pendant la recherche, les dépassements sont seulement
 pénalisés ; à la fin, SEULES les solutions faisables sont proposées (contrainte dure). Une exécution dont la
 solution finale n'est pas faisable compte donc comme « aucune solution proposée » : elle entre dans le taux de
 solutions proposées, mais pas dans les statistiques de qualité. Le glouton est le DÉPART commun (référence), décrit
@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from scipy import stats  # noqa: E402
 
-from commun_rapport import (AGREGEES, COULEURS, MARQUEURS, METHODES, SORTIE, ecrire_csv, enregistrer_manifeste,  # noqa: E402
+from commun_rapport import (AGREGEES, COULEURS, MARQUEURS, METHODES, SORTIE, ecrire_csv,  # noqa: E402
                             lire_csv, resume_stat, sauver_figure)
 
 SCRIPT = "scripts/e_analyse.py"
@@ -95,7 +95,7 @@ def analyse_n1(n1, conv):
     ax.set_xticks(range(len(meth)), meth, rotation=20)
     ax.set(ylabel="F1 commun (à minimiser)", title=f"N1, instance d'étude fictive : 10 graines, budget 10 s "
                                                      f"(toutes les solutions sont faisables : {all(_vrai(l_['faisable']) for l_ in n1)})")
-    f_scores = sauver_figure(fig, "n1_scores")
+    sauver_figure(fig, "n1_scores")
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(8, 4.5), layout="constrained")
@@ -108,12 +108,9 @@ def analyse_n1(n1, conv):
         ax.plot([], [], color=COULEURS[m], label=m)
     ax.set(xlabel="Temps réel (s)", ylabel="Meilleur F1 trouvé", title="N1 : convergence (10 graines par méthode)")
     ax.legend(fontsize=8)
-    f_conv = sauver_figure(fig, "n1_convergence")
+    sauver_figure(fig, "n1_convergence")
     plt.close(fig)
 
-    enregistrer_manifeste("T3 n1_resume.csv", ["n1_resultats.csv"], SCRIPT)
-    enregistrer_manifeste("N1 scores / convergence", ["n1_resultats.csv", "donnees_agregees/convergence.json"], SCRIPT,
-                          note=", ".join(f_scores + f_conv))
     return res
 
 
@@ -183,7 +180,6 @@ def analyse_n2(n2, conv):
 
 
 
-    figs = []
     # F3 scores (référence)
     fig, ax = plt.subplots(figsize=(10, 4.8), layout="constrained")
     meth = [m for m in ORDRE if any(l_["methode"] == m for l_ in ref)]
@@ -204,7 +200,7 @@ def analyse_n2(n2, conv):
     ax.set(ylabel="Objectif F2 + report des solutions proposées (à minimiser)",
            title="N2 v28, cohorte de référence (charge 100 %) : 10 graines, budget 10 s ; "
                  "seules les solutions faisables sont proposées")
-    figs += sauver_figure(fig, "n2_scores")
+    sauver_figure(fig, "n2_scores")
     plt.close(fig)
 
     # F4a composantes
@@ -220,7 +216,7 @@ def analyse_n2(n2, conv):
     ax.set(ylabel="Composante pondérée (moyenne ± écart-type)",
            title="N2 référence : composantes de l'objectif (F2 = bloc + lits + places ; + report)")
     ax.legend()
-    figs += sauver_figure(fig, "n2_composantes")
+    sauver_figure(fig, "n2_composantes")
     plt.close(fig)
 
     # F4b qualité vs budget
@@ -234,7 +230,7 @@ def analyse_n2(n2, conv):
            ylabel="Objectif F2 + report des solutions proposées (moy. ± é.-t.)",
            title="N2 référence : qualité selon le budget (point absent : aucune solution proposée)")
     ax.legend(fontsize=8)
-    figs += sauver_figure(fig, "n2_qualite_budget")
+    sauver_figure(fig, "n2_qualite_budget")
     plt.close(fig)
 
     # F5 convergence (score de RECHERCHE, seul enregistré au fil de l'exécution)
@@ -249,12 +245,9 @@ def analyse_n2(n2, conv):
     ax.set(xlabel="Temps réel (s)", ylabel="Meilleur score de recherche (F2 + report)",
            title="N2 référence : convergence (10 graines par méthode)")
     ax.legend(fontsize=8)
-    figs += sauver_figure(fig, "n2_convergence")
+    sauver_figure(fig, "n2_convergence")
     plt.close(fig)
 
-    for p in ("n2_resume.csv", "figures N2 (scores, composantes, budget, convergence)"):
-        enregistrer_manifeste(p, ["n2_resultats.csv", "donnees_agregees/convergence.json"], SCRIPT,
-                              note=", ".join(figs) if p.startswith("F") else "")
     return res_ref, tests
 
 
