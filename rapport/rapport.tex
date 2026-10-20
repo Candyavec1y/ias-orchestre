@@ -1,0 +1,1498 @@
+\documentclass[11pt,a4paper]{article}
+
+% ===== PACKAGES =====
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{tocloft}
+\usepackage{array}
+\usepackage{amsmath,amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\makeatletter\renewcommand{\ALG@beginalgorithmic}{\small}\makeatother
+\usepackage{placeins}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\graphicspath{{figures/}}
+
+\geometry{margin=2cm}
+\setstretch{1.0}
+\setlength{\parskip}{0.1em}
+\setlength{\emergencystretch}{2em}
+\renewcommand{\thesection}{\Roman{section}}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\addto\captionsfrench{\renewcommand{\contentsname}{Sommaire}\renewcommand{\tablename}{Tableau}}
+\renewcommand{\refname}{Références}
+% Eviter la collision des numéros romains dans le sommaire
+\setlength{\cftsecnumwidth}{3.1em}
+\setlength{\cftsubsecnumwidth}{4.3em}
+\setlength{\cftsubsubsecnumwidth}{5.0em}
+\setlength{\cftbeforesecskip}{1pt}
+\setlength{\cftbeforetoctitleskip}{0pt}
+\setlength{\cftaftertoctitleskip}{8pt}
+\renewcommand{\cftsecfont}{\small\bfseries}\renewcommand{\cftsecpagefont}{\small\bfseries}
+\renewcommand{\cftsubsecfont}{\footnotesize}\renewcommand{\cftsubsecpagefont}{\footnotesize}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue}
+
+% Mise en forme des légendes
+\captionsetup[table]{
+    position=top,
+    skip=8pt
+}
+
+\captionsetup[figure]{
+    position=bottom,
+    skip=6pt
+}
+
+% ===== DOCUMENT =====
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+\vspace*{1.3cm}
+{\Large\textbf{Centrale Lille Institut}\par}
+\vspace{0.35cm}
+{\large Projet fil rouge -- IA \& Santé\par}
+\vspace{1.75cm}
+{\Huge\textbf{OR'CHESTRE}\par}
+\vspace{0.65cm}
+{\Large Ordonnancement intelligent et dynamique des blocs opératoires,\par
+ des lits d'hospitalisation et des places ambulatoires\par}
+\vspace{1.75cm}
+{\large\textbf{Rapport scientifique de projet}\par}
+\vspace{1.45cm}
+{\large\textbf{Auteurs}\par}
+\vspace{0.6cm}
+\begin{tabular}{ll}
+Kimlee Pasquier & Ingrid Mouradian\\[0.35cm]
+Tanguy De Bock & Richard Delmotte\\[0.35cm]
+François Le Meur & Candy Mollier
+\end{tabular}
+\vspace{0.7cm}
+
+\vfill
+{\large Année universitaire 2026--2027\par}
+\end{center}
+\end{titlepage}
+
+% ===== RÉSUMÉ ET MOTS-CLÉS =====
+
+\noindent\textbf{Résumé.}
+La programmation des interventions chirurgicales exige de coordonner des ressources interdépendantes : salles, chirurgiens, lits d'hospitalisation et places ambulatoires. Lorsque les dates d'intervention sont fixées principalement selon les disponibilités opératoires, les capacités d'accueil en aval peuvent devenir limitantes. OR'CHESTRE propose un outil d'aide à la décision qui intègre ces contraintes dès la programmation, dans une logique de flux tiré, puis adapte le planning aux événements imprévus.
+
+L'outil associe trois composantes complémentaires. Quatre modèles d'apprentissage automatique HistGradientBoosting estiment les durées opératoires et de séjour ainsi que le mode de prise en charge ; une règle distincte propose une priorité indicative, soumise à validation médicale. L'ordonnancement statique distingue la planification des vacations, étudiée sur une instance pédagogique, de l'affectation des patients à un planning de vacations préétabli. Cette dernière tient compte des capacités opératoires et d'hébergement. Trois métaheuristiques --- recuit simulé, recherche tabou et algorithme génétique --- sont comparées seules et selon plusieurs stratégies d'hybridation. Enfin, un système multi-agents fondé sur le protocole \emph{Contract Net} traite les urgences et les aléas en recherchant des adaptations limitant les perturbations du programme.
+
+Les expérimentations montrent que l'intérêt des hybridations dépend du contexte et du temps de calcul disponible : elles ne surpassent pas systématiquement les méthodes individuelles. La régulation dynamique révèle également un compromis entre qualité du planning, rapidité de réaction et stabilité des interventions programmées. Ces résultats, obtenus principalement sur des patients et des événements simulés, constituent une première évaluation du dispositif et nécessitent une validation en conditions hospitalières réelles.
+
+\medskip
+\noindent\textbf{Mots-clés :} ordonnancement chirurgical ; optimisation intégrée ; apprentissage automatique ; métaheuristiques hybrides ; systèmes multi-agents ; régulation des urgences.
+
+% ===== SOMMAIRE =====
+\clearpage
+\begingroup\setstretch{0.9}\setlength{\cftbeforesecskip}{0pt}\enlargethispage{5\baselineskip}
+\tableofcontents
+\endgroup
+\clearpage
+
+
+% ===== INTRODUCTION =====
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Contexte et enjeux}
+
+L'activité chirurgicale d'un hôpital repose sur plusieurs ressources interdépendantes : les salles de bloc opératoire et les chirurgiens en amont, les lits d'hospitalisation et les places ambulatoires en aval. Une contrainte sur l'une de ces ressources peut se répercuter sur les autres : un retard au bloc décale les patients suivants, modifie l'occupation des lits et des places et peut conduire à une situation de saturation. Une meilleure coordination permet de limiter ces déséquilibres, de réduire l'attente des patients et d'améliorer les conditions de prise en charge. Elle représente également un enjeu économique important, en favorisant une utilisation plus efficace des ressources hospitalières.
+
+Le parcours du patient comprend l'accueil et la préparation préopératoire, l'intervention elle-même, qui mobilise une salle, un chirurgien et une équipe d'anesthésie, puis le réveil suivi d'une prise en charge ambulatoire ou conventionnelle. Le calendrier d'admission et la durée du séjour varient selon la situation clinique. Planifier ne consiste donc pas seulement à remplir des salles d'opération, mais à synchroniser les différentes étapes du parcours patient. Cette tâche est rendue difficile par des capacités limitées, la variabilité des durées opératoires et des séjours, ainsi que la survenue d'urgences.
+
+\subsection{Problématique et limites des travaux existants}
+
+Optimiser une ressource isolément peut dégrader la performance globale : augmenter le volume d'interventions peut accroître la demande en lits et en places ambulatoires et provoquer une saturation en aval. Le problème est combinatoire et multicritère ; lorsque sa taille et le nombre de contraintes augmentent, les méthodes exactes peuvent devenir coûteuses en temps de calcul.
+
+Une large part de la littérature s'intéresse à l'ordonnancement des blocs opératoires~\cite{cardoen2010}. Certains travaux intègrent également les ressources postopératoires, notamment les lits d'hospitalisation ou de soins intensifs~\cite{schneider2020,augustin2022}. D'autres proposent des approches intégrées reposant sur plusieurs méthodes d'optimisation~\cite{fei2010,vieira2025}.
+
+Toutefois, dans les travaux examinés, peu d'approches réunissent explicitement, au sein d'un même système, la prédiction des caractéristiques des patients, l'ordonnancement conjoint des blocs, des lits et des places ambulatoires, ainsi que l'adaptation dynamique aux urgences et aux aléas. Notre projet vise à articuler ces différentes dimensions dans un outil unique d'aide à la décision.
+
+\subsection{Objectifs et contributions}
+
+Notre objectif est de passer d'une logique de \emph{flux poussé}, dans laquelle les interventions sont programmées avant de rechercher les capacités d'accueil nécessaires, à une logique de \emph{flux tiré}, où les dates d'intervention sont proposées en fonction des ressources prévisionnellement disponibles. Le chirurgien conserve la décision finale.
+
+Dans cette perspective, nous développons \emph{OR'CHESTRE}, un outil d'aide à la décision visant à coordonner la planification des blocs opératoires, des lits d'hospitalisation et des places ambulatoires. Ses principales contributions sont les suivantes :
+
+\begin{itemize}
+    \item Un \textbf{module d'apprentissage automatique} qui, à partir des données saisies en consultation (sexe, âge, chirurgien, type d'intervention, codes de diagnostic CIM et d'acte CCAM\footnote{CIM : Classification internationale des maladies ; CCAM : Classification commune des actes médicaux.}), prédit les caractéristiques nécessaires à la planification : durée opératoire, mode de prise en charge et durées préopératoire et postopératoire, complété par une règle déterministe fondée sur les codes CIM-10 et CCAM pour proposer une priorité indicative ;
+
+    \item Un \textbf{modèle d'ordonnancement à deux niveaux}, résolu à l'aide de trois métaheuristiques, le recuit simulé (RS), la recherche tabou (Tabou) et l'algorithme génétique simple (AGS), et de leurs hybridations en relais ou imbriquées. Le premier niveau organise les vacations des chirurgiens, tandis que le second affecte les patients en tenant compte des capacités en lits et en places ambulatoires ;
+
+    \item Un \textbf{système multi-agents} (SMA) fondé sur le protocole \emph{Contract Net}, permettant d'insérer les urgences et de gérer les aléas organisationnels en limitant les modifications du planning existant ;
+
+    \item Une \textbf{interface graphique} réunissant ces différents composants et destinée à faciliter leur utilisation par les professionnels de santé.
+\end{itemize}
+
+\subsection{Organisation de l'article}
+
+La section~\ref{sec:lit} présente la revue de littérature. La section~\ref{sec:problem} décrit le problème étudié et la section~\ref{sec:math} en donne la formulation mathématique. La section~\ref{sec:method} détaille l'approche hybride proposée, tandis que la section~\ref{sec:expdesign} présente le protocole expérimental. Les résultats numériques sont exposés dans la section~\ref{sec:results}, puis discutés dans la section~\ref{sec:discussion}. Enfin, la section~\ref{sec:conclusion} présente les conclusions et les perspectives du projet.
+
+% =====================================================================
+
+\section{Revue de littérature}
+\label{sec:lit}
+
+\subsection{Planification et ordonnancement des blocs opératoires}
+
+La planification des blocs opératoires constitue un problème majeur de recherche opérationnelle, en raison de la diversité des ressources mobilisées et de leur interdépendance. Cardoen et al.~\cite{cardoen2010} proposent une revue de littérature qui distingue notamment les différents problèmes de planification selon les objectifs de performance, les catégories de patients, les méthodes de résolution et la prise en compte des incertitudes.
+
+L'ordonnancement chirurgical intervient à plusieurs niveaux de décision, depuis la répartition des capacités opératoires jusqu'à l'affectation et au séquencement des interventions. Les principaux critères étudiés comprennent l'utilisation des salles, les temps d'attente, les dépassements horaires et les coûts associés.
+
+Les recherches récentes soulignent également l'importance des ressources situées en aval du bloc. Schneider et al.~\cite{schneider2020} proposent ainsi une planification prenant en compte les besoins en lits postopératoires afin de limiter les variations d'occupation. De même, Augustin et al.~\cite{augustin2022} intègrent la disponibilité des lits de soins intensifs dans la programmation chirurgicale pour tenir compte des risques d'annulation.
+
+\subsection{Méthodes d'optimisation exacte}
+
+Les méthodes exactes cherchent à déterminer une solution optimale pour une formulation mathématique donnée, lorsque la résolution peut être menée à son terme. Parmi les approches utilisées figurent la programmation linéaire en nombres entiers, la programmation par contraintes et les méthodes de décomposition.
+
+Roshanaei et al.~\cite{roshanaei2020} proposent notamment une méthode de type \textit{Branch-and-Check}, combinant programmation entière et programmation par contraintes pour résoudre un problème de planification chirurgicale à plusieurs niveaux. Schneider et al.~\cite{schneider2020} développent, quant à eux, un modèle de programmation linéaire mixte intégrant simultanément l'utilisation des blocs et les besoins en lits postopératoires.
+
+Ces méthodes présentent l'avantage de fournir des solutions dont la qualité peut être évaluée à l'aide de bornes d'optimalité. Cependant, leur coût de calcul peut augmenter fortement avec la taille des instances et la multiplication des contraintes. Cette difficulté motive le recours à des méthodes approchées pour les problèmes d'ordonnancement complexes.
+
+\subsection{Heuristiques et métaheuristiques}
+
+Les heuristiques et les métaheuristiques visent à obtenir des solutions de bonne qualité dans des temps de calcul maîtrisés, sans garantir systématiquement l'optimalité.
+
+Plusieurs approches ont été appliquées à l'ordonnancement chirurgical. Aringhieri et al.~\cite{aringhieri2015} proposent une métaheuristique à deux niveaux pour coordonner l'affectation des blocs opératoires et la programmation des patients, en tenant compte des lits postopératoires.
+
+Plus récemment, Vieira et al.~\cite{vieira2025} étudient trois méthodes de recherche : un algorithme génétique à clés aléatoires associé au \textit{Q-learning}, le recuit simulé et la recherche locale itérée. Ces méthodes reposent sur une représentation commune des solutions et sont évaluées sur des instances d'ordonnancement chirurgical intégrant plusieurs ressources et contraintes de disponibilité.
+
+Leurs performances dépendent toutefois de leur adaptation au problème, notamment du codage des solutions, des voisinages explorés et du paramétrage des algorithmes.
+
+\subsection{Approches hybrides}
+
+L'hybridation consiste à associer plusieurs méthodes de résolution afin de tirer parti de leurs mécanismes complémentaires. Elle peut notamment combiner une méthode de construction de solutions avec une recherche locale, ou intégrer plusieurs techniques d'optimisation au sein d'un même algorithme.
+
+Fei et al.~\cite{fei2010} proposent une approche en deux phases pour la planification chirurgicale. Une heuristique fondée sur la génération de colonnes détermine d'abord les dates d'intervention, puis un algorithme génétique hybride construit les plannings journaliers en tenant compte de la disponibilité des lits de réveil.
+
+Vieira et al.~\cite{vieira2025} proposent une autre forme de combinaison méthodologique, fondée sur un cadre commun de représentation et de décodage des solutions, permettant d'appliquer différentes métaheuristiques à un même problème.
+
+Le choix de l'architecture d'hybridation reste néanmoins déterminant et doit être évalué expérimentalement en fonction des caractéristiques du problème traité.
+
+\subsection{Positionnement de l'approche proposée}
+
+La littérature met en évidence plusieurs axes complémentaires : l'amélioration de l'occupation des blocs opératoires, l'intégration des ressources postopératoires, la prise en compte de l'incertitude et le développement de méthodes d'optimisation avancées~\cite{alamin2025,vieira2025}.
+
+La particularité d'OR'CHESTRE réside également dans l'intégration d'un SMA destiné à adapter le planning aux urgences et aux perturbations, tout en prenant en compte les capacités en lits d'hospitalisation et en places ambulatoires.
+
+L'objectif n'est donc pas de proposer une nouvelle métaheuristique fondamentale, mais d'étudier l'intérêt de leur combinaison avec des modèles prédictifs et un mécanisme d'adaptation dynamique dans un même outil d'aide à la décision.
+
+
+\section{Description du problème}
+\label{sec:problem}
+
+\subsection{Description détaillée}
+
+Nous considérons la planification des interventions chirurgicales en coordination avec les ressources en aval (lits d'hospitalisation et places ambulatoires). Le problème statique se décompose en deux niveaux d'affectation, chacun disposant d'une fonction objectif propre :
+
+\begin{itemize}
+    \item \textbf{Niveau 1 -- Planification des vacations.} Les blocs de disponibilité des chirurgiens sont affectés à des salles et à des créneaux de deux heures. Une \emph{vacation} est un ensemble de créneaux consécutifs d'un même chirurgien, dans la même salle et le même jour.
+
+    \item \textbf{Niveau 2 -- Affectation des patients.} Les patients sont affectés aux vacations compatibles avec leur chirurgien, en tenant compte des durées opératoires et des capacités d'accueil en aval. Leur mode de prise en charge, ambulatoire ou conventionnel, détermine les besoins en places ou en lits.
+\end{itemize}
+
+La planification statique organise les interventions connues à l'avance sur un horizon d'une à quatre semaines, avec possibilité de report sur les semaines suivantes. Elle devient dynamique lorsque surviennent des urgences ou des aléas organisationnels, tels que des annulations, des retards ou des indisponibilités de ressources. Le SMA vise alors à adapter le programme opératoire en limitant les perturbations du planning initial.
+
+L'interface ajoute l'inscription d'un patient de consultation et l'annulation.
+
+
+
+\subsection{Ressources considérées}
+
+Le problème étudié mobilise plusieurs ressources hospitalières, dont les capacités sont limitées. L'instance expérimentale est construite à partir du planning réel des vacations. Les chirurgiens, les salles, les heures de vacation et les capacités d'hébergement sont des données fixes ; le nombre de patients à programmer est le paramètre que l'on fait varier dans les expériences.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Ressources de l'instance expérimentale (planning réel des vacations)}
+\label{tab:ressources}
+\begin{tabularx}{\linewidth}{@{}p{3.2cm}X@{}}
+\toprule
+\textbf{Ressource} & \textbf{Valeur} \\
+\midrule
+Chirurgiens & 16 en semaine paire, 18 en semaine impaire (23 codes praticiens au total) \\
+Salles opératoires & 5, dont la salle 1 sans aucune vacation \\
+Vacations & 35 en semaine paire, 37 en semaine impaire, aux horaires réels (7~h~45 à 17~h~30, coupées par la pause de 13~h à 13~h~30), soit environ 150~h de bloc par semaine \\
+Plages réservées aux urgences & 3 ou 4 par semaine \\
+Cycle & 4 semaines : impaire A, paire, impaire B, paire \\
+Lits d'hospitalisation & 30 lits, dont 3 réservés aux urgences \\
+Places ambulatoires & 20 places par demi-journée\\
+Patients & variable selon l'expérience \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Les salles opératoires et les chirurgiens constituent des ressources exclusives : une salle ne peut accueillir qu'une intervention à la fois et un chirurgien ne peut intervenir simultanément dans plusieurs salles. Les lits d'hospitalisation et les places ambulatoires sont des ressources à capacité limitée, dont l'occupation dépend du mode de prise en charge et de la durée de séjour des patients. On distingue le lit, occupé au moins une nuit, de la place ambulatoire, occupée seulement en journée, sans consommation nocturne de lit.
+
+Une partie des lits est conservée en réserve afin de faciliter la gestion des urgences et des aléas. Dans l'optimisation statique, la capacité utilisable est le nombre de lits diminué de la réserve ; dans le SMA, la réserve n'est mobilisable que pour une urgence.
+
+
+
+
+\subsection{Hypothèses}
+
+Les principales hypothèses retenues pour la modélisation sont les suivantes :
+
+\begin{enumerate}
+    \item \textbf{Horizon de planification.}
+    Le planning statique est établi sur une semaine pour l'instance d'étude et sur quatre semaines pour le planning réel, les interventions programmées étant connues à l'avance. Les patients ne pouvant être affectés peuvent être reportés sur les semaines suivantes, dans la limite de trois semaines supplémentaires : les vacations de l'horizon sont reconduites sur les trois semaines suivantes et le choix «~non placé~» est retiré des opérateurs, si bien que tout patient est programmé, au besoin par report.
+
+    \item \textbf{Affectation des chirurgiens.}
+    Chaque patient est associé à un chirurgien dans le problème statique. En situation d'urgence, une réaffectation à un autre chirurgien compétent peut être envisagée selon les règles de régulation.
+
+    \item \textbf{Caractéristiques des patients.}
+    Le mode de prise en charge, les durées opératoires et les durées de séjour sont considérés comme connus au moment de l'optimisation. Ces valeurs peuvent provenir de prédictions du module d'apprentissage automatique ou de données synthétiques pour les simulations.
+
+    \item \textbf{Occupation des ressources.}
+    Un patient ambulatoire mobilise une place le jour de son intervention, tandis qu'un patient hospitalisé mobilise une capacité de lit pendant son séjour. L'occupation des lits est agrégée par nuitée. Une sortie est conventionnellement prévue à midi, suivie de 60 minutes de remise en état avant une nouvelle admission. Le jour de sortie n'est pas compté comme une nuit supplémentaire. Les places ambulatoires sont quant à elles comptabilisées par demi-journée, matin ou après-midi, avec une remise en état conventionnelle de 60 minutes entre les deux périodes. Le modèle statique ne choisit pas de lit ou de place physique individuellement.
+
+    \item \textbf{Capacité opératoire.}
+    Une marge de sécurité est prévue pour tenir compte des incertitudes sur les durées opératoires. Les dépassements de capacité sont pénalisés dans la fonction objectif.
+
+    \item \textbf{Priorisation des patients et gestion des urgences.}
+    Les patients programmés sont associés à un niveau de priorité de 1 (faible) à 4 (urgente), qui pondère le coût des reports. Les urgences imprévues sont quant à elles classées selon leur gravité, qui détermine le délai maximal de prise en charge dans le SMA : vitale (60~min), urgente (6~h) ou différable (24~h). Ces niveaux de gravité et les délais associés constituent des hypothèses de simulation.
+\end{enumerate}
+
+
+
+\subsection{Contraintes opérationnelles}
+
+\paragraph{Niveau 1 -- Planification des vacations.}
+Une salle opératoire ne peut accueillir qu'une vacation à un instant donné et un chirurgien ne peut être affecté simultanément à plusieurs salles. Les affectations doivent respecter les disponibilités des chirurgiens, les salles autorisées ainsi que les créneaux réservés aux urgences. Le nombre de créneaux attribués à chaque chirurgien doit correspondre à son besoin opératoire.
+
+\paragraph{Niveau 2 -- Affectation des patients.}
+Chaque patient est affecté au plus une fois, à une vacation compatible avec son chirurgien et sa date minimale ; la charge de chaque vacation, l'occupation des lits par nuitée (hors réserve) et celle des places par demi-journée respectent leurs capacités (section~\ref{sec:math}).
+
+Les conflits de ressources et les dépassements de capacité sont pénalisés dans les fonctions objectif afin de permettre aux métaheuristiques d'explorer des solutions temporairement infaisables. Les patients non affectés sont également pénalisés.
+
+\paragraph{Vérification de la faisabilité} Un contrôle indépendant des fonctions objectif et des métaheuristiques vérifie les solutions finales aux deux niveaux. Au niveau 1, il contrôle notamment l'affectation de tous les blocs, les disponibilités des chirurgiens et les conflits de ressources. Au niveau 2, il vérifie l'affectation des patients, la compatibilité patient–chirurgien–vacation, les dates minimales d'intervention et le respect des capacités opératoires et d'hébergement, avec une faible tolérance de dépassement des vacations (section~\ref{sec:math}). Pendant la recherche, chaque méthode conserve la meilleure solution faisable rencontrée : c'est elle qui est proposée. Si aucune solution ne respecte l'ensemble des contraintes, le résultat est explicitement signalé comme non valide et les violations sont détaillées.
+
+\paragraph{Planification dynamique.}
+Les urgences doivent être insérées en fonction de leur gravité et du délai maximal de prise en charge. La régulation peut entraîner des décalages, des reports ou des déprogrammations, ainsi que l'utilisation de capacités de réserve. Ces perturbations sont associées à des coûts afin de privilégier les modifications les moins importantes du planning initial. Les heures du programme sont une contrainte dure : une intervention doit tenir dans une vacation, opérée par un chirurgien compétent, ou dans une plage réservée aux urgences, sans heures supplémentaires. En dehors de ces heures, les urgences relèvent d'un planning de garde (une salle et une équipe, à partir de 18~h les jours de programme et toute la journée les autres jours). Une urgence qui ne peut pas être opérée dans la journée est confiée au planning de garde. En revanche, si aucun chirurgien compétent n'est disponible à temps (par exemple en l'absence du spécialiste), un transfert vers un autre établissement doit pouvoir être proposé.
+
+
+\subsection{Critères de performance}
+
+La performance du planning est évaluée à travers plusieurs critères, propres à chaque niveau d'optimisation.
+
+\paragraph{Niveau 1 -- Planification des vacations.}
+L'objectif est de construire un planning cohérent avec les disponibilités des chirurgiens et des salles opératoires, en minimisant les conflits d'affectation des salles et des chirurgiens, la dispersion d'un même chirurgien entre plusieurs salles et la fragmentation de ses vacations en plusieurs plages horaires distinctes.
+
+\paragraph{Niveau 2 -- Affectation des patients.}
+L'objectif est de programmer les interventions en limitant les déséquilibres entre les capacités opératoires et les ressources d'accueil. Les critères évalués sont le nombre de patients non programmés, les minutes de dépassement de la capacité utile des vacations, le temps opératoire restant inutilisé dans les vacations ordinaires, les dépassements cumulés des capacités en lits et en places ambulatoires, et la variabilité de leur occupation quotidienne. Ces critères permettent de rechercher un compromis entre l'utilisation des capacités opératoires, la programmation des patients et la disponibilité des ressources postopératoires. Des indicateurs descriptifs complètent le score : taux d'occupation du bloc, pics et taux d'occupation des lits et des places, nombre de patients reportés et semaines de report cumulées, attente moyenne par priorité.
+
+\paragraph{Planification dynamique.}
+La performance de la régulation est mesurée par le nombre d'urgences prises en charge dans les délais, les interventions décalées ou déprogrammées, les patients restant sans solution et les éventuels dépassements de capacité. Le coût des modifications apportées au planning initial est également évalué afin de limiter les perturbations liées aux urgences et aux aléas. Le bilan du SMA compte en outre les urgences confiées au planning de garde, l'attente moyenne des urgences, les patients repris par un confrère ou laissés en liste d'attente, les alertes, les erreurs détectées par un contrôle de cohérence indépendant et les messages échangés.
+
+Enfin, les temps de calcul sont mesurés pour comparer les méthodes d'optimisation.
+
+
+
+\section{Formulation mathématique}
+\label{sec:math}
+
+La planification statique est décomposée en deux niveaux : l'affectation des blocs de disponibilité des chirurgiens aux salles et aux créneaux (niveau~1), puis l'affectation des patients à des vacations disponibles (niveau~2). Chaque niveau est évalué par une fonction objectif pondérée. Les coefficients sont définis symboliquement ci-dessous ; leurs valeurs relèvent du paramétrage expérimental.
+
+\subsection{Ensembles et indices}
+
+Le tableau~\ref{tab:ensembles_modele} présente les ensembles et les indices du modèle.
+
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Ensembles et indices du modèle}
+\label{tab:ensembles_modele}
+\begin{tabularx}{\linewidth}{@{}p{2.0cm}p{1.15cm}X@{}}
+\toprule
+\textbf{Notation} & \textbf{Indice} & \textbf{Description} \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Niveau 1 --- Planification des vacations}} \\
+$K$ & $k$ & Chirurgiens. \\
+$S$ & $s$ & Salles opératoires. \\
+$T$ & $t$ & Créneaux temporels de deux heures sur l'horizon. \\
+$P=S\times T$ & $p=(s,t)$ & Couples salle--créneau. \\
+$B$ & $b$ & Blocs de disponibilité opératoire à affecter. \\
+\addlinespace[3pt]
+\multicolumn{3}{@{}l}{\textit{Niveau 2 --- Affectation des patients}} \\
+$I$ & $i$ & Patients à programmer. \\
+$V$ & $v$ & Vacations disponibles, issues du niveau 1 ou fournies en entrée. \\
+$D$ & $d$ & Dates de l'horizon considéré, utilisées notamment pour le décompte des nuitées. \\
+$H$ & $h$ & Demi-journées ambulatoires : matin et après-midi. \\
+$V_{\mathrm{ord}}\subseteq V$ & $v$ & Vacations ordinaires (hors vacations supplémentaires). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+Les vacations constituent une interface conceptuelle entre les deux problèmes d'ordonnancement. Elles peuvent résulter d'une affectation de blocs de disponibilité dans l'instance pédagogique ou être directement fournies par un planning de vacations préétabli.
+
+\subsection{Paramètres}
+
+Les tableaux~\ref{tab:param_n1} et~\ref{tab:param_n2} présentent les paramètres des deux niveaux.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Paramètres du niveau 1}
+\label{tab:param_n1}
+\begin{tabularx}{\linewidth}{@{}p{3.2cm}X@{}}
+\toprule
+\textbf{Notation} & \textbf{Signification} \\
+\midrule
+$n_k$ & Nombre de blocs de deux heures demandés par le chirurgien $k$. \\
+$c(b)\in K$ & Chirurgien auquel est associé le bloc $b$ ; le nombre de blocs de $k$ est $n_k$. \\
+$P^{\mathrm{libre}}\subseteq P$ & Plages disponibles, hors créneaux indisponibles ou réservés. \\
+$\operatorname{Dom}(b)\subseteq P^{\mathrm{libre}}$ & Plages autorisées pour le bloc $b$, selon les disponibilités du chirurgien et les salles compatibles. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Paramètres du niveau 2}
+\label{tab:param_n2}
+\begin{tabularx}{\linewidth}{@{}p{3.3cm}X@{}}
+\toprule
+\textbf{Notation} & \textbf{Signification} \\
+\midrule
+$a_i\in\{0,1\}$ & Mode de prise en charge fixé avant optimisation : 1 si ambulatoire, 0 si hospitalisation conventionnelle. \\
+$\widehat p_i$ & Durée opératoire estimée, en minutes. \\
+$\widehat{pre}_i,\widehat{post}_i$ & Durées pré- et postopératoires estimées, en jours. \\
+$c_i,\ d_i^{\min}$ & Chirurgien du patient et éventuelle date minimale d'intervention. \\
+$q_i$ & Priorité du patient, utilisée pour pondérer les reports. \\
+$d_v,s_v,c_v,h_v$ & Jour, salle, chirurgien et demi-journée (matin ou après-midi) de la vacation $v$. \\
+$\mathrm{Cap}_v$ & Capacité temporelle nominale de la vacation, en minutes. \\
+$\tau_v,\ m_v^{\mathrm{fixe}}$ & Marge proportionnelle et marge fixe de sécurité de la vacation. \\
+
+$B_d,R_d,P_d$ & Nombre total de lits, lits réservés et capacité de places ambulatoires par demi-journée du jour $d$. \\
+
+$k_v$ & Nombre de semaines de report au-delà de l'horizon initial ; nul pour les vacations de l'horizon initial. \\
+
+$M_{iv},L_{ivd},A_{ivdh}$ & Indicateurs de compatibilité et d'occupation des ressources, définis ci-dessous. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+La capacité opératoire utile est définie par
+\begin{equation}
+\mathrm{CapUtile}_v=\max\!\left(0,\,\mathrm{Cap}_v(1-\tau_v)-m_v^{\mathrm{fixe}}\right).
+\label{eq:caputile}
+\end{equation}
+Dans le code, $\tau_v=0{,}10$ et $m_v^{\mathrm{fixe}}=0$ : une vacation de 4~h offre ainsi 216~min de capacité utile.
+
+Les indicateurs $M_{iv}$, $L_{ivd}$ et $A_{ivdh}$ sont des \emph{paramètres calculés}, et non des variables de décision :
+
+\begin{align}
+M_{iv} &=
+\begin{cases}
+1 & \text{si } c_i=c_v
+    \text{ et } (d_i^{\min}\text{ absent ou }d_v\ge d_i^{\min}),\\
+0 & \text{sinon},
+\end{cases}
+\\[4pt]
+L_{ivd} &=
+\begin{cases}
+1 & \text{si } d_v-\widehat{pre}_i
+    \le d < d_v+\widehat{post}_i,\\
+1 & \text{si } d=d_v
+    \text{ et } \widehat{pre}_i=\widehat{post}_i=0,\\
+0 & \text{sinon},
+\end{cases}
+\\[4pt]
+A_{ivdh} &=
+\begin{cases}
+1 & \text{si } d=d_v \text{ et } h=h_v,\\
+0 & \text{sinon}.
+\end{cases}
+\end{align}
+
+Le coefficient $L_{ivd}$ n'est utilisé que pour les patients hospitalisés ; $A_{ivdh}$ ne concerne que les patients ambulatoires.
+
+\subsection{Variables de décision}
+
+\paragraph{Niveau 1.} La variable $y_{bp}$ vaut 1 si le bloc $b$ est affecté à la plage $p$, et 0 sinon :
+\begin{equation}
+y_{bp}\in\{0,1\}\qquad (b\in B,\ p\in P).
+\end{equation}
+
+\paragraph{Niveau 2.} La variable $x_{iv}$ vaut 1 si le patient $i$ est affecté à la vacation $v$, et 0 sinon :
+\begin{equation}
+x_{iv}\in\{0,1\}\qquad (i\in I,\ v\in V).
+\end{equation}
+
+L'affectation des patients induit les charges et occupations suivantes :
+\begin{align}
+\mathrm{Charge}_v&=\sum_{i\in I}\widehat p_i x_{iv},\label{eq:charge_v}\\
+\mathrm{OccLit}_d&=\sum_{\substack{i\in I\\a_i=0}}\sum_{v\in V}L_{ivd}x_{iv},\label{eq:occ_lit}\\
+\mathrm{OccPlace}_{d,h}&=\sum_{\substack{i\in I\\a_i=1}}\sum_{v\in V}A_{ivdh}x_{iv}.\label{eq:occ_place}
+\end{align}
+Aucune variable ne choisit un lit individuel ni l'heure exacte de début de l'intervention ; le niveau 2 détermine l'affectation aux vacations et les occupations agrégées qui en découlent (tableau~\ref{tab:variables}). L'ordre de passage dans une vacation n'est fixé qu'à l'entrée du SMA.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Variables de décision et grandeurs induites par l'affectation}
+\label{tab:variables}
+\begin{tabularx}{\linewidth}{@{}p{2.6cm}p{2.0cm}X@{}}
+\toprule
+\textbf{Notation} & \textbf{Niveau} & \textbf{Signification} \\
+\midrule
+$y_{bp}$ & 1 & Vaut 1 si le bloc $b$ est affecté à la plage $p$, 0 sinon. \\
+$x_{iv}$ & 2 & Vaut 1 si le patient $i$ est affecté à la vacation $v$, 0 sinon. \\
+$\mathrm{Charge}_v$ & 2 & Durée opératoire totale des patients affectés à la vacation $v$, en minutes. \\
+$\mathrm{OccLit}_d$ & 2 & Nombre de lits occupés la nuit du jour $d$ par les patients hospitalisés. \\
+$\mathrm{OccPlace}_{d,h}$ & 2 & Nombre de places ambulatoires occupées le jour $d$ pendant la demi-journée $h$. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Fonctions objectif}
+
+Les deux fonctions objectif sont minimisées.
+
+\paragraph{Niveau 1 --- Planification des vacations.}
+On note $C_s$ le nombre de paires de blocs en conflit dans une même salle au même créneau, $C_c$ le nombre de paires de blocs d'un même chirurgien placés simultanément, $S_k$ l'ensemble des salles utilisées par le chirurgien $k$ et $g_k$ son nombre de groupes de créneaux consécutifs dans une même salle et un même jour. On définit :
+\begin{align}
+D_s&=\sum_{k\in K}\max(0,|S_k|-1),\\
+F&=\sum_{k\in K}\max(0,g_k-1).
+\end{align}
+La fonction objectif s'écrit :
+\begin{equation}
+\boxed{F_1=\alpha_1(C_s+C_c)+\beta_1D_s+\gamma_1F.}
+\label{eq:F1}
+\end{equation}
+
+Les conflits de salles et de chirurgiens sont
+regroupés sous le même coefficient $\alpha_1$,
+car ils correspondent à deux formes de violation
+des contraintes d'exclusivité des ressources. Le tableau~\ref{tab:termes_n1} détaille les termes de $F_1$.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Termes et coefficients de la fonction objectif du niveau 1}
+\label{tab:termes_n1}
+\begin{tabularx}{\linewidth}{@{}p{1.6cm}p{2.8cm}X@{}}
+\toprule
+\textbf{Notation} & \textbf{Unité} & \textbf{Signification} \\
+\midrule
+$C_s$ & paires de blocs & Paires de blocs placés dans une même salle au même créneau. \\
+$C_c$ & paires de blocs & Paires de blocs d'un même chirurgien placés simultanément. \\
+$S_k$ & ensemble de salles & Salles utilisées par le chirurgien $k$. \\
+$D_s$ & salles & Salles supplémentaires utilisées par les chirurgiens, au-delà d'une salle par chirurgien. \\
+$g_k$ & groupes & Nombre de groupes de créneaux consécutifs du chirurgien $k$ dans une même salle et un même jour. \\
+$F$ & groupes & Fragmentation : groupes supplémentaires, au-delà d'un groupe par chirurgien. \\
+$\alpha_1$ & coefficient & Poids des conflits de salle et de chirurgien. \\
+$\beta_1$ & coefficient & Poids du nombre de salles par chirurgien. \\
+$\gamma_1$ & coefficient & Poids de la fragmentation des vacations. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\paragraph{Niveau 2 --- Affectation des patients.}
+Trois composantes mesurent respectivement les pénalités relatives au bloc, aux lits et aux places ambulatoires :
+\begin{equation}
+\boxed{F_2^{\mathrm{commun}}=\alpha_2P_{\mathrm{bloc}}+\beta_2P_{\mathrm{lits}}+\gamma_2P_{\mathrm{ambu}}.}
+\label{eq:F2}
+\end{equation}
+Leurs expressions sont :
+\begin{align}
+P_{\mathrm{bloc}}&=\lambda_N N+\lambda_D\mathcal{D}+\lambda_I I_{\mathrm{inoc}},\\
+P_{\mathrm{lits}}&=\lambda_{E_L}E_L+\lambda_{V_L}V_L,\\
+P_{\mathrm{ambu}}&=\lambda_{E_A}E_A+\lambda_{V_A}V_A.
+\end{align}
+Les quantités $N$ (patients non placés), $\mathcal{D}$ (minutes de dépassement des vacations), $I_{\mathrm{inoc}}$ (minutes inutilisées des vacations ordinaires), $E_L$ et $E_A$ (dépassements cumulés des capacités) sont définies par :
+\begin{align}
+N&=\sum_{i\in I}\left(1-\sum_{v\in V}x_{iv}\right),\\
+\mathcal{D}&=\sum_{v\in V}\max(0,\mathrm{Charge}_v-\mathrm{CapUtile}_v),\\
+I_{\mathrm{inoc}}&=\sum_{v\in V_{\mathrm{ord}}}\max(0,\mathrm{CapUtile}_v-\mathrm{Charge}_v),\\
+E_L&=\sum_{d\in D}\max(0,\mathrm{OccLit}_d-(B_d-R_d)),\\
+E_A&=\sum_{d\in D}\sum_{h\in H}\max(0,\mathrm{OccPlace}_{d,h}-P_d).
+\end{align}
+
+Les grandeurs $V_L$ et $V_A$ désignent respectivement
+les variances de l'occupation des lits par nuitée
+et des places ambulatoires par demi-journée.
+Elles sont calculées sur les seules périodes où
+l'occupation de la ressource est strictement positive.
+ Cette convention est distincte d'une variance sur l'ensemble des jours de l'horizon. Les trois composantes correspondent aux scores \texttt{score\_blocs}, \texttt{score\_lits} et \texttt{score\_places} du code, dont la somme est le score total ($\alpha_2=\beta_2=\gamma_2=1$). Avec $\lambda_N=8\,000$, un patient non placé coûte autant que 80~minutes de dépassement ou 8\,000~minutes de bloc inoccupé. Le tableau~\ref{tab:termes_n2} récapitule ces termes.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Termes de pénalité du niveau 2}
+\label{tab:termes_n2}
+\begin{tabularx}{\linewidth}{@{}p{1.6cm}p{2.6cm}X@{}}
+\toprule
+\textbf{Notation} & \textbf{Unité} & \textbf{Signification} \\
+\midrule
+$N$ & patients & Patients non placés dans une vacation. \\
+$\mathcal{D}$ & minutes & Dépassement de la capacité utile des vacations. \\
+$I_{\mathrm{inoc}}$ & minutes & Capacité utile inutilisée des vacations ordinaires. \\
+$E_L$ & lits $\times$ nuits & Dépassement cumulé de la capacité en lits. \\
+$E_A$ & places $\times$ demi-journées & Dépassement cumulé de la capacité en places ambulatoires. \\
+$V_L$ & (lits)$^2$ & Variance de l'occupation des lits par nuitée. \\
+$V_A$ & (places)$^2$ & Variance de l'occupation des places par demi-journée. \\
+$P_{\mathrm{bloc}}$ & points & Pénalité relative au bloc : $\lambda_N N+\lambda_D\mathcal{D}+\lambda_I I_{\mathrm{inoc}}$. \\
+$P_{\mathrm{lits}}$ & points & Pénalité relative aux lits : $\lambda_{E_L}E_L+\lambda_{V_L}V_L$. \\
+$P_{\mathrm{ambu}}$ & points & Pénalité relative aux places ambulatoires : $\lambda_{E_A}E_A+\lambda_{V_A}V_A$. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Coût des reports.}
+La recherche hybride de niveau 2 intègre, en plus du score commun, une pénalisation des semaines de report pondérée par la priorité :
+\begin{equation}
+\boxed{F_2^{\mathrm{recherche}}=F_2^{\mathrm{commun}}+\rho\sum_{i\in I}\sum_{v\in V}w(q_i)\,k_v\,x_{iv}.}
+\label{eq:F2recherche}
+\end{equation}
+Ici, $\rho\ge0$ règle l'importance des reports et $w(q_i)$ est le poids associé à la priorité $q_i$.
+
+
+Les métaheuristiques de niveau 2 utilisent
+$F_2^{\mathrm{recherche}}$ pour guider l'optimisation
+et limiter le recours aux semaines supplémentaires.
+Les solutions finales faisables sont donc classées sur ce
+critère optimisé ; $F_2^{\mathrm{commun}}$, qui ne dépend
+pas du poids des reports, est publié à côté comme mesure
+commune de la qualité du planning.
+
+Les valeurs des coefficients de pondération sont
+présentées dans le tableau~\ref{tab:poids}.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Coefficients de pondération des fonctions objectif (valeurs par défaut du code)}
+\label{tab:poids}
+\begin{tabularx}{\linewidth}{@{}p{2.0cm}p{1.6cm}X@{}}
+\toprule
+\textbf{Coefficient} & \textbf{Valeur} & \textbf{Rôle} \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Niveau 1}} \\
+$\alpha_1$ & 10\,000 & Conflits de salle et de chirurgien. \\
+$\beta_1$ & 100 & Salles utilisées par chaque chirurgien. \\
+$\gamma_1$ & 50 & Fragmentation des vacations. \\
+\addlinespace[3pt]
+\multicolumn{3}{@{}l}{\textit{Niveau 2 --- composantes du score commun}} \\
+$\alpha_2,\beta_2,\gamma_2$ & 1 & Poids du bloc, des lits et des places dans $F_2^{\mathrm{commun}}$. \\
+$\lambda_N$ & 8\,000 & Patient non placé. \\
+$\lambda_D$ & 100 & Minute de dépassement d'une vacation. \\
+$\lambda_I$ & 1 & Minute inutilisée d'une vacation ordinaire. \\
+$\lambda_{E_L},\lambda_{E_A}$ & 5\,000 & Dépassement de capacité en lits, en places. \\
+$\lambda_{V_L},\lambda_{V_A}$ & 20 & Variance de l'occupation des lits, des places. \\
+\addlinespace[3pt]
+\multicolumn{3}{@{}l}{\textit{Niveau 2 --- recherche}} \\
+$\rho$ & 100 & Poids global des semaines de report. \\
+$w(q)$, $q=1,\ldots,4$ & 1, 2, 3, 5 & Poids de la priorité $q$ dans le coût des reports. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\subsection{Contraintes}
+
+\paragraph{Niveau 1 --- Planification des vacations.}
+Le modèle cible impose l'unicité et l'admissibilité des affectations, ainsi que l'absence de conflits :
+\begin{align}
+\sum_{p\in P}y_{bp}&=1 &&\forall b\in B,\label{eq:n1-unique}\\
+y_{bp}&=0 &&\forall b\in B,\ p\notin\operatorname{Dom}(b),\label{eq:n1-domaine}\\
+\sum_{b\in B}y_{bp}&\le1 &&\forall p\in P,\label{eq:n1-salle}\\
+\sum_{\substack{b\in B\\c(b)=k}}\sum_{s\in S}y_{b,(s,t)}&\le1 &&\forall k\in K,\ \forall t\in T.\label{eq:n1-chir}
+\end{align}
+
+\paragraph{Niveau 2 --- Affectation des patients.}
+Chaque patient est affecté au plus une fois, à une vacation compatible. Le modèle cible impose également le respect des capacités :
+\begin{align}
+\sum_{v\in V}x_{iv}&\le1 &&\forall i\in I,\label{eq:n2-unique}\\
+x_{iv}&\le M_{iv} &&\forall i\in I,\ \forall v\in V,\label{eq:n2-compat}\\
+\mathrm{Charge}_v&\le\mathrm{CapUtile}_v+\delta_v &&\forall v\in V,\label{eq:n2-bloc}\\
+\mathrm{OccLit}_d&\le B_d-R_d &&\forall d\in D,\label{eq:n2-lits}\\
+\mathrm{OccPlace}_{d,h}&\le P_d
+&&\forall d\in D,\ \forall h\in H.
+\label{eq:n2-places}
+\end{align}
+La tolérance $\delta_v=\min\!\left(5,\ 0{,}25\,(\mathrm{Cap}_v-\mathrm{CapUtile}_v)\right)$ minutes est le dépassement admis par le contrôle de faisabilité : 5~min pour une vacation de 5~h (marge de 30~min), 3~min pour une vacation de 2~h. La fonction objectif continue de pénaliser chaque minute au-delà de $\mathrm{CapUtile}_v$ (terme $\mathcal{D}$).
+
+
+Les contraintes précédentes définissent les conditions
+à respecter pour construire un planning valide.
+Lors de la recherche, certaines violations peuvent être
+temporairement admises et pénalisées par la fonction objectif.
+
+Au niveau~1, des mécanismes de réparation visent à éliminer
+les conflits d'affectation. Au niveau~2, les patients non
+placés peuvent être affectés à des vacations supplémentaires
+par report, sans que cela garantisse systématiquement
+le respect des capacités.
+
+Un contrôle indépendant vérifie donc la faisabilité des
+solutions finales. Au niveau~2, une solution n'est déclarée
+faisable que si tous les patients sont affectés ($N=0$)
+et si l'ensemble des contraintes est respecté ; la meilleure
+solution faisable rencontrée pendant la recherche est
+celle qui est proposée.
+
+
+\subsection{Explication et justification du modèle}
+
+\paragraph{Décomposition.}
+Séparer les deux niveaux distingue l'attribution des capacités opératoires aux chirurgiens de la programmation des patients. Les vacations assurent leur articulation, sans imposer de résoudre simultanément toutes les décisions.
+
+\paragraph{Pondérations.}
+Les fonctions scalaires permettent de comparer les solutions d'une même instance. Les coefficients traduisent des arbitrages entre conflits, programmation des patients, dépassements et lissage de l'hébergement ; leur valeur n'est pas imposée par le modèle et doit être justifiée par le protocole expérimental. Les poids retenus établissent une hiérarchie, de sorte que la recherche traite d'abord la faisabilité, puis la qualité. Au niveau~1, un seul conflit (10\,000) coûte davantage que l'ensemble des pénalités de dispersion et de fragmentation du planning de départ (1\,750). Au niveau~2, une minute de dépassement d'une vacation (100) coûte autant que 100~minutes de bloc inoccupé ou qu'une semaine de report d'un patient de priorité~1, et une nuit de lit au-delà de la capacité (5\,000) davantage que trois semaines de report d'un patient de priorité~4 (1\,500). Comme tout patient peut être reporté, aucune solution proposée ne laisse de patient non placé : $\lambda_N$ sert seulement à écarter les solutions incomplètes. Une étude de sensibilité, qui tire conjointement les six poids du niveau~2 entre $\times0{,}1$ et $\times10$ (60 jeux, deux charges, trois graines), montre que le jeu retenu donne des solutions faisables et n'est dépassé que par des écarts inférieurs à sa propre variabilité entre graines ; les poids du dépassement et du patient non placé ne doivent pas baisser.
+
+\paragraph{Couplage des ressources.}
+L'affectation d'un patient consomme à la fois du temps opératoire et une capacité d'hébergement. Le modèle rend ainsi visibles les effets d'une programmation sur les ressources postopératoires.
+
+
+\section{Approche hybride d'optimisation proposée}
+\label{sec:method}
+
+
+\subsection{Description de l'approche}
+
+L'approche proposée repose sur la combinaison de trois
+métaheuristiques : l'algorithme génétique simple (AGS),
+le recuit simulé (RS) et la recherche tabou (Tabou). Elle vise
+à exploiter la complémentarité de ces méthodes pour
+améliorer la qualité des solutions obtenues dans un
+temps de calcul limité.
+
+L'implémentation de référence s'appuie sur un socle commun à tous les modules : mêmes classes de données, même fonction objectif par niveau, mêmes solutions initiales et évaluation \emph{incrémentale} du niveau~2, qui ne recalcule que les vacations et les jours touchés par un mouvement. Chaque algorithme joue un rôle : l'AGS diversifie, grâce à un croisement \emph{par chirurgien} qui recombine les meilleurs plannings partiels de solutions différentes ; RS explore, en acceptant des dégradations pour franchir les paliers du score ; Tabou intensifie, en vidant un bassin d'attraction grâce à sa mémoire.
+
+\paragraph{Positionnement dans le système global.}
+
+Ces composants sont complémentaires, mais
+l'hybridation étudiée désigne spécifiquement
+la combinaison des métaheuristiques d'optimisation.
+Les mêmes familles de métaheuristiques peuvent aussi être appelées par le moteur de régulation (section~\ref{sec:sma}). La figure~\ref{fig:architecture} résume l'enchaînement des modules.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize,
+  boite/.style={draw, rounded corners=2pt, align=center, minimum height=0.95cm, text width=2.5cm, fill=white},
+  humain/.style={boite, fill=yellow!15},
+  donnee/.style={boite, fill=gray!10},
+  fl/.style={-{Stealth[length=2mm]}, thick},
+  partiel/.style={-{Stealth[length=2mm]}, thick, dashed},
+  node distance=0.6cm and 1.15cm]
+  \node[donnee] (consult) {Consultation\\(8 variables)};
+  \node[boite, right=of consult] (ml) {Prévision\\(4 modèles) + règle};
+  \node[humain, right=of ml] (valid) {Validation par\\le chirurgien};
+  \node[donnee, below=1.0cm of consult] (vac) {Planning réel\\des vacations};
+  \node[boite, right=of vac] (n2) {Niveau 2\\patients $\to$ vacations\\(hybridation)};
+  \node[boite, right=of n2] (n1) {Niveau 1\\(instance d'étude)};
+  \node[donnee, below=1.0cm of vac] (alea) {Urgences, pannes,\\annulations};
+  \node[boite, right=of alea] (sma) {SMA (Mesa)\\Contract Net\\+ métaheuristiques};
+  \node[humain, right=of sma] (prog) {Programme courant\\(décisions, alertes)};
+  \draw[fl] (consult) -- (ml);
+  \draw[fl] (ml) -- (valid);
+  \draw[fl] (vac) -- (n2);
+  \draw[partiel] (n1) -- (n2);
+  \draw[fl] (n2) -- node[right, font=\scriptsize]{programme initial} (sma);
+  \draw[fl] (alea) -- (sma);
+  \draw[fl] (sma) -- (prog);
+  \draw[fl] (valid.east) -- ++(0.35,0) |- ([yshift=-0.45cm]sma.south) node[pos=0.75, below, font=\scriptsize]{inscription} -- (sma.south);
+\end{tikzpicture}
+\caption{Architecture fonctionnelle d’OR’CHESTRE. Traits pleins : connexions implémentées dans l'interface ; tirets : enchaînement réalisé uniquement sur l'instance d'étude. Fond jaune : étapes soumises à une décision humaine.}
+\label{fig:architecture}
+\end{figure}
+
+
+
+
+\subsection{Articulation entre les méthodes d'optimisation}
+
+\paragraph{Adaptation des métaheuristiques aux deux niveaux.}
+
+Au niveau 1, une solution est représentée par un vecteur associant à chaque bloc de disponibilité d'un chirurgien un couple salle--créneau. Au niveau 2, une solution associe à chaque patient une vacation compatible, éventuellement située dans une semaine supplémentaire de report ou une valeur indiquant qu'il n'est pas encore programmé.
+
+Le tableau~\ref{tab:adaptation_meta} présente les principales adaptations réalisées.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Adaptation des métaheuristiques aux deux niveaux d'optimisation }
+\label{tab:adaptation_meta}
+\begin{tabularx}{\linewidth}{@{}p{2.3cm}XX@{}}
+\toprule
+\textbf{Élément} &
+\textbf{Niveau 1 : vacations} &
+\textbf{Niveau 2 : patients} \\
+\midrule
+
+Représentation &
+Vecteur associant chaque bloc opératoire à un couple salle--créneau. &
+Vecteur associant chaque patient à une vacation (de la semaine ou d'une semaine de report). \\
+
+Solution initiale &
+Construction d'une affectation par retour arrière, en respectant les domaines admissibles (bloc le plus contraint d'abord, salle préférée en priorité). &
+Construction gloutonne multidépart (40 départs), suivie du placement des patients restants dans la vacation qui dégrade le moins le score, au besoin en report. \\
+
+Croisement &
+Par chirurgien : l'enfant hérite de tout le planning d'un chirurgien chez l'un des parents, puis réparation des conflits. &
+Par chirurgien : les patients d'un chirurgien héritent ensemble des vacations de l'un des parents. \\
+
+Voisinages et mutations &
+Réaffectation d'un bloc à une autre plage admissible, échange de blocs ou translation de toute une vacation vers des plages contiguës libres. &
+Déplacement ou échange de patients entre vacations compatibles ; insertion avec éjection (l'éjecté est reporté, jamais retiré). \\
+
+Évaluation &
+Fonction objectif $F_1$ : conflits, dispersion et fragmentation. &
+$F_2^{\mathrm{recherche}}$ pendant la recherche et pour le classement final ; $F_2^{\mathrm{commun}}$ publié à côté. \\
+
+Contrôle de faisabilité &
+Validation indépendante des domaines, disponibilités, besoins horaires et conflits de ressources. &
+Validation indépendante des affectations, compatibilités, dates minimales et capacités opératoires (tolérance $\delta_v$), de lits et de places. \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Les procédures de réparation cherchent à limiter les violations de contraintes, sans garantir systématiquement la faisabilité de toutes les solutions explorées.
+
+\paragraph{Stratégies d'hybridation.}
+
+Trois stratégies hybrides sont étudiées, auxquelles s’ajoutent les exécutions de RS, Tabou et AGS seuls. Elles se distinguent par l'ordre d'intervention des métaheuristiques et par l'intégration de la recherche locale dans l'évolution de la population. Le budget standard est de 10~s par méthode dans le parcours applicatif (modifiable pour les campagnes), et trois références l'accompagnent avec le même budget : AGS seul, RS seul et Tabou seul.
+
+\begin{enumerate}
+
+    \item \textbf{Hybridation mémétique (AGS avec recherche locale).}
+
+    L'AGS évolue pendant 75\,\% du budget ; à chaque génération, ses deux meilleurs enfants sont améliorés par 15 itérations de Tabou (hybridation lamarckienne), puis une intensification par RS puis Tabou occupe le reste du budget (algorithme~\ref{alg:memetique}).
+
+    \item \textbf{Hybridation séquentielle AGS$\rightarrow$RS$\rightarrow$Tabou.}
+
+    L'AGS constitue la première phase de recherche, sans amélioration tabou des enfants, pendant 50\,\% du budget.
+
+    La meilleure solution obtenue est ensuite transmise à RS, puis à Tabou.
+
+    \item \textbf{Hybridation RS$\rightarrow$AGS$\rightarrow$Tabou.}
+
+    Quatre recherches locales courtes (70\,\% RS puis 30\,\% Tabou), lancées depuis des départs différents et occupant 40\,\% du budget, fournissent des optima locaux variés que l'AGS recombine. Une phase génétique est ensuite exécutée, avec amélioration tabou des meilleurs enfants au cours des générations. Enfin, la meilleure solution bénéficie d'une nouvelle phase d'amélioration par RS puis Tabou.
+
+\end{enumerate}
+
+RS calibre automatiquement sa température initiale pour accepter environ 30\,\% des dégradations typiques (10\,\% lors de l'intensification finale), puis refroidit géométriquement jusqu'à un millième de cette valeur. Tabou retient le meilleur voisin non tabou, sauf critère d'aspiration, avec une durée taboue aléatoire, et perturbe la solution après une stagnation.
+
+
+\subsection{Algorithme}
+
+L'algorithme~\ref{alg:memetique} présente le schéma général de l'hybridation mémétique, applicable aux deux niveaux d'ordonnancement. Les solutions sont évaluées au moyen de $F_1$ au niveau~1 et du score interne $F_2^{\mathrm{recherche}}$ au niveau~2. Une validation indépendante de faisabilité intervient pour sélectionner et présenter les solutions finales.
+
+\begin{algorithm}[htbp]
+\caption{Schéma de l'hybridation mémétique}
+\label{alg:memetique}
+\begin{algorithmic}[1]
+
+\Require Instance $\mathcal{I}_{\ell}$, $\ell\in\{1,2\}$, budget $T$
+\Ensure Solution $s^*$, scores et faisabilité
+
+\State $\mathcal{P} \gets \Call{Initialiser}{\mathcal{I}_{\ell}}$ \Comment{départ commun + individus perturbés}
+\State $s^* \gets \Call{Meilleur}{\mathcal{P}}$
+\State $t_0 \gets \Call{Horloge}{}$
+
+\While{$\Call{Horloge}{}-t_0 < 0{,}75\,T$}
+    \State $E \gets \Call{Reproduire}{\mathcal{P}}$
+    \For{$j \in \Call{Top2}{E}$}
+        \State $E_j \gets \Call{Tabou}{E_j,15}$
+    \EndFor
+    \State $\mathcal{P} \gets \Call{Elitisme}{\mathcal{P},E}$
+    \State $s^* \gets \Call{Meilleur}{s^*,\mathcal{P}}$
+\EndWhile
+
+\State $s_{RS} \gets \Call{Recuit}{s^*,0{,}125\,T}$
+\State $s_T \gets \Call{Tabou}{s_{RS},0{,}125\,T}$
+\State $s^* \gets \Call{Meilleur}{s^*,s_{RS},s_T}$
+
+\State \Return $s^*$, $\Call{Scores}{s^*}$, $\Call{Faisabilite}{s^*}$
+
+\end{algorithmic}
+\end{algorithm}
+
+La procédure \textsc{Reproduire} regroupe la sélection par tournoi, le croisement et la mutation ; les doublons sont mutés de nouveau pour préserver la diversité.
+
+\subsection{Traitement des urgences et des aléas : système multi-agents}
+\label{sec:sma}
+
+Le planning initial est repris par un SMA événementiel pour traiter les urgences, annulations et aléas de ressources. Il distingue des agents de triage, de régulation, de salle, de chirurgien, d'hébergement, de logistique, de garde et d'optimisation. Une négociation de type \emph{Contract Net} met en concurrence des propositions d'insertion, validées au regard des capacités et des disponibilités. Chaque proposition est associée à un coût de perturbation du programme existant. Les messages et les décisions sont journalisés.
+
+\paragraph{Priorités et escalade.}
+Trois classes d'urgences simulées sont utilisées : vitale, urgente et différable. Leurs délais conventionnels d'arrivée à début d'intervention sont respectivement de 60~min, 6~h et 24~h, avec des tolérances additionnelles de 60, 180 et 240~min. Une urgence vitale déclenche immédiatement l'examen d'une solution de garde. Lorsque aucun chirurgien compétent ne permet une intervention dans la limite acceptable, le système \emph{propose} un transfert. Une proposition de transfert ne prouve donc ni la réalisation d'un transfert, ni une intervention dans le délai. L'algorithme~\ref{alg:cnp} résume cette régulation.
+
+\begin{algorithm}[htbp]
+\caption{Schéma de la régulation d'une urgence par négociation et escalade}
+\label{alg:cnp}
+\begin{algorithmic}[1]
+\Require Urgence $u$, date d'arrivée $t_u$, planning courant, compétences et capacités
+\Ensure Plan retenu ou proposition de transfert, avec alertes et traçabilité
+\State Déterminer gravité, délai cible, tolérance et praticiens compétents
+\For{$n=0,1,2$}
+    \State Solliciter les agents Salle, Chirurgien et Hébergement
+    \State Construire et valider les offres autorisées au niveau $n$
+    \If{une offre satisfait le délai cible}
+        \State Retenir l'offre admissible de coût minimal ; \Return
+    \EndIf
+\EndFor
+\State Examiner les offres au-delà du délai cible dans la tolérance permise
+\If{une telle offre est retenue}
+    \State Enregistrer le retard et alerter ; \Return
+\EndIf
+\State Comparer les solutions admissibles du programme et de garde
+\If{aucun chirurgien compétent n'est disponible dans la limite acceptable}
+    \State Alerter : transfert à décider par le régulateur
+    \State Conserver, le cas échéant, un plan interne provisoire
+\Else
+    \State Appliquer le plan retenu et alerter en cas de retard
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Gestion des aléas.}
+Une panne du monte-lit et sa réparation donnent lieu à une réévaluation des ordres de passage et, si nécessaire, au replacement des patients perturbés. L'absence d'un chirurgien ferme temporairement ses vacations ; les patients non commencés sont reproposés à leur chirurgien au retour ou à un confrère si cette possibilité a été acceptée. Une prolongation d'intervention peut décaler les interventions suivantes, voire conduire à leur déprogrammation et replacement ; une intervention déjà commencée n'est pas interrompue pour respecter une fin de vacation. L'indisponibilité de lits réduit la capacité programmable sur une période : les interventions hospitalisées non commencées et non urgentes peuvent être déplacées, en commençant par les plus faibles priorités. La réserve destinée aux urgences est conservée dans la mesure permise par la capacité restante. Les patients sans nouvelle affectation immédiate restent en liste d'attente, réexaminée lors des possibilités de replacement.
+
+\paragraph{Optimisation complémentaire.}
+Le moteur dispose d'une réoptimisation globale par métaheuristique (mémétique, budget de 1~s), plus courte que l'ordonnancement hors ligne. \textbf{Elle n'est pas activée automatiquement dans le parcours standard de l'interface} ; elle est accessible depuis l'administration. L'ordre de passage dans chaque salle reste fixé par la règle gloutonne du site, sans optimisation locale par métaheuristique.
+
+\subsection{Fonction de coût du système multi-agents}
+\label{sec:cout_sma}
+
+À l'arrivée d'une urgence, chaque salle propose une façon de l'insérer dans le planning, et la régulation retient la meilleure proposition selon deux critères appliqués dans cet ordre.
+
+Le premier est le délai de l'urgence, fixé par sa gravité (vitale, urgente ou différable). Il est traité comme une contrainte et non comme un coût : les propositions hors délai sont écartées. Si aucune ne respecte le délai, la proposition la moins tardive est retenue et le médecin régulateur est alerté.
+
+Le second est le coût de la proposition, minimisé parmi celles qui respectent le délai. Il correspond à la somme des perturbations imposées au planning, chacune pondérée par un coefficient (tableau~\ref{tab:coef_sma}) :
+\begin{equation}
+C = \underbrace{c_{\text{déc}}\,\times\,\text{retards et avances}}_{\text{patients décalés}}
++ \underbrace{c_{\text{dép}}\,\times\,\text{reports}}_{\text{patients déprogrammés}}
++ \underbrace{c_{\mathrm{ch}} + c_{\mathrm{ast}}}_{\text{chirurgien}}
++ \underbrace{c_{\mathrm{res}} + c_{\mathrm{lit}}}_{\text{lits}} + \cdots
+\end{equation}
+Les coûts liés aux patients sont multipliés par leur priorité $p$.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Coefficients de coût du système multi-agents ($p$ : priorité du patient).}
+\label{tab:coef_sma}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{2.8cm}@{}}
+\toprule
+\textbf{Perturbation} & \textbf{Coefficient} & \textbf{Nature} \\
+\midrule
+Retard d'un patient programmé & $c_{\text{déc}}=1$ par minute, $\times\,p$ & patient \\
+Avance d'un patient programmé & $0{,}5$ par minute, $\times\,p$ & patient \\
+Report à un autre jour & 100 par jour, $\times\,p$ & patient \\
+Déprogrammation d'un patient & $c_{\text{dép}}=2000$, $\times\,p$ & patient \\
+Patient déplacé par la réoptimisation globale & 20 & stabilité \\
+Rétention en salle de réveil (panne) & 2 par minute & logistique \\
+Reprise par un autre chirurgien & $c_{\mathrm{ch}}=300$ & ressources \\
+Chirurgien rappelé d'astreinte & $c_{\mathrm{ast}}=500$ & ressources \\
+Utilisation d'un lit de réserve & $c_{\mathrm{res}}=300$ & capacité \\
+Lit au-delà de la capacité & $c_{\mathrm{lit}}=5000$ & capacité \\
+Proposition hors délai & $10^{7}$ & contrainte \\
+Poids d'attente de l'urgence (vitale / urgente / différable) & 100 / 10 / 1 par minute & urgence \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+Les coefficients sont des paramètres de décision fixés par l'équipe, selon deux critères.
+
+\textbf{Une hiérarchie des perturbations.} Les coefficients ordonnent les perturbations de la moins à la plus pénalisante : décaler un patient, utiliser un lit de réserve ou changer de chirurgien, rappeler un chirurgien d'astreinte, déprogrammer un patient, puis dépasser la capacité en lits. Cette hiérarchie admet une exception : la déprogrammation étant multipliée par la priorité, elle coûte plus qu'un lit supplémentaire pour un patient de forte priorité.
+
+\textbf{Une échelle commune avec le planning statique.} Les coûts ont le même ordre de grandeur que les pénalités du score du niveau~2, ce qui rend les deux évaluations comparables.
+
+La robustesse de ces choix est évaluée par une analyse de sensibilité : chaque coefficient est multiplié par~0,5 puis par~2, un seul à la fois, sur l'ensemble des scénarios et avec les mêmes graines. Pour chaque essai, trois indicateurs sont comparés au cas de référence : la part des patients dont l'affectation est inchangée, le sort de chaque urgence (insérée ou transférée) et le nombre de patients déprogrammés, décalés ou reportés. Une variation est jugée significative si elle dépasse celle observée entre deux exécutions identiques du cas de référence.
+
+L'analyse porte sur 19 exécutions (15 scénarios, 3 graines pour les scénarios aléatoires), soit 3\,439 affectations de patients. Le moteur étant déterministe dans la configuration du site, deux exécutions identiques donnent le même résultat : le seuil de significativité est nul. L'analyse, relancée sur la version finale du code, redonne exactement ces résultats. Les tableaux~\ref{tab:sma_sensibilite} et~\ref{tab:sma_criteres} résument les résultats.
+
+\begin{table}[htbp]
+\centering
+\caption{Effet de chaque coefficient multiplié par 0,5 puis par 2 (écart à la référence). Aucun coefficient ne change le sort d'une urgence.}
+\label{tab:sma_sensibilite}
+\footnotesize
+\begin{tabular}{lrrrrr}
+\toprule
+& & \multicolumn{2}{c}{\textbf{Affectations modifiées}} & \multicolumn{2}{c}{\textbf{Patients perturbés}} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+\textbf{Coefficient} & \textbf{Base} & $\times0{,}5$ & $\times2$ & $\times0{,}5$ & $\times2$ \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Coefficients qui modifient les décisions}} \\
+Déprogrammation ($\times p$) & 2\,000 & 29 & 0 & $-6$ & 0 \\
+Report (par jour, $\times p$) & 100 & 6 & 27 & 0 & $-1$ \\
+Retard (par min, $\times p$) & 1 & 7 & 15 & $+4$ & $-7$ \\
+Attente différable (par min) & 1 & 15 & 9 & $-6$ & $+2$ \\
+Avance (par min, $\times p$) & 0,5 & 0 & 6 & 0 & 0 \\
+Reprise par un autre chirurgien & 300 & 2 & 1 & 0 & 0 \\
+Attente urgente (par min) & 10 & 0 & 0 & $-1$ & 0 \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Coefficients sans effet (toutes les valeurs à 0)}} \\
+\multicolumn{6}{@{}p{0.9\linewidth}}{Stabilité de la réoptimisation globale (20), rétention en salle de réveil (2), chirurgien d'astreinte (500), lit de réserve (300), lit hors capacité (5\,000), attente vitale (100).} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Vérification des critères de choix des coefficients}
+\label{tab:sma_criteres}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}p{3.1cm}Xp{2.2cm}@{}}
+\toprule
+\textbf{Critère} & \textbf{Vérification} & \textbf{Résultat} \\
+\midrule
+Hiérarchie des perturbations & Décaler 1~h ($\le 240$) $\le$ lit de réserve (300) $\le$ autre chirurgien (300) $<$ astreinte (500) $<$ déprogrammer, $p=1$ (2\,000) $<$ lit hors capacité (5\,000) & Respectée \\
+Exception de priorité & Déprogrammer coûte plus qu'un lit hors capacité pour $p = 3$ et $4$ & Conforme \\
+Échelle commune avec le niveau~2 & Coût d'un lit hors capacité (5\,000) et poids du lit dans le score de niveau~2 (5\,000) & Écart nul \\
+Robustesse & Affectations modifiées pour un coefficient divisé ou multiplié par 2 & $\le 0{,}8$\,\% \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+
+Les décisions sont robustes aux coefficients : les effets restent faibles et se concentrent sur les scénarios chargés (journée chargée, lits indisponibles, semaine en surcharge). Les coefficients sans effet correspondent à des perturbations qui ne sont jamais en concurrence avec une autre option dans les scénarios testés.
+
+
+
+\subsection{Interface d'aide à la décision}
+
+L'interface de consultation recueille huit variables descriptives, propose les caractéristiques du séjour estimées par quatre modèles d'apprentissage et affiche la priorité obtenue par une règle distincte. Le chirurgien peut valider ou corriger les informations proposées et choisir un créneau parmi les possibilités admissibles. Le programme de quatre semaines repose sur le tableau de vacations de terrain ; la régulation dynamique intervient ensuite sur le programme courant.
+
+L'interface permet également la visualisation des interventions et des alertes, la déclaration d'urgences, de pannes, d'absences, de prolongations d'intervention et d'indisponibilités de lits. L'administrateur peut paramétrer les capacités d'hébergement, actuellement fixées par défaut à 30 lits dont trois réservés, et 20 places ambulatoires par demi-journée, sans modifier les capacités propres à l'instance pédagogique.
+
+\subsection{Paramétrage}
+
+Les performances des métaheuristiques dépendent de leurs paramètres de recherche, notamment la taille de la population pour l'AGS, la durée de la mémoire taboue et les températures de RS. Le tableau~\ref{tab:parametres} présente la configuration de référence considérée pour les deux niveaux d'optimisation.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Paramétrage des métaheuristiques }
+\label{tab:parametres}
+\begin{tabularx}{\linewidth}{@{}p{2.6cm}p{5.2cm}X@{}}
+\toprule
+\textbf{Méthode} & \textbf{Paramètre} & \textbf{Valeur} \\
+\midrule
+AGS
+& Taille de population & 30 \\
+& Générations & arrêt temporel \\
+& Probabilité de croisement / mutation & $0{,}90$ / $0{,}40$ \\
+& Taille du tournoi / élites & 3 / 2 \\
+\midrule
+Tabou
+& Durée taboue & 25 + aléa de 0 à 5 \\
+& Patience & 40 itérations \\
+& Voisins au niveau 1 & 150 (60 pour un enfant) \\
+& Échanges / éjections au niveau 2 & 300 / 80 \\
+\midrule
+RS
+& Acceptation initiale cible & $0{,}30$ ($0{,}10$ en phase finale) \\
+& Température finale / initiale & $0{,}001$ \\
+\midrule
+Hybridation
+& Enfants améliorés par génération & 2 (15 itérations tabou) \\
+& Budget & identique pour toutes les méthodes \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Le nombre effectif de générations et d'itérations dépend du budget temporel alloué à chaque stratégie. La répartition de ce budget entre les différentes phases varie selon l’hybridation considérée.
+
+Ces paramètres de recherche sont distincts des coefficients de pondération des fonctions objectif introduits dans la formulation mathématique. Dans le SMA, des réglages «~temps réel~» réduisent les voisinages et les populations : population de 16 et 120 échanges pour la réoptimisation globale (1~s).
+
+Les coefficients de pondération des fonctions objectif retenus pour les expérimentations sont ceux du tableau~\ref{tab:poids}.
+
+\textbf{Graines aléatoires.} Le code fixe par défaut la graine 42 pour la recherche et 43 pour la génération des patients ; le ML utilise la graine 42 pour la séparation entraînement--test.
+
+
+
+\subsection{Justification des choix méthodologiques}
+
+\paragraph{Hybridation.}
+L'hybridation cherche à équilibrer diversification et intensification de la recherche. L'intérêt de cette combinaison doit être établi par comparaison avec les méthodes individuelles.
+
+\paragraph{Système multi-agents.}
+Le SMA répond au besoin de réactivité face aux événements imprévus. Le protocole \emph{Contract Net} permet de coordonner les propositions des différents agents et de sélectionner une adaptation du planning selon les contraintes de ressources, les délais de prise en charge et le coût des perturbations, sans imposer une réoptimisation globale à chaque événement. La décentralisation reflète l'organisation hospitalière : chaque agent détient l'information de son service, ce qui rend chaque décision traçable dans le journal des messages. L’échelle d’escalade vise à rechercher une réponse à chaque urgence ; certaines situations exigent cependant une décision humaine de transfert.
+
+
+
+
+\section{Plan expérimental}
+\label{sec:expdesign}
+
+\subsection{Données et instances utilisées}
+
+Notre approche est évaluée à partir de données hospitalières pseudonymisées et d'instances de simulation représentatives du problème d'ordonnancement étudié.
+
+La base historique fournie comporte 14\,649 enregistrements et 30 variables, comprenant notamment des informations démographiques, les codes de diagnostic CIM, les actes CCAM, les praticiens, les horaires opératoires et les durées de séjour, entre janvier 2019 et décembre 2022.
+
+Elle est utilisée pour entraîner et évaluer les modèles prédictifs. Quatre modèles de gradient boosting sur histogrammes (\texttt{HistGradientBoosting} de scikit-learn, qui traite nativement les variables catégorielles et les valeurs manquantes) sont entraînés, un par cible :
+\begin{itemize}
+    \item le mode de prise en charge (classification) : un séjour est ambulatoire lorsque l'intervention a lieu le jour de l'entrée et la sortie le jour même ;
+    \item la durée au bloc, en heures, de l'entrée à la sortie de salle ;
+    \item les durées préopératoire et postopératoire, apprises sur les seuls séjours en hospitalisation conventionnelle.
+\end{itemize}
+
+Les modèles utilisent onze variables d'entrée, dont huit saisies en consultation : le type d'intervention, le code CIM-10 principal, le premier acte CCAM, le sexe, le praticien, le type d'anesthésie, le recours à une anesthésie locorégionale et l'âge ; les trois autres, l'année, le mois et le jour de la semaine, sont déduites de la date d'intervention. Le prétraitement écarte les durées négatives, les durées de bloc nulles (horaires non renseignés) et les séjours dont l'une des trois durées manque ; les trois variables à forte cardinalité (type d'intervention, CIM, CCAM) sont limitées à leurs 200 modalités les plus fréquentes, les autres étant regroupées en «~Autre~».
+
+Les données sont réparties entre un ensemble d'entraînement (80\,\%) et un ensemble de test (20\,\%) des données, par tirage aléatoire (graine 42), stratifié pour la classification. L'entraînement utilise un arrêt précoce ; le modèle final est réentraîné sur l'ensemble des données.
+
+
+Les données ne comportent pas de mesure clinique observée du degré d'urgence. Le projet calcule donc un score indicatif de 1 à 10 à partir d'une règle sur les codes CIM-10 et CCAM. Ce score est converti en une proposition de priorité, que le médecin peut valider ou corriger. Il ne constitue pas un modèle prédictif d'urgence ni un outil de triage clinique validé.
+
+Un second fichier décrit les vacations opératoires et leur répartition entre les chirurgiens, les salles et les plages horaires ; il a été converti en planning du bloc : cinq salles, dont la salle 1 sans vacation, sur un cycle de quatre semaines.
+
+Les métaheuristiques et le SMA sont évalués sur le planning réel (tableau~\ref{tab:ressources}). Le nombre de patients à programmer varie selon l'expérience, de façon à couvrir plusieurs niveaux de charge du bloc. Les patients sont générés par des règles fixes (hypothèses de l'étude) : demande de chaque chirurgien proportionnelle à son temps de vacation, durées au bloc de 30 à 150~min, 40\,\% d'ambulatoire, 1 à 3 nuits après l'intervention pour les hospitalisés. Seule l'étude de saturation tire durée, mode et nuits parmi les séjours réels de l'historique.
+
+
+\subsection{Scénarios expérimentaux}
+
+Les expérimentations sont organisées en deux étapes complémentaires.
+
+La première porte sur l'ordonnancement statique, dans lequel les interventions à programmer sont connues à l'avance. Les trois métaheuristiques sont évaluées individuellement, puis combinées selon différentes stratégies d'hybridation, en relais ou imbriquées.
+
+La seconde étape évalue l'adaptation dynamique des plannings par le SMA, sur des scénarios construits et sur deux semaines d'urgences aléatoires (tableau~\ref{tab:scenarios}). Dans ces dernières, le jour, l'heure, la durée, le mode de prise en charge et les nuits des urgences sont calibrés sur l'historique 2019--2022 ; la répartition des gravités (10\,\% vitales, 20\,\% urgentes, 70\,\% différables) est une hypothèse.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Quelques scénarios du SMA (\texttt{sma/scenarios\_sma.py})}
+\label{tab:scenarios}
+\begin{tabularx}{\linewidth}{@{}p{3.3cm}X@{}}
+\toprule
+\textbf{Scénario} & \textbf{Événements} \\
+\midrule
+Insertion simple & Mercredi 11~h : entorse grave, urgente, 45~min, ambulatoire. \\
+Fracture puis panne & Mardi 9~h~40 : fracture, urgente, 60~min ; 10~h~15 : panne du monte-lit jusqu'à 13~h. \\
+Gravité vitale & La même fracture, déclarée vitale. \\
+Gravité différable & La même fracture, déclarée différable. \\
+Urgences simultanées & Trois urgences en 20~minutes (deux en orthopédie, une à la main). \\
+Journée chargée & Jeudi : vitale à 8~h~20, urgente à 9~h, panne de 10~h~30 prolongée jusqu'à 14~h~30, urgente à 14~h. \\
+Panne matinale & Lundi : panne du monte-lit de 7~h~30 à 11~h. \\
+Chirurgien absent & Vendredi : urgences de la main (urgente), vasculaire (vitale) et du rachis (différable). \\
+Rattrapage & Mardi : panne annoncée jusqu'à 15~h, réparée à 10~h~30. \\
+Panne sans effet & Mercredi : panne sans patient hospitalisé à monter. \\
+Semaine normale & Urgences aléatoires, une par jour en moyenne. \\
+Semaine en surcharge & Urgences aléatoires, trois par jour en moyenne, et deux pannes de 1 à 3~h. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Méthodes de comparaison et benchmarks}
+
+Leurs performances sont comparées sur une même instance de simulation, afin d'évaluer les différences de qualité des solutions et de temps de calcul. Les stratégies hybrides sont ensuite confrontées aux méthodes individuelles, ainsi qu'entre elles, pour étudier l'intérêt de combiner plusieurs mécanismes de recherche.
+
+Toutes les méthodes (trois stratégies hybrides et trois références : AGS, RS et Tabou seuls) partent de la même solution initiale, la construction gloutonne multidépart, avec le même budget de temps ; le gain de chaque méthode est mesuré par rapport au score de ce départ commun.
+
+Le budget commun est de 10~s par exécution. Le niveau~1 et la cohorte de référence du niveau~2 sont résolus avec 10 graines (1 à 10) ; l'étude de la charge (70, 85, 100 et 115\,\% de la capacité utile) porte sur 3 cohortes de patients et 3 graines, et l'étude du budget (2, 5, 10 et 20~s) sur 3 graines. Le SMA est évalué avec une graine fixe pour les scénarios déterministes et 5 graines pour les scénarios aléatoires.
+
+Pour l'adaptation dynamique, le planning initial constitue la situation de référence. Les résultats obtenus après intervention du SMA permettent d'évaluer les modifications nécessaires à la prise en charge des urgences et des aléas.
+
+\subsection{Indicateurs de performance}
+
+L'évaluation repose sur plusieurs indicateurs adaptés aux différentes composantes du système.
+
+Pour les modèles prédictifs, le coefficient de détermination $R^2$ mesure la qualité des prédictions quantitatives, tandis que le score F1 permet d'évaluer la classification du mode de prise en charge. Le script d'entraînement calcule aussi l'erreur absolue moyenne (MAE) et la racine de l'erreur quadratique moyenne (RMSE) de chaque régression, ainsi que l'exactitude de la classification ; le score F1 affiché est celui de la classe «~hospitalisation conventionnelle~».
+
+Pour l'ordonnancement statique, les principaux indicateurs sont les scores associés à l'occupation du bloc, à l'utilisation des lits et à celle des places ambulatoires. Ils s'additionnent pour former $F_2^{\mathrm{commun}}$ et s'expriment en points de pénalité. Les méthodes sont classées sur l'objectif optimisé $F_2^{\mathrm{recherche}}$, qui y ajoute la pénalité de report ; le taux de faisabilité (part des exécutions qui proposent une solution faisable) est publié séparément.
+
+Pour le SMA, une urgence est prise en charge dans le délai lorsque son incision débute au plus tard 60~min, 6~h ou 24~h après son arrivée, selon sa gravité.
+
+\subsection{Environnement informatique et protocole expérimental}
+
+Les méthodes d'optimisation et le SMA sont implémentés en Python (version 3.11 ou ultérieure, testé avec 3.13 et 3.14). Les principales bibliothèques sont scikit-learn (testé avec la version 1.9.1), Mesa (version 3 ou ultérieure), pandas, NumPy, Matplotlib et, pour l'interface, Streamlit et Plotly.
+
+Les calculs sont réalisés sur un ordinateur portable Apple à processeur M2 avec 8~Go de mémoire, sous macOS~27.
+
+
+\section{Résultats numériques}
+\label{sec:results}
+
+\subsection{Présentation des résultats}
+
+Cette section présente les performances des modèles prédictifs,
+des métaheuristiques individuelles, de leurs hybridations
+et du SMA.
+
+Sauf mention contraire, chaque métaheuristique dispose de 10~s par exécution et chaque configuration est répétée sur 10 graines. Seules les solutions finales faisables sont proposées ; les statistiques portent sur ces solutions.
+
+\subsubsection{Résultats des modèles prédictifs}
+
+Les modèles sont entraînés sur 80\,\% des 14\,477 séjours et évalués sur les 20\,\% restants (tableau~\ref{tab:ml_results}).
+
+\begin{table}[htbp]
+\centering
+\caption{Performances des modèles prédictifs sur le jeu de test (entre parenthèses : référence simple, médiane par type d'intervention ou médiane globale)}
+\label{tab:ml_results}
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Variable prédite} & \textbf{Effectif de test} & \textbf{$R^2$} & \textbf{MAE} & \textbf{RMSE} & \textbf{F1} \\
+\midrule
+Durée au bloc (min) & 2\,896 & 0,670 (0,45) & 14,8 (19,1) & 21,8 & -- \\
+Durée préopératoire (nuits) & 1\,304 & 0,03 ($-0{,}01$) & 0,26 (0,29) & 2,48 & -- \\
+Durée postopératoire (nuits) & 1\,304 & 0,695 ($-0{,}06$) & 0,54 (1,13) & 0,83 & -- \\
+Mode de prise en charge & 2\,896 & -- & -- & -- & 0,915 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Les modèles de durée au bloc, de nuits postopératoires et de mode de prise en charge (exactitude 0,925 contre 0,550 pour la classe majoritaire) apportent un gain net ; celui des nuits préopératoires n'en apporte pas et peut être remplacé par la médiane. Le score d'urgence est une règle déterministe sur les codes CIM-10 et CCAM, sans évaluation prédictive.
+
+Deux erreurs comptent pour le planning. Les interventions de plus de 2~h sont sous-estimées dans 80,5\,\% des cas, de 26,7~min en moyenne, soit plus que la marge de 24~min d'une vacation de 4~h : la marge de 10\,\% ne suffit pas pour ces vacations. Par ailleurs, 10,4\,\% des patients hospitalisés sont prédits ambulatoires, ce qui masque un besoin de lit ; la validation par le chirurgien reste nécessaire.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=1.0\linewidth]{ml_reel_predit.png}
+\caption{Valeurs prédites en fonction des valeurs observées sur le jeu de test (densité ; cases de moins de 5 séjours masquées) : durée au bloc, nuits préopératoires et nuits postopératoires des patients hospitalisés. Tirets : prédiction parfaite.}
+\label{fig:ml_reel_predit}
+\end{figure}
+
+\subsubsection{Résultats des métaheuristiques individuelles et hybrides}
+
+Les méthodes de niveau~2 sont évaluées sur 421 patients générés sur le planning réel (4 semaines et 3 semaines de report, charge de 99\,\% de la capacité utile). Toutes partent de la même solution gloutonne, non faisable (objectif $F_2^{\mathrm{recherche}}=31\,565$, dont $F_2^{\mathrm{commun}}=8\,265$).
+
+\begin{table}[htbp]
+\centering
+\caption{Comparaison des méthodes au niveau 2, classées sur l'objectif $F_2^{\mathrm{recherche}}$ (moyenne $\pm$ écart-type ; Proposées : solutions faisables, dont grâce à la tolérance $\delta_v$)}
+\label{tab:meta_results}
+\footnotesize
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+\textbf{Méthode} & \textbf{Bloc} & \textbf{Lits} & \textbf{Ambu.} & \textbf{$F_2^{\mathrm{commun}}$} & \textbf{Report} & \textbf{Objectif} & \textbf{Reportés} & \textbf{Proposées} & \textbf{Temps (s)} \\
+\midrule
+RS seul & $2\,387\pm141$ & $991\pm47$ & $44\pm6$ & $3\,422\pm161$ & 4\,280 & $\mathbf{7\,702}\pm298$ & $23{,}3\pm1{,}1$ & 10/10 (0) & 10,01 \\
+AGS $\rightarrow$ RS $\rightarrow$ Tabou & $2\,631\pm138$ & $938\pm60$ & $31\pm5$ & $3\,601\pm110$ & 4\,640 & $8\,241\pm208$ & $24{,}9\pm0{,}7$ & 10/10 (1) & 10,38 \\
+RS $\rightarrow$ AGS $\rightarrow$ Tabou & $2\,948\pm137$ & $909\pm88$ & $36\pm4$ & $3\,893\pm116$ & 5\,260 & $9\,153\pm447$ & $27{,}5\pm2{,}2$ & 10/10 (1) & 10,47 \\
+Mémétique & $3\,098\pm194$ & $882\pm98$ & $34\pm5$ & $4\,014\pm136$ & 5\,570 & $9\,584\pm596$ & $29{,}1\pm2{,}5$ & 10/10 (0) & 10,40 \\
+Tabou seul & $3\,117\pm159$ & $850\pm68$ & $33\pm5$ & $4\,000\pm149$ & 6\,580 & $10\,580\pm356$ & $33{,}9\pm1{,}7$ & 10/10 (2) & 10,02 \\
+AGS seul & $5\,108\pm203$ & $848\pm91$ & $63\pm9$ & $6\,020\pm232$ & 16\,311 & $22\,331\pm701$ & $70{,}0\pm2{,}2$ & 9/10 (5) & 10,39 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+Toutes les méthodes réduisent l'objectif du départ de 29,3\,\% (AGS seul) à 75,6\,\% (RS seul), et le score commun de 27,2\,\% à 58,6\,\% (tableau~\ref{tab:meta_results}). La composante bloc explique l'essentiel des écarts de score commun ; la composante ambulatoire est marginale. La pénalité de report départage Tabou seul et la mémétique, de score commun équivalent. La variabilité entre graines est faible (écart-type inférieur à 5\,\% de la moyenne pour le score commun, à 7\,\% pour l'objectif).
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.85\linewidth]{n2_composantes.png}
+\caption{Composantes pondérées de l'objectif au niveau~2 (cohorte de référence, 10~s, moyenne $\pm$ écart-type sur 10 graines) : bloc, lits et places forment $F_2^{\text{commun}}$, auxquels s'ajoute la pénalité de report.}
+\label{fig:n2_composantes}
+\end{figure}
+
+
+
+Au niveau~1, évalué uniquement sur une instance fictive (8 chirurgiens, 3 salles, 45 blocs), toutes les méthodes produisent des plannings faisables et réduisent $F_1$ de 1\,750 à une valeur comprise entre 900 et 1\,050 en moins d'une seconde ; les valeurs finales (900 à 1\,005 en moyenne) sont atteintes dans le budget de 10~s.
+
+\subsubsection{Résultats de l'adaptation dynamique}
+
+Le SMA part d'un programme de deux semaines (181 interventions) ; le tableau~\ref{tab:sma_results} donne le bilan dans la configuration du site (\emph{Contract Net} sans métaheuristique).
+
+\begin{table}[htbp]
+\centering
+\caption{Bilan du SMA sur une sélection de scénarios (configuration du site ; scénarios aléatoires : sommes sur les graines abouties). Total sur les 21 scénarios déterministes : 23 urgences, 21 dans le délai, 1 confiée à la garde, 1 transfert proposé, 26 patients décalés, 54 reportés, 8 en liste d'attente}
+\label{tab:sma_results}
+\footnotesize
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrrr}
+\toprule
+\textbf{Scénario} & \textbf{Urg.} & \textbf{Dans délai} & \textbf{Garde} & \textbf{Décalés} & \textbf{Reportés} & \textbf{Alertes} & \textbf{Messages} \\
+\midrule
+Insertion simple & 1 & 1 & 0 & 0 & 0 & 0 & 107 \\
+Fracture puis panne & 1 & 1 & 0 & 2 & 0 & 0 & 549 \\
+Gravité vitale & 1 & 1 & 0 & 0 & 0 & 0 & 78 \\
+Gravité différable & 1 & 1 & 0 & 0 & 0 & 0 & 91 \\
+Urgences simultanées & 3 & 3 & 0 & 0 & 0 & 0 & 286 \\
+Journée chargée & 3 & 3 & 0 & 3 & 5 & 0 & 1\,779 \\
+Panne matinale & 0 & -- & 0 & 3 & 4 & 0 & 646 \\
+Chirurgien absent & 3 & 2 & 0 & 2 & 1 & 1 & 665 \\
+Rattrapage & 0 & -- & 0 & 2 & 1 & 0 & 639 \\
+Panne sans effet & 0 & -- & 0 & 0 & 1 & 0 & 317 \\
+\midrule
+Semaine normale (5/5 graines) & 22 & 22 & 4 & 5 & 2 & 4 & 4\,607 \\
+Semaine en surcharge (2/5 graines) & 28 & 28 & 4 & 17 & 5 & 4 & 5\,678 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+Toutes les urgences sont prises en charge dans le délai, sauf l'ischémie vasculaire du scénario «~chirurgien absent~» : faute de chirurgien compétent disponible, un transfert est proposé au régulateur. Sur l'ensemble des 21 scénarios déterministes, une seconde urgence est hors délai : une urgence vitale arrivée en surcharge, confiée au planning de garde. Le programme est largement préservé (au moins 93\,\% des interventions inchangées dans les scénarios déterministes, 90\,\% dans la semaine en surcharge) ; les pannes du monte-lit le perturbent davantage que les urgences : dans le scénario «~fracture puis panne~», l'urgence est insérée sans décaler d'intervention, mais la panne reporte deux patients hospitalisés à l'après-midi. Trois des cinq tirages de la semaine en surcharge s'arrêtent sur une erreur du moteur et sont exclus : la robustesse en forte surcharge n'est pas établie.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.85\linewidth]{sma_gantt_urgence_panne_1310_apres.png}
+\caption{Programme du mardi après régulation dans le scénario «~fracture puis panne~» (configuration du site). En rouge : l'urgence insérée ; zone grisée : panne du monte-lit ; hachures : patients ambulatoires ; cadres en tirets : vacations.}
+\label{fig:sma_gantt}
+\end{figure}
+
+Sur 21 scénarios à événements identiques, l'ajout d'une réoptimisation globale par la mémétique (1~s, sans optimisation locale) ne change pas le nombre d'urgences dans le délai (21 sur 23) : elle applique 14 des 57 plans calculés, réduit le score du programme de 19,5\,\% (427\,110 à 343\,793) et la liste d'attente (de 8 à 5 patients), mais porte les patients décalés de 26 à 48 et multiplie le temps de calcul par 10 environ. AGS$\rightarrow$RS$\rightarrow$Tabou fait moins bien (354\,437, 13 plans appliqués) ; RS seul n'applique aucun plan. Une optimisation locale des salles par Tabou seul ne change presque rien (27 patients décalés au lieu de 26) et allonge le calcul de 6,2 à 10,8~s (figure~\ref{fig:sma_strategies}).
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.85\linewidth]{sma_strategies.png}
+\caption{Stratégies de régulation comparées à événements identiques sur les 21 scénarios déterministes. À gauche : urgences dans le délai et perturbations du programme ; à droite : temps de calcul cumulé. La réoptimisation globale (mémétique) réduit la liste d'attente mais décale presque deux fois plus de patients ; l'optimisation locale ne change presque rien.}
+\label{fig:sma_strategies}
+\end{figure}
+ L'absence de régulation n'étant pas simulable dans le moteur, l'apport du SMA par rapport à un programme figé n'est pas mesuré.
+
+L'étude de saturation montre que le service opère environ 432 patients en 4 semaines, soit 95\,\% de la capacité utile : la ressource limitante est le temps opératoire. Les lits ne deviennent limitants que si leur nombre est réduit à 20. Le levier le plus efficace est organisationnel : accepter un autre chirurgien porte l'occupation utile à 97\,\%.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.75\linewidth]{saturation_courbes.png}
+\caption{Saturation du bloc sur 4 semaines (patients au profil réel, inscrits par ordre d'arrivée) : part du temps de vacation programmée selon les capacités d'hébergement et l'acceptation d'un autre chirurgien. Pointillés : capacité utile.}
+\label{fig:saturation}
+\end{figure}
+
+\subsection{Qualité des solutions}
+
+La qualité des solutions est évaluée à partir
+des fonctions objectif définies dans la
+formulation mathématique. Ces fonctions prennent
+en compte l'utilisation des ressources opératoires,
+les contraintes d'affectation et la saturation
+des capacités d'accueil.
+
+Remplir le bloc sollicite davantage les lits : RS seul atteint 92,6\,\% d'occupation du bloc avec un pic de 25,6 lits, AGS seul 84,6\,\% avec 23,2 lits. Aucune solution ne dépasse les 27 lits programmables, ce qui préserve la réserve des urgences. Les places ambulatoires ne sont jamais limitantes (au plus 10 places occupées sur 20). Les patients prioritaires sont programmés plus tôt : pour RS seul, le délai moyen passe de 5,4 jours en priorité~1 à 2,8 jours en priorité~4.
+
+La part des exécutions qui proposent une solution diminue avec la charge : toutes en proposent une à 70\,\% de la capacité utile et 9 sur 9 à 85\,\% pour les métaheuristiques (dont 3 ou 4 grâce à la tolérance). Aux charges plus élevées, cette baisse reflète surtout des instances impossibles : à 115\,\%, la demande d'au moins un chirurgien dépasse de 57~min la capacité utile de toutes ses vacations, report compris, et à 100\,\%, deux des trois cohortes sont également impossibles (une intervention de 120~min pour des vacations de 108~min utiles ; 12~min de demande en excès). Seule la cohorte de référence est réalisable à cette charge. Toutes les violations sont des dépassements de la capacité utile d'une vacation.
+
+\subsection{Temps de calcul}
+
+Le budget de 10~s est respecté à 5\,\% près par toutes les méthodes. Tabou est la méthode la plus rapide à améliorer le départ : première amélioration en 0,04~s au niveau~2 (3,4~s pour RS seul) et son meilleur score du niveau~1 atteint en 0,12~s ; elle plafonne ensuite, et n'est que cinquième au niveau~2 après 10~s (figure~\ref{fig:vitesse}).
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=1.0\linewidth]{vitesse_convergence.png}
+\caption{Meilleur score atteint au cours du temps (médiane sur 10 graines, échelle logarithmique) au niveau~2 (à gauche) et au niveau~1 (au centre) ; à droite, délais médians de première amélioration et de convergence au niveau~2. Tabou (trait épais) améliore le départ le premier, puis plafonne.}
+\label{fig:vitesse}
+\end{figure}
+ Une prédiction en consultation prend 10~ms et la régulation d'une urgence 4~ms dans la configuration du site, environ 1~s avec la réoptimisation globale (budget de 1~s). Passer de 10 à 20~s améliore peu RS seul (3 graines) : l'objectif baisse de 4\,\% (7\,557 puis 7\,251) et le score commun ne varie pas au-delà de l'écart-type (3\,323 puis 3\,351) : 10~s suffisent pour cette taille d'instance (figure~\ref{fig:budget}).
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.6\linewidth]{n2_qualite_budget.png}
+\caption{Objectif du niveau~2 selon le budget (moyenne $\pm$ écart-type sur 3 graines ; point absent : aucune solution proposée). RS seul est le meilleur à chaque budget.}
+\label{fig:budget}
+\end{figure}
+
+
+\subsection{Écart à l'optimalité}
+
+L'écart à l'optimalité permet d'évaluer
+la distance entre la valeur d'une solution
+obtenue et une borne inférieure valide
+de la fonction objectif à minimiser.
+
+Lorsque cette borne est strictement positive,
+l'écart relatif peut être défini par :
+
+\begin{equation}
+\mathrm{Gap}(\%) =
+100 \times
+\frac{f(S)-LB}{LB},
+\end{equation}
+
+où $f(S)$ désigne la valeur de la fonction
+objectif pour la solution $S$ et $LB$
+une borne inférieure valide du même problème.
+
+Aucune méthode exacte n'est implémentée : l'écart à l'optimalité n'est pas disponible. Les méthodes sont comparées à la meilleure solution faisable observée, qui n'en est pas un équivalent.
+
+\subsection{Comparaison des différentes méthodes}
+
+À budget égal, la meilleure configuration est RS seul : il obtient l'objectif moyen le plus bas (7\,702) comme le score commun le plus bas (3\,422) et propose une solution faisable à chaque exécution, à tous les budgets testés (2 à 20~s). La meilleure hybridation, AGS$\rightarrow$RS$\rightarrow$Tabou, est 7,0\,\% au-dessus sur l'objectif (8\,241 ; 5,2\,\% sur le score commun) ; la mémétique est 24\,\% au-dessus (17\,\% sur le score commun). Un test de Wilcoxon apparié par graine, avec correction de Holm, montre sur l'objectif que la mémétique est significativement moins bonne que RS seul ($p=0{,}006$, 10 graines sur 10), mais meilleure que Tabou seul ($p=0{,}008$, 9 graines sur 10) et que l'AGS seul ($p=0{,}008$) ; sur le score commun, les conclusions sont les mêmes, sauf entre la mémétique et Tabou seul, non distinguables ($p=1$). À titre exploratoire, AGS$\rightarrow$RS$\rightarrow$Tabou est moins bon que RS seul à chaque graine ($p=0{,}002$). La figure~\ref{fig:memetique} détaille ces comparaisons graine par graine. Au niveau~1, RS seul et RS$\rightarrow$AGS$\rightarrow$Tabou atteignent tous deux la meilleure valeur observée à chaque graine. Le surcoût de calcul des hybridations est faible (4 à 5\,\% de dépassement du budget), mais elles n'apportent aucun gain de qualité.
+
+Ce résultat s'explique par la répartition du budget. Les hybridations consacrent 50 à 75\,\% du temps à l'AGS, qui évalue des solutions complètes alors que RS et Tabou évaluent leurs mouvements de façon incrémentale, beaucoup moins coûteuse. Les courbes de convergence le confirment : dans la mémétique et AGS$\rightarrow$RS$\rightarrow$Tabou, les principales améliorations surviennent pendant la phase RS, qui ne dispose que de 12,5 à 25\,\% du budget et démarre à plus basse température. Ce constat vaut pour cette instance et ce budget ; l'écart se réduit quand le budget augmente (6,5\,\% à 20~s contre 19\,\% à 2~s sur l'objectif pour AGS$\rightarrow$RS$\rightarrow$Tabou).
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=1.0\linewidth]{memetique_comparaisons.png}
+\caption{À gauche : écart d'objectif entre la mémétique et chaque autre méthode, graine par graine (niveau~2, 10~s ; négatif : mémétique meilleure). À droite : score cumulé du programme après réoptimisation globale du SMA (1~s, 21 scénarios) : la mémétique donne le meilleur programme.}
+\label{fig:memetique}
+\end{figure}
+
+Ces résultats fixent les méthodes retenues pour l'outil : RS seul pour le programme opératoire (niveau~2, 10~s), avec AGS$\rightarrow$RS$\rightarrow$Tabou comme hybridation de référence ; RS seul ou RS$\rightarrow$AGS$\rightarrow$Tabou pour le niveau~1 ; la mémétique pour la réoptimisation globale du SMA (1~s), où elle obtient le meilleur score du programme ; aucune métaheuristique pour l'ordre de passage dans les salles, fixé par la règle gloutonne du site.
+
+\subsection{Analyse et interprétation des résultats}
+
+Sur cette instance, combiner les métaheuristiques n'améliore pas la recherche locale seule : à budget égal, l'efficacité de chaque évaluation compte davantage que la diversité apportée par la population. Le constat s'inverse pour la réoptimisation très courte du SMA (1~s) : RS n'a pas le temps de refroidir, et n'applique aucun plan, tandis que la mémétique en applique 14 sur 57.
+
+Ces résultats proviennent de simulations (patients générés, un seul service, aléas construits) ; seules les performances des modèles prédictifs sont mesurées sur données réelles.
+
+\section{Conformité et déploiement hospitalier}
+\label{sec:deploiement}
+
+Le déploiement d'OR'CHESTRE en milieu hospitalier suit trois phases : cadrer l'outil sur le plan réglementaire, protéger les données de santé, puis l'intégrer progressivement à l'organisation du bloc.
+
+\subsection{Phase 1 : cadrage réglementaire}
+
+La destination de l'outil est définie ainsi : aide à l'organisation du bloc opératoire (salles, créneaux, lits), sans fonction de diagnostic, de traitement ni de pronostic clinique, la décision finale revenant toujours à un professionnel. Cette destination détermine le statut de l'outil au regard du règlement européen sur les dispositifs médicaux (2017/745), qui définit le marquage CE : un logiciel sans finalité médicale n'est pas un dispositif médical. La qualification est consignée dans un dossier de justification, établi selon le guide MDCG~2019-11, que l'on présente à tout établissement qui interroge le statut de l'outil.
+
+Deux éléments de l'outil sont formulés de manière à rester dans ce cadre. L'indice d'urgence, calculé par une règle déterministe, est dérivé des codes diagnostic et acte ; il ne constitue pas une évaluation clinique. La gravité utilisée par le SMA est une saisie du médecin régulateur, et le système se limite à proposer des insertions que ce dernier valide.
+
+\subsection{Phase 2 : protection des données}
+
+Les données de santé constituent une catégorie particulière au sens du RGPD. Les codes diagnostic (CIM) et acte (CCAM) restent des données personnelles même sans le nom du patient : les données sont pseudonymisées, non anonymisées. Quatre mesures encadrent leur traitement :
+\begin{itemize}
+\item la minimisation : seul l'âge est conservé (et non la date de naissance), les codes rares sont regroupés ;
+\item la pseudonymisation : l'identifiant patient n'a aucun lien avec l'identité, et la table de correspondance reste détenue par l'hôpital ;
+\item le déploiement sur les serveurs de l'hôpital, qui évite les transferts de données et le recours à un hébergeur externe certifié pour les données de santé ;
+\item la contractualisation : l'hôpital est responsable de traitement, l'équipe est seulement sous-traitante.
+\end{itemize}
+Les accès sont limités par rôle et journalisés.
+
+\subsection{Phase 3 : intégration progressive}
+
+L'outil est introduit en trois étapes, de sorte que l'hôpital n'en dépende qu'une fois sa fiabilité constatée.
+\begin{itemize}
+\item Mode «~ombre~». L'outil calcule un planning en parallèle du planning habituel, sans influencer aucune décision. On compare les deux plannings pour mesurer l'écart.
+\item Pilote. L'outil est utilisé sur un seul bloc, et chaque proposition est validée par un professionnel avant d'être appliquée.
+\item Extension. L'outil est étendu aux autres blocs si les indicateurs fixés au départ sont atteints, comme le taux d'occupation des salles et le nombre de retards.
+\end{itemize}
+Une formation serait mise en place ; elle ne s'adresserait qu'aux quelques référents, cadres de bloc et médecin régulateur, qui transmettraient ensuite l'usage de l'outil à leurs équipes (avec une possibilité de proposer d'autres formations pour le reste de l'équipe).
+
+\section{Discussion et enseignements managériaux}
+\label{sec:discussion}
+
+\subsection{Interprétation des résultats}
+
+Pour le gestionnaire du bloc, les résultats se traduisent en quatre enseignements.
+
+\begin{itemize}
+    \item \textbf{Remplir le bloc sans saturer l'aval est possible.} Un taux d'occupation de 93\,\% du temps de vacation est atteint sans dépasser les lits programmables : la réserve reste disponible pour les urgences. Le choix de la méthode revient à arbitrer entre patients reportés et pic de lits.
+    \item \textbf{Le temps opératoire est le premier levier.} Les lits ne sont devenus limitants qu'en réduisant leur nombre de 30 à 20 ; accepter qu'un patient soit opéré par un autre chirurgien augmente davantage la capacité qu'ajouter des lits ou des places.
+    \item \textbf{La marge de sécurité doit dépendre de la durée prévue.} Une marge uniforme de 10\,\% couvre les interventions courtes, mais pas les interventions longues, dont la durée est sous-estimée ; dès 85\,\% de charge, 3 ou 4 programmes sur 9 ne sont faisables que grâce à une tolérance de quelques minutes au-delà de la capacité utile.
+    \item \textbf{La régulation peut rester légère.} Le \emph{Contract Net} seul répond aux urgences en quelques millisecondes en préservant le programme ; les pannes du monte-lit perturbent davantage le programme que les urgences, ce qui fait de la fiabilité de cet équipement un levier organisationnel. Ajouter une réoptimisation globale par la mémétique, la méthode la plus efficace dans ce rôle, améliore le programme et réduit la liste d'attente, mais décale presque deux fois plus de patients.
+\end{itemize}
+
+\subsection{Apports pour la gestion des blocs opératoires}
+
+\begin{itemize}
+    \item \textbf{Une réponse aux urgences sans refaire tout le planning.} Les urgences sont insérées avec un coût explicite pour chaque perturbation (décalage, déprogrammation, utilisation d'un lit de réserve), ce qui rend les arbitrages visibles. Lorsque aucune offre ne respecte le délai, le médecin régulateur est alerté ; en dernier recours, l'urgence est confiée au planning de garde.
+    \item \textbf{Une réserve de lits utilisée comme tampon.} La réserve n'est mobilisable que par les urgences : elle absorbe un surcroît d'activité non programmée sans bloquer la programmation ordinaire. Le but est tout de même de ne pas compter sur ces lits d'urgence : dans les résultats, aucune solution proposée n'entame cette réserve.
+    \item \textbf{Un outil d'aide à la décision.} L'outil fait des propositions que les professionnels de santé valident ; il ne remplace pas leur décision. Les prédictions du modèle sont validées ou corrigées par le chirurgien, qui choisit aussi le créneau parmi au plus quatre propositions.
+\end{itemize}
+
+\subsection{Robustesse de l'approche}
+
+Le dépôt contient une suite de tests automatisés (urgences, absences, pannes, capacités, inscriptions, optimisation globale), un contrôle de cohérence exécuté après chaque simulation et deux scénarios aléatoires paramétrés par une graine, qui permettent de répéter l'étude sur de nombreuses semaines. Les erreurs de prédiction des durées au bloc ne sont absorbées que par la marge de 10\,\% des vacations ($\tau_v$) ; leur effet est évalué ci-dessous sans réoptimisation.
+
+La robustesse est évaluée selon trois axes.
+
+\paragraph{Répétitions.} D'une graine à l'autre, l'écart-type du score commun de niveau~2 reste inférieur à 5\,\% de la moyenne (7\,\% pour l'objectif) ; au niveau~1, RS seul atteint la même valeur à chaque graine.
+
+\paragraph{Taux d'échec.} Sur la cohorte de référence, 59 des 60 exécutions des métaheuristiques proposent une solution faisable (AGS seul : 9 sur 10), dont 9 seulement grâce à la tolérance $\delta_v$ (5 pour AGS seul) : la fonction objectif pénalise chaque minute de dépassement, alors que le contrôle de faisabilité en admet quelques-unes. Pour le SMA, trois tirages sur cinq de la semaine en surcharge échouent sur une erreur du moteur.
+
+\paragraph{Nombre de patients et durées.} Toutes les exécutions des métaheuristiques proposent une solution jusqu'à 85\,\% de la capacité utile ; au-delà, la plupart des instances générées sont impossibles (section~\ref{sec:results}). Les programmes de la cohorte de référence sont enfin réévalués, sans réoptimisation, avec des durées opératoires perturbées. La marge de 10\,\% absorbe un allongement de 10\,\% sans heure supplémentaire, mais aucun programme ne reste alors faisable au sens de la capacité utile ; au-delà, les programmes qui remplissent le plus le bloc sont les plus exposés : un allongement de 20\,\% induit de 1\,040~min (mémétique) à 1\,233~min (RS seul) d'heures supplémentaires, et un bruit lognormal ($\sigma=0{,}25$) de 421 à 489~min. Côté hébergement, retirer 6 lits rend tous les programmes non faisables, alors que retirer 5 places n'en affecte aucun.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=1.0\linewidth]{robustesse_durees.png}
+\caption{Programmes de la cohorte de référence réévalués, sans réoptimisation, avec des durées opératoires perturbées : heures supplémentaires induites (à gauche) et part des programmes encore faisables (à droite).}
+\label{fig:robustesse}
+\end{figure}
+
+\subsection{Limites de l'étude}
+
+\begin{itemize}
+    \item \textbf{Données.} L'outil n'a pas été testé sur des patients réels et l'étude porte sur un seul service. Les patients des expériences d'optimisation et du SMA sont générés par des règles fixes ; seule l'étude de saturation reprend des profils de séjours réels, sans la demande réelle. Le score d'urgence est déduit des codes diagnostiques par une règle, le chirurgien prend toutefois la décision finale.
+    \item \textbf{Prédiction.} Les modèles sont évalués sur un seul établissement, avec une séparation par séjour : 35,5\,\% des séjours de test concernent un patient vu à l'entraînement, ce qui peut rendre les performances optimistes ; elles ne sont pas transposables telles quelles à un autre établissement.
+    \item \textbf{Comparaison.} Elle porte uniquement sur nos propres méthodes ; il n'y a pas de comparaison avec une méthode exacte ni avec un autre travail.
+    \item \textbf{Modèle.} Les durées sont des valeurs ponctuelles, les lits sont comptés en nombre par par nuitée. Les équipes d'anesthésie et la salle de réveil ne sont pas modélisées comme des ressources contraintes dans l'optimisation statique.
+    \item \textbf{Aléas.} Les résultats du SMA portent sur des scénarios construits d'un seul service, et la comparaison des réoptimisations sur une seule graine. Le système déprogramme encore des patients dans certains cas : la gestion des urgences peut encore être améliorer. Trois tirages sur cinq de la semaine en surcharge échouent sur une erreur du moteur, et l'absence de régulation n'étant pas simulable, l'apport du SMA par rapport à un programme figé n'est pas mesuré.
+\end{itemize}
+
+% =====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+\subsection{Synthèse des principales contributions}
+
+Nous avons proposé \emph{OR'CHESTRE}, un outil d'aide à la décision qui coordonne le bloc opératoire, les lits et les places ambulatoires. Ces composants partagent les mêmes structures de données et la même fonction objectif par niveau ; le SMA peut réutiliser les métaheuristiques pour améliorer ses propositions et réoptimiser le programme restant.
+
+\subsection{Principaux résultats}
+
+Les résultats montrent tout d'abord l'intérêt du module prédictif pour anticiper les besoins des patients. La durée opératoire est estimée avec une erreur absolue moyenne de 14,8 minutes, tandis que le mode de prise en charge, ambulatoire ou conventionnel, est correctement prédit dans 92,5\,\% des cas.
+
+Concernant l'optimisation statique, le recuit simulé obtient les meilleurs scores sur la cohorte de référence de 421 patients, avec un budget de calcul de 10 secondes. Les stratégies hybrides ne présentent pas de gain supplémentaire dans ces conditions expérimentales. Ces observations suggèrent que leur intérêt dépend notamment des caractéristiques du problème et du budget de calcul disponible.
+
+Enfin, les simulations du système multi-agents montrent sa capacité à réorganiser le programme face aux urgences et aux perturbations : 21 des 23 urgences sont prises en charge dans le délai cible sur les scénarios déterministes étudiés. La réoptimisation globale par l'approche mémétique améliore la qualité du programme, mais entraîne davantage de déplacements de patients et augmente le temps de calcul. L'étude de saturation identifie par ailleurs le temps opératoire comme la principale ressource limitante, devant les capacités d'hébergement, dans les configurations simulées.
+
+
+\subsection{Perspectives de recherche}
+
+Afin d'améliorer notre projet nous pourrions envisager les perspectives suivantes :
+\begin{itemize}
+    \item tester davantage de scénarios et répéter les expériences sur plusieurs instances ;
+    \item améliorer le modèle d'apprentissage automatique ;
+    \item revoir la répartition du budget de calcul dans les hybridations ;
+    \item une méthode de descente de gradient aurait pu être utilisée afin de déterminer de meilleurs coefficients pour les fonctions objectifs : toutefois, cette méthode recquiert une grande puissance de calculs.
+    \item valider les métaheuristiques sur de petites instances avec un solveur exact (programmation par contraintes, par exemple CP-SAT).
+    \item améliorer la vitesse de calcul de la reprogrammation des patients.
+\end{itemize}
+
+En définitive, OR'CHESTRE montre qu'un même outil peut proposer des dates d'intervention qui tiennent compte des lits et des places, puis absorber les urgences en préservant le programme : c'est le passage d'un flux poussé à un flux tiré.
+
+% =====================================================================
+\phantomsection
+\addcontentsline{toc}{section}{Références}
+{\small
+\begin{thebibliography}{99}
+\setlength{\itemsep}{1pt}
+\bibitem{cardoen2010}
+B. Cardoen, E. Demeulemeester et J. Beliën, «~Operating room planning and scheduling: A literature review~»,
+\emph{European Journal of Operational Research}, 201(3), 921--932, 2010.
+\href{https://doi.org/10.1016/j.ejor.2009.04.011}{doi:10.1016/j.ejor.2009.04.011}.
+
+\bibitem{schneider2020}
+A. J. T. Schneider, J. T. van Essen, M. Carlier et E. W. Hans, «~Scheduling surgery groups considering multiple downstream resources~»,
+\emph{European Journal of Operational Research}, 282(2), 741--752, 2020.
+\href{https://doi.org/10.1016/j.ejor.2019.09.029}{doi:10.1016/j.ejor.2019.09.029}.
+
+\bibitem{augustin2022}
+A. Augustin, P. Jouvet, N. Lahrichi, A. Lodi et L.-M. Rousseau, «~A data-driven approach to include availability of ICU beds in the planning of the operating room~»,
+\emph{Omega}, 109, article 102608, 2022.
+\href{https://doi.org/10.1016/j.omega.2022.102608}{doi:10.1016/j.omega.2022.102608}.
+
+\bibitem{roshanaei2020}
+V. Roshanaei, K. E. C. Booth, D. M. Aleman, D. R. Urbach et J. C. Beck, «~Branch-and-check methods for multi-level operating room planning and scheduling~»,
+\emph{International Journal of Production Economics}, 220, article 107433, 2020.
+\href{https://doi.org/10.1016/j.ijpe.2019.07.006}{doi:10.1016/j.ijpe.2019.07.006}.
+
+\bibitem{aringhieri2015}
+R. Aringhieri, P. Landa, P. Soriano, E. Tanfani et A. Testi, «~A two level metaheuristic for the operating room scheduling and assignment problem~»,
+\emph{Computers \& Operations Research}, 54, 21--34, 2015.
+\href{https://doi.org/10.1016/j.cor.2014.08.014}{doi:10.1016/j.cor.2014.08.014}.
+
+\bibitem{vieira2025}
+B. S. Vieira, E. M. Silva et A. A. Chaves, «~Random-key algorithms for optimizing integrated Operating Room Scheduling~»,
+\emph{Applied Soft Computing}, 180, article 113368, 2025.
+\href{https://doi.org/10.1016/j.asoc.2025.113368}{doi:10.1016/j.asoc.2025.113368}.
+
+\bibitem{fei2010}
+H. Fei, N. Meskens et C. Chu, «~A planning and scheduling problem for an operating theatre using an open scheduling strategy~»,
+\emph{Computers \& Industrial Engineering}, 58(2), 221--230, 2010.
+\href{https://doi.org/10.1016/j.cie.2009.02.012}{doi:10.1016/j.cie.2009.02.012}.
+
+\bibitem{alamin2025}
+Md Al Amin et al., «~Exploring the Landscape of Operating Room Scheduling: A Bibliometric Analysis of Recent Advancements and Future Prospects~»,
+\emph{Biomedical Engineering and Computational Biology}, 16, 1--16, 2025.
+\href{https://doi.org/10.1177/11795972241271549}{doi:10.1177/11795972241271549}.
+\end{thebibliography}
+}
+
+\end{document}
