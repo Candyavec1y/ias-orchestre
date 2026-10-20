@@ -62,20 +62,20 @@ RS\textgreater{}AGS\textgreater{}TABOU & 100 & 900,0 $\pm$ 0,0 & 900 & 48,6 & 16
 \begin{table}[htbp]
 \centering
 \small
-\caption{N2 sur v28, cohorte de référence (charge 100~\% de la capacité utile), budget 10~s ; F2 commun (sans pénalité de report). Écart à la meilleure solution faisable observée, pas un gap d'optimalité.}
+\caption{N2 sur v28, cohorte de référence (charge 100~\% de la capacité utile), budget 10~s. Seules les solutions faisables sont proposées (règle de l'équipe) : statistiques calculées sur les solutions proposées ; F2 commun sans pénalité de report. Le glouton est le départ commun (non faisable). Écart à la meilleure solution faisable observée, pas un gap d'optimalité.}
 \label{tab:n2}
-\begin{tabular}{lrrrrrrrr}
+\begin{tabular}{lrrrrrrr}
 \toprule
-Méthode & n & Faisable (\%) & F2 moy. $\pm$ é.-t. & F2 méd. & Gain vs départ (\%) & Écart meill. faisable (\%) & Reportés & Temps (s) \\
+Méthode & Proposées & F2 moy. $\pm$ é.-t. & F2 méd. & Gain vs départ (\%) & Écart meill. faisable (\%) & Reportés & Temps (s) \\
 \midrule
-glouton & 1 & 0 & 8 265 $\pm$ 0 & 8 265 & 0,0 & 167,3 & 82,0 & 0,5 \\
-premier créneau & 1 & 100 & 5 484 $\pm$ 0 & 5 484 & 33,6 & 77,4 & 36,0 & 0,5 \\
-RS seul & 10 & 100 & 3 344 $\pm$ 173 & 3 355 & 59,5 & 8,1 & 23,2 & 10,0 \\
-TABOU seul & 10 & 90 & 3 956 $\pm$ 186 & 3 888 & 52,1 & 28,0 & 33,7 & 10,0 \\
-AGS seul & 10 & 70 & 5 708 $\pm$ 164 & 5 752 & 30,9 & 84,6 & 65,4 & 10,3 \\
-memetique & 10 & 100 & 3 823 $\pm$ 178 & 3 814 & 53,7 & 23,7 & 28,2 & 10,3 \\
-AGS\textgreater{}RS\textgreater{}TABOU & 10 & 80 & 3 593 $\pm$ 179 & 3 600 & 56,5 & 16,2 & 25,3 & 10,4 \\
-RS\textgreater{}AGS\textgreater{}TABOU & 10 & 90 & 3 905 $\pm$ 104 & 3 935 & 52,8 & 26,3 & 28,0 & 10,4 \\
+glouton (départ) & — & 8 265 $\pm$ 0 & 8 265 & 0,0 & 167,3 & 82,0 & 0,5 \\
+premier créneau & 1 / 1 & 5 484 $\pm$ 0 & 5 484 & 33,6 & 77,4 & 36,0 & 0,5 \\
+RS seul & 10 / 10 & 3 344 $\pm$ 173 & 3 355 & 59,5 & 8,1 & 23,2 & 10,0 \\
+TABOU seul & 9 / 10 & 3 923 $\pm$ 163 & 3 874 & 52,5 & 26,9 & 33,8 & 10,0 \\
+AGS seul & 7 / 10 & 5 643 $\pm$ 147 & 5 730 & 31,7 & 82,5 & 65,4 & 10,3 \\
+memetique & 10 / 10 & 3 823 $\pm$ 178 & 3 814 & 53,7 & 23,7 & 28,2 & 10,3 \\
+AGS\textgreater{}RS\textgreater{}TABOU & 8 / 10 & 3 555 $\pm$ 150 & 3 600 & 57,0 & 15,0 & 25,1 & 10,4 \\
+RS\textgreater{}AGS\textgreater{}TABOU & 9 / 10 & 3 898 $\pm$ 108 & 3 916 & 52,8 & 26,1 & 28,0 & 10,4 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -83,7 +83,7 @@ RS\textgreater{}AGS\textgreater{}TABOU & 10 & 90 & 3 905 $\pm$ 104 & 3 935 & 52,
 \begin{table}[htbp]
 \centering
 \small
-\caption{Gains et contreparties (moyennes sur 10 graines, cohorte de référence) : composantes pondérées de F2 et indicateurs opérationnels}
+\caption{Gains et contreparties (moyennes sur les solutions proposées, cohorte de référence ; glouton = départ) : composantes pondérées de F2 et indicateurs opérationnels}
 \label{tab:compromis}
 \begin{tabular}{lrrrrrrrrr}
 \toprule
@@ -92,11 +92,11 @@ Méthode & Bloc & Lits & Places & Occ. bloc (\%) & Pic lits & Pic places & Repor
 glouton & 7 107 & 1 044 & 114 & 83,6 & 27,0 & 11,0 & 82,0 & 6,7 & 6,7 \\
 premier créneau & 3 894 & 1 487 & 103 & 88,0 & 27,0 & 9,0 & 36,0 & 3,6 & 1,6 \\
 RS seul & 2 318 & 982 & 44 & 92,9 & 25,2 & 6,9 & 23,2 & 3,5 & 2,6 \\
-TABOU seul & 3 083 & 840 & 34 & 90,5 & 24,9 & 6,3 & 33,7 & 4,0 & 2,8 \\
-AGS seul & 4 856 & 797 & 55 & 85,2 & 23,0 & 7,5 & 65,4 & 5,7 & 4,5 \\
+TABOU seul & 3 042 & 847 & 34 & 90,6 & 25,0 & 6,3 & 33,8 & 4,0 & 2,8 \\
+AGS seul & 4 820 & 770 & 53 & 85,1 & 22,7 & 7,6 & 65,4 & 5,6 & 4,4 \\
 memetique & 2 900 & 891 & 33 & 91,1 & 25,0 & 6,5 & 28,2 & 3,7 & 2,8 \\
-AGS\textgreater{}RS\textgreater{}TABOU & 2 627 & 937 & 29 & 92,0 & 25,0 & 6,7 & 25,3 & 3,6 & 2,8 \\
-RS\textgreater{}AGS\textgreater{}TABOU & 2 979 & 891 & 35 & 90,9 & 25,0 & 6,4 & 28,0 & 3,7 & 2,9 \\
+AGS\textgreater{}RS\textgreater{}TABOU & 2 572 & 954 & 29 & 92,1 & 25,1 & 6,5 & 25,1 & 3,6 & 2,7 \\
+RS\textgreater{}AGS\textgreater{}TABOU & 2 974 & 888 & 36 & 90,8 & 24,8 & 6,4 & 28,0 & 3,7 & 2,9 \\
 \bottomrule
 \end{tabular}
 \end{table}

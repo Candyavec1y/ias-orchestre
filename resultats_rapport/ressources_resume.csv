@@ -1,9 +1,9 @@
-methode,graine,occupation_bloc_moyenne_pct,jours_bloc_au_dela_capacite_utile,pic_lits_horizon,nuits_lits_au_cap_programmable,lits_programmables,reserve,pic_places_matin,pic_places_apres_midi,demi_journees_places_pleines,sorties_a_midi,admissions,jours_avec_sortie_et_admission,lits_reutilises_le_jour_de_sortie_max,occupation_lits_au_dela_horizon
-glouton,1,83.66536252352638,0,25,2,27,3,11,8,0,247,247,31,154,158
-premier créneau,1,87.98406407042677,0,27,2,27,3,9,6,0,247,247,29,151,46
-RS seul,1,93.43261440999473,0,27,1,27,3,7,5,0,247,247,27,166,30
-TABOU seul,1,89.97601747026434,0,25,0,27,3,6,7,0,247,247,27,168,50
-AGS seul,1,85.16971800812473,0,26,0,27,3,8,7,0,247,247,31,158,95
-memetique,1,91.17323305802043,0,24,0,27,3,7,6,0,247,247,29,171,43
-AGS>RS>TABOU,1,91.98063784304875,0,26,0,27,3,6,5,0,247,247,29,176,39
-RS>AGS>TABOU,1,91.2758863306114,0,27,1,27,3,6,6,0,247,247,29,170,45
+methode,graine,faisable,occupation_bloc_moyenne_pct,jours_bloc_au_dela_capacite_utile,pic_lits_horizon,nuits_lits_au_cap_programmable,lits_programmables,reserve,pic_places_matin,pic_places_apres_midi,demi_journees_places_pleines,sorties_a_midi,admissions,jours_avec_sortie_et_admission,lits_reutilises_le_jour_de_sortie_max,occupation_lits_au_dela_horizon
+glouton,1,False,83.66536252352638,0,25,2,27,3,11,8,0,247,247,31,154,158
+premier créneau,1,True,87.98406407042677,0,27,2,27,3,9,6,0,247,247,29,151,46
+RS seul,1,True,93.43261440999473,0,27,1,27,3,7,5,0,247,247,27,166,30
+TABOU seul,1,True,89.97601747026434,0,25,0,27,3,6,7,0,247,247,27,168,50
+AGS seul,3,True,85.25146604175212,0,22,0,27,3,8,6,0,247,247,31,161,109
+memetique,1,True,91.17323305802043,0,24,0,27,3,7,6,0,247,247,29,171,43
+AGS>RS>TABOU,1,True,91.98063784304875,0,26,0,27,3,6,5,0,247,247,29,176,39
+RS>AGS>TABOU,2,True,90.32641753291345,0,24,0,27,3,7,6,0,247,247,30,179,53

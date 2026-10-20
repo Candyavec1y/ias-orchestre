@@ -2,6 +2,12 @@
 """
 Analyse des campagnes D (N1) et E (N2) : résumés statistiques, test confirmatoire fixé a priori
 (PREPARATION_EXPERIENCES.md), gains et contreparties, figures F2-F5 et F7. Lit uniquement les sorties agrégées.
+
+Règle de l'équipe (réponse à QUESTIONS.md, point 1) : pendant la recherche, les dépassements sont seulement
+pénalisés ; à la fin, SEULES les solutions faisables sont proposées (contrainte dure). Une exécution dont la
+solution finale n'est pas faisable compte donc comme « aucune solution proposée » : elle entre dans le taux de
+solutions proposées, mais pas dans les statistiques de qualité. Le glouton est le DÉPART commun (référence), décrit
+sur toutes ses exécutions.
 """
 from __future__ import annotations
 
@@ -52,10 +58,12 @@ def resume(lignes, cles, metriques):
     out = []
     for g, ls in sorted(groupes.items(), key=lambda kv: (kv[0][:-1], ORDRE.index(kv[0][-1]) if kv[0][-1] in ORDRE else 99)):
         ligne = dict(zip(cles, g))
+        proposees = ls if g[-1] == "glouton" else [l_ for l_ in ls if _vrai(l_["faisable"])]
         ligne["executions"] = len(ls)
+        ligne["solutions_proposees"] = len(proposees) if g[-1] != "glouton" else "départ"
         ligne["taux_faisable_pct"] = 100 * sum(_vrai(l_["faisable"]) for l_ in ls) / len(ls)
         for m in metriques:
-            s = resume_stat([_f(l_.get(m)) for l_ in ls])
+            s = resume_stat([_f(l_.get(m)) for l_ in proposees])
             for k, v in s.items():
                 if k != "n":
                     ligne[f"{m}_{k}"] = v
@@ -174,8 +182,8 @@ def analyse_n2(n2, conv):
     # --- test confirmatoire fixé a priori : memetique vs chaque méthode seule, apparié par graine ---
     tests = []
     for m in ("RS seul", "TABOU seul", "AGS seul"):
-        a = {int(l_["graine"]): _f(l_["score_commun"]) for l_ in ref if l_["methode"] == "memetique"}
-        b = {int(l_["graine"]): _f(l_["score_commun"]) for l_ in ref if l_["methode"] == m}
+        a = {int(l_["graine"]): _f(l_["score_commun"]) for l_ in ref if l_["methode"] == "memetique" and _vrai(l_["faisable"])}
+        b = {int(l_["graine"]): _f(l_["score_commun"]) for l_ in ref if l_["methode"] == m and _vrai(l_["faisable"])}
         g = sorted(set(a) & set(b))
         d = [a[k] - b[k] for k in g]
         w = stats.wilcoxon([a[k] for k in g], [b[k] for k in g]) if any(d) else None
@@ -193,7 +201,8 @@ def analyse_n2(n2, conv):
     # --- gains et contreparties (cohorte de référence, moyennes sur les graines) ---
     gc = []
     for r in res_ref:
-        gc.append({"methode": r["methode"], "executions": r["executions"], "taux_faisable_pct": r["taux_faisable_pct"],
+        gc.append({"methode": r["methode"], "executions": r["executions"], "solutions_proposees": r["solutions_proposees"],
+                   "taux_faisable_pct": r["taux_faisable_pct"],
                    **{k: r.get(f"{k}_moyenne") for k in ("score_commun", "gain_vs_depart_pct", "score_bloc", "score_lits",
                                                          "score_places", "taux_occupation_bloc_pct", "temps_inoccupe_min",
                                                          "pic_lits", "jours_lits_pleins", "pic_places",
@@ -206,20 +215,23 @@ def analyse_n2(n2, conv):
     # F3 scores (référence)
     fig, ax = plt.subplots(figsize=(10, 4.8), layout="constrained")
     meth = [m for m in ORDRE if any(l_["methode"] == m for l_ in ref)]
+    etiquettes = []
     for k, m in enumerate(meth):
         ls = [l_ for l_ in ref if l_["methode"] == m]
-        v = [_f(l_["score_commun"]) for l_ in ls]
-        ax.boxplot([v], positions=[k], widths=0.6, patch_artist=True,
-                   boxprops=dict(facecolor=COULEURS[m], alpha=0.5), medianprops=dict(color="k"), showfliers=False)
-        x = np.full(len(v), k) + np.linspace(-0.15, 0.15, len(v))
-        fa = [_vrai(l_["faisable"]) for l_ in ls]
-        ax.scatter(x[fa], np.array(v)[fa], c="k", s=14, marker="o", label="faisable" if k == 0 else None)
-        ax.scatter(x[[not f for f in fa]], np.array(v)[[not f for f in fa]], facecolors="none", edgecolors="r", s=30,
-                   marker="o", label="NON faisable" if k == 0 else None)
-    ax.set_xticks(range(len(meth)), meth, rotation=20)
-    ax.set(ylabel="F2 commun (à minimiser)", title="N2 v28, cohorte de référence (charge 100 % de la capacité utile) : "
-                                                     "10 graines, budget 10 s")
-    ax.legend()
+        if m == "glouton":                           # départ commun : affiché pour référence, non proposé
+            ax.scatter([k], [_f(ls[0]["score_commun"])], facecolors="none", edgecolors="r", s=40, marker="o")
+            etiquettes.append("départ\n(non faisable)" if not _vrai(ls[0]["faisable"]) else "départ")
+            continue
+        v = [_f(l_["score_commun"]) for l_ in ls if _vrai(l_["faisable"])]
+        if v:
+            ax.boxplot([v], positions=[k], widths=0.6, patch_artist=True,
+                       boxprops=dict(facecolor=COULEURS[m], alpha=0.5), medianprops=dict(color="k"), showfliers=False)
+            ax.scatter(np.full(len(v), k) + np.linspace(-0.15, 0.15, len(v)), v, c="k", s=14, marker="o")
+        etiquettes.append(f"{m}\n{len(v)}/{len(ls)} proposées")
+    ax.set_xticks(range(len(meth)), etiquettes, rotation=20, fontsize=8)
+    ax.set(ylabel="F2 commun des solutions proposées (à minimiser)",
+           title="N2 v28, cohorte de référence (charge 100 %) : 10 graines, budget 10 s ; "
+                 "seules les solutions faisables sont proposées")
     figs += sauver_figure(fig, "n2_scores")
     plt.close(fig)
 
@@ -241,12 +253,13 @@ def analyse_n2(n2, conv):
     # F4b qualité vs budget
     fig, ax = plt.subplots(figsize=(8, 4.5), layout="constrained")
     for m in METHODES:
-        pts = sorted((float(r["budget_s"]), r["score_commun_moyenne"], r["score_commun_ecart_type"], r["taux_faisable_pct"])
-                     for r in res_b if r["methode"] == m)
+        pts = sorted((float(r["budget_s"]), r.get("score_commun_moyenne", math.nan), r.get("score_commun_ecart_type", 0.0),
+                      r["taux_faisable_pct"]) for r in res_b if r["methode"] == m)        # NaN : aucune solution proposée
         ax.errorbar([p[0] for p in pts], [p[1] for p in pts], yerr=[p[2] for p in pts], color=COULEURS[m],
                     marker=MARQUEURS[m], capsize=3, label=m)
     ax.set(xscale="log", xticks=[2, 5, 10, 20], xticklabels=["2", "5", "10", "20"], xlabel="Budget (s, temps réel)",
-           ylabel="F2 commun (moyenne ± écart-type, 3 graines)", title="N2 référence : qualité selon le budget")
+           ylabel="F2 commun des solutions proposées (moy. ± é.-t.)",
+           title="N2 référence : qualité selon le budget (point absent : aucune solution proposée)")
     ax.legend(fontsize=8)
     figs += sauver_figure(fig, "n2_qualite_budget")
     plt.close(fig)
@@ -275,10 +288,10 @@ def analyse_n2(n2, conv):
             continue
         axes[0].plot([p[0] for p in pts], [p[1] for p in pts], marker=MARQUEURS[m], color=COULEURS[m], label=m)
         axes[1].plot([p[0] for p in pts], [p[3] for p in pts], marker=MARQUEURS[m], color=COULEURS[m], label=m)
-    axes[0].set(xlabel="Charge (% de la capacité utile visée)", ylabel="Solutions faisables (%)",
-                title="Taux de solutions faisables (3 cohortes × 3 graines)")
+    axes[0].set(xlabel="Charge (% de la capacité utile visée)", ylabel="Exécutions avec une solution proposée (%)",
+                title="Solutions proposées (faisables), 3 cohortes × 3 graines")
     axes[1].set(xlabel="Charge (% de la capacité utile visée)", ylabel="Patients reportés (moyenne)",
-                title="Patients reportés après l'horizon de 4 semaines")
+                title="Patients reportés après l'horizon (solutions proposées)")
     axes[0].legend(fontsize=8)
     figs += sauver_figure(fig, "n2_charges")
     plt.close(fig)
@@ -286,12 +299,13 @@ def analyse_n2(n2, conv):
     # délai par priorité
     fig, ax = plt.subplots(figsize=(10, 4.5), layout="constrained")
     for i, prio in enumerate((1, 2, 3, 4)):
-        moy = [resume_stat([_f(l_.get(f"delai_moyen_j_p{prio}")) for l_ in ref if l_["methode"] == m]).get("moyenne") or 0
+        moy = [resume_stat([_f(l_.get(f"delai_moyen_j_p{prio}")) for l_ in ref if l_["methode"] == m
+                            and (m == "glouton" or _vrai(l_["faisable"]))]).get("moyenne") or 0
                for m in meth]
         ax.bar(np.arange(len(meth)) + (i - 1.5) * 0.2, moy, 0.2, label=f"priorité {prio}",
                color=["0.85", "0.6", "0.35", "0.1"][i], edgecolor="k")
     ax.set_xticks(range(len(meth)), meth, rotation=20)
-    ax.set(ylabel="Délai moyen date au plus tôt → intervention (jours)", title="N2 référence : délai par priorité")
+    ax.set(ylabel="Délai moyen date au plus tôt → intervention (jours)", title="N2 référence : délai par priorité (solutions proposées ; glouton = départ)")
     ax.legend()
     figs += sauver_figure(fig, "n2_delai_priorite")
     plt.close(fig)

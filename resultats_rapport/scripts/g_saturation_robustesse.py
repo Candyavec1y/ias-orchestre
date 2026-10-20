@@ -3,8 +3,8 @@
 Tâche G : saturation (étude du projet interface/tests/saturation.py, appelée sans modification) et robustesse des
 programmes N2 de la campagne E à des perturbations (durées opératoires, capacités), une dimension à la fois.
 
-Robustesse : chaque solution finale N2 de la cohorte de référence (10 graines × 6 méthodes + glouton + premier
-créneau) est RÉÉVALUÉE (sans réoptimisation) avec des durées multipliées par un facteur fixe (0,9 / 1,1 / 1,2) ou par
+Robustesse : chaque solution N2 PROPOSÉE (faisable) de la cohorte de référence, plus le départ glouton pour
+référence, est RÉÉVALUÉE (sans réoptimisation) avec des durées multipliées par un facteur fixe (0,9 / 1,1 / 1,2) ou par
 un bruit lognormal (σ = 0,25 ≈ erreur relative du modèle de durée, 20 tirages), puis avec moins de lits ou de places.
 Mesures : dépassements de la capacité utile (marge de 10 %) et de la durée TOTALE des vacations (heures
 supplémentaires), violations du validateur. Les patients sont synthétiques (cohorte DEMO).
@@ -68,7 +68,12 @@ def robustesse():
     sols = json.loads((AGREGEES / "solutions_synthetiques.json").read_text(encoding="utf-8"))
     base = H.instance_v28(LUNDI_REFERENCE, 4, graine=43, charge=0.90)
     inst = H.etendre_horizon(base, H.NB_SEMAINES_REPORT)
-    choisies = [s for s in sols if s["campagne"] == "N2_reference"]
+    # règle de l'équipe : seules les solutions faisables sont proposées ; le glouton (départ commun) sert de référence
+    from commun_rapport import lire_csv
+    faisable = {(r["methode"], int(r["graine"])): r["faisable"] == "True"
+                for r in lire_csv(SORTIE / "n2_resultats.csv") if r["campagne"] == "N2_reference"}
+    choisies = [s for s in sols if s["campagne"] == "N2_reference"
+                and (s["methode"] == "glouton" or faisable[(s["methode"], int(s["graine"]))])]
 
     def mesurer(inst2, aff):
         charge = {}
@@ -154,6 +159,11 @@ if __name__ == "__main__":
     t0 = time.perf_counter()
     rob = robustesse()
     print(f"robustesse : {len(rob)} lignes ({time.perf_counter() - t0:.0f} s)", flush=True)
-    sat, courbes = saturation()
+    if len(sys.argv) > 1 and sys.argv[1] == "robustesse":      # saturation déjà calculée : relue
+        from commun_rapport import lire_csv
+        sat = lire_csv(SORTIE / "saturation_resultats.csv")
+        courbes = json.loads((AGREGEES / "saturation_courbes.json").read_text(encoding="utf-8"))
+    else:
+        sat, courbes = saturation()
     figures(sat, courbes, rob)
     print(f"Terminé en {time.perf_counter() - t0:.0f} s")

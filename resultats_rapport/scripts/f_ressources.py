@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Tâche F : profils d'occupation bloc / lits / places sur les 4 semaines v28 (cohorte de référence, graine 1 pour
-chaque méthode), sorties à midi et admissions du même jour, et nuage des compromis taux d'occupation du bloc / pic
+Tâche F : profils d'occupation bloc / lits / places sur les 4 semaines v28 (cohorte de référence, première graine
+faisable de chaque méthode), sorties à midi et admissions du même jour, et nuage des compromis taux d'occupation du bloc / pic
 de lits sur toutes les exécutions à 100 % de charge. Lit les solutions synthétiques enregistrées par la campagne E.
 
 Le modèle ne contient pas d'heure d'admission : les « admissions du soir » ne sont pas mesurables ; on compte les
@@ -31,8 +31,16 @@ def main():
     from parametres import LUNDI_REFERENCE as L0
     inst = H.etendre_horizon(H.instance_v28(L0, 4, graine=43, charge=0.90), H.NB_SEMAINES_REPORT)
     sols = json.loads((AGREGEES / "solutions_synthetiques.json").read_text(encoding="utf-8"))
-    ref = {s["methode"]: {int(k): v for k, v in s["solution"].items()} for s in sols
-           if s["campagne"] == "N2_reference" and int(s["graine"]) == 1}
+    # règle de l'équipe : seules les solutions faisables sont proposées -> pour chaque méthode, la plus petite graine
+    # dont la solution est faisable (le glouton est le départ commun, montré pour référence)
+    faisable = {(r["methode"], int(r["graine"])): r["faisable"] == "True"
+                for r in lire_csv(SORTIE / "n2_resultats.csv") if r["campagne"] == "N2_reference"}
+    ref, graine_retenue = {}, {}
+    for s in sorted((s for s in sols if s["campagne"] == "N2_reference"), key=lambda s: int(s["graine"])):
+        m = s["methode"]
+        if m not in ref and (m == "glouton" or faisable.get((m, int(s["graine"])))):
+            ref[m] = {int(k): v for k, v in s["solution"].items()}
+            graine_retenue[m] = int(s["graine"])
     jours = [L0 + timedelta(days=k) for k in range(28 + 21)]
     V, P, h = inst.vacations, inst.patients, inst.hebergement
     cap_jour = defaultdict(float)
@@ -62,7 +70,7 @@ def main():
         apm = {j: places.get(SC.DemiJournee(j, True), 0) for j in jours}
         profils[m] = {"bloc": bloc, "lits": lj, "matin": matin, "apm": apm, "sorties": sorties, "admissions": admissions}
         horizon = [j for j in jours if j < L0 + timedelta(days=28)]
-        lignes.append({"methode": m, "graine": 1, "occupation_bloc_moyenne_pct": float(np.mean(list(bloc.values()))),
+        lignes.append({"methode": m, "graine": graine_retenue[m], "faisable": faisable.get((m, graine_retenue[m])), "occupation_bloc_moyenne_pct": float(np.mean(list(bloc.values()))),
                        "jours_bloc_au_dela_capacite_utile": sum(x > 100 for x in bloc.values()),
                        "pic_lits_horizon": max((lj.get(j, 0) for j in horizon), default=0),
                        "nuits_lits_au_cap_programmable": sum(lj.get(j, 0) >= h.cap_lits for j in jours),
@@ -92,7 +100,7 @@ def main():
     axes[1].set(ylabel="Lits occupés (nuit)", title="pointillé noir : 27 lits programmables ; rouge : 30 avec la réserve")
     axes[2].set(ylabel="Places (pic de la journée)", xlabel="Jour (4 semaines + 3 semaines de report)")
     axes[0].legend(fontsize=8, ncol=4)
-    fig.suptitle("Profils d'occupation, cohorte de référence, graine 1")
+    fig.suptitle("Profils d'occupation, cohorte de référence (première graine faisable ; glouton = départ)")
     figs += sauver_figure(fig, "ressources_profils")
     plt.close(fig)
 
@@ -102,7 +110,7 @@ def main():
     ax.bar(jours, [pr["sorties"][j] for j in jours], width=0.4, align="edge", color="0.3", label="sorties à midi")
     ax.bar(jours, [-pr["admissions"][j] for j in jours], width=0.4, align="edge", color="0.7", label="admissions (négatif)")
     ax.plot(jours, [pr["lits"].get(j, 0) for j in jours], "k-", label="lits occupés la nuit")
-    ax.set(title=f"Lits : sorties à midi et admissions du même jour ({m}, graine 1) — heure d'admission non modélisée",
+    ax.set(title=f"Lits : sorties à midi et admissions du même jour ({m}, graine {graine_retenue[m]}) — heure d'admission non modélisée",
            ylabel="Patients")
     ax.legend(fontsize=8)
     figs += sauver_figure(fig, "ressources_lits_rotation")
@@ -120,7 +128,7 @@ def main():
             ax.scatter(x[[not f for f in fa]], y[[not f for f in fa]], marker=MARQUEURS[m], facecolors="none",
                        edgecolors=COULEURS[m], s=28)
     ax.set(xlabel="Taux d'occupation du bloc (%)", ylabel="Pic de lits occupés",
-           title="Compromis observés à 100 % de charge (3 cohortes ; symbole creux = non faisable)")
+           title="Compromis observés à 100 % de charge (3 cohortes ; symbole creux = non faisable, non proposé)")
     ax.legend(fontsize=7)
     figs += sauver_figure(fig, "ressources_compromis")
     plt.close(fig)

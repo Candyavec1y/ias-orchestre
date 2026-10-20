@@ -103,32 +103,6 @@ RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1215.0,453,18,False,0,0,45,18
 RS>AGS>TABOU,3,"bruit lognormal σ=0,25",1192.5,471,16,False,0,0,44,19
 RS>AGS>TABOU,3,lits 24 (−6),0,0,0,False,6,0,0,
 RS>AGS>TABOU,3,places 15 (−5),0,0,0,True,0,0,0,
-AGS>RS>TABOU,4,"durées ×0,9",0,0,0,True,0,0,0,
-AGS>RS>TABOU,4,"durées ×1,0 (nominal)",3.0,0,0,False,0,0,2,
-AGS>RS>TABOU,4,"durées ×1,1",1374.5,0,0,False,0,0,84,
-AGS>RS>TABOU,4,"durées ×1,2",3780.0,1077,82,False,0,0,111,
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1333.0,502,22,False,0,0,44,0
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1037.5,455,17,False,0,0,34,1
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1299.0,575,18,False,0,0,41,2
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1130.0,436,15,False,0,0,39,3
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1031.0,410,15,False,0,0,35,4
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1133.5,391,15,False,0,0,36,5
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1005.5,352,15,False,0,0,36,6
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1396.0,503,20,False,0,0,45,7
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1020.5,350,13,False,0,0,39,8
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",893.5,296,17,False,0,0,36,9
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1189.5,373,22,False,0,0,48,10
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",997.0,351,16,False,0,0,41,11
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1053.5,338,15,False,0,0,40,12
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1078.0,411,18,False,0,0,35,13
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1589.5,770,21,False,0,0,48,14
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1323.5,504,19,False,0,0,42,15
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",888.0,352,13,False,0,0,32,16
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1546.5,536,23,False,0,0,55,17
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1061.0,304,12,False,0,0,48,18
-AGS>RS>TABOU,4,"bruit lognormal σ=0,25",1187.5,320,16,False,0,0,50,19
-AGS>RS>TABOU,4,lits 24 (−6),3.0,0,0,False,4,0,2,
-AGS>RS>TABOU,4,places 15 (−5),3.0,0,0,False,0,0,2,
 RS>AGS>TABOU,10,"durées ×0,9",0,0,0,True,0,0,0,
 RS>AGS>TABOU,10,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
 RS>AGS>TABOU,10,"durées ×1,1",1337.0,0,0,False,0,0,81,
@@ -155,32 +129,6 @@ RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1180.0,543,17,False,0,0,36,18
 RS>AGS>TABOU,10,"bruit lognormal σ=0,25",1219.0,459,16,False,0,0,47,19
 RS>AGS>TABOU,10,lits 24 (−6),0,0,0,False,6,0,0,
 RS>AGS>TABOU,10,places 15 (−5),0,0,0,True,0,0,0,
-AGS>RS>TABOU,9,"durées ×0,9",0,0,0,True,0,0,0,
-AGS>RS>TABOU,9,"durées ×1,0 (nominal)",1.5,0,0,False,0,0,1,
-AGS>RS>TABOU,9,"durées ×1,1",1510.5,0,0,False,0,0,92,
-AGS>RS>TABOU,9,"durées ×1,2",4005.0,1191,90,False,0,0,114,
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1320.0,534,20,False,0,0,43,0
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1127.5,482,19,False,0,0,36,1
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1522.0,783,23,False,0,0,41,2
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1239.0,417,16,False,0,0,45,3
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",900.0,327,15,False,0,0,35,4
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1066.5,357,17,False,0,0,42,5
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",930.0,305,14,False,0,0,34,6
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1323.0,480,15,False,0,0,48,7
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1339.0,431,23,False,0,0,48,8
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",817.0,283,14,False,0,0,30,9
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1467.0,536,24,False,0,0,52,10
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1119.5,426,17,False,0,0,39,11
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1285.5,494,20,False,0,0,41,12
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1217.5,530,19,False,0,0,38,13
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1607.5,728,21,False,0,0,51,14
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1255.5,425,16,False,0,0,45,15
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",945.0,321,15,False,0,0,38,16
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1520.5,627,25,False,0,0,55,17
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1169.0,475,17,False,0,0,42,18
-AGS>RS>TABOU,9,"bruit lognormal σ=0,25",1098.5,310,17,False,0,0,47,19
-AGS>RS>TABOU,9,lits 24 (−6),1.5,0,0,False,4,0,1,
-AGS>RS>TABOU,9,places 15 (−5),1.5,0,0,False,0,0,1,
 RS seul,9,"durées ×0,9",0,0,0,True,0,0,0,
 RS seul,9,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
 RS seul,9,"durées ×1,1",1505.5,0,0,False,0,0,91,
@@ -285,32 +233,6 @@ AGS seul,7,"bruit lognormal σ=0,25",1308.5,604,21,False,0,0,40,18
 AGS seul,7,"bruit lognormal σ=0,25",1295.0,518,23,False,0,0,44,19
 AGS seul,7,lits 24 (−6),0,0,0,False,2,0,0,
 AGS seul,7,places 15 (−5),0,0,0,True,0,0,0,
-TABOU seul,5,"durées ×0,9",0,0,0,True,0,0,0,
-TABOU seul,5,"durées ×1,0 (nominal)",1.5,0,0,False,0,0,1,
-TABOU seul,5,"durées ×1,1",1356.0,0,0,False,0,0,84,
-TABOU seul,5,"durées ×1,2",3640.5,1056,82,False,0,0,105,
-TABOU seul,5,"bruit lognormal σ=0,25",1255.0,490,21,False,0,0,49,0
-TABOU seul,5,"bruit lognormal σ=0,25",913.5,359,14,False,0,0,38,1
-TABOU seul,5,"bruit lognormal σ=0,25",1275.5,598,18,False,0,0,37,2
-TABOU seul,5,"bruit lognormal σ=0,25",1082.0,375,15,False,0,0,38,3
-TABOU seul,5,"bruit lognormal σ=0,25",1057.0,425,15,False,0,0,34,4
-TABOU seul,5,"bruit lognormal σ=0,25",1080.0,368,18,False,0,0,37,5
-TABOU seul,5,"bruit lognormal σ=0,25",842.0,215,11,False,0,0,37,6
-TABOU seul,5,"bruit lognormal σ=0,25",1223.0,420,19,False,0,0,47,7
-TABOU seul,5,"bruit lognormal σ=0,25",1310.0,521,23,False,0,0,45,8
-TABOU seul,5,"bruit lognormal σ=0,25",818.5,290,16,False,0,0,31,9
-TABOU seul,5,"bruit lognormal σ=0,25",1260.0,482,24,False,0,0,42,10
-TABOU seul,5,"bruit lognormal σ=0,25",1037.0,401,13,False,0,0,39,11
-TABOU seul,5,"bruit lognormal σ=0,25",1446.0,605,21,False,0,0,41,12
-TABOU seul,5,"bruit lognormal σ=0,25",1017.0,374,18,False,0,0,36,13
-TABOU seul,5,"bruit lognormal σ=0,25",1684.0,865,23,False,0,0,46,14
-TABOU seul,5,"bruit lognormal σ=0,25",1470.5,677,20,False,0,0,43,15
-TABOU seul,5,"bruit lognormal σ=0,25",985.0,369,13,False,0,0,38,16
-TABOU seul,5,"bruit lognormal σ=0,25",1499.0,472,24,False,0,0,57,17
-TABOU seul,5,"bruit lognormal σ=0,25",1273.0,603,17,False,0,0,40,18
-TABOU seul,5,"bruit lognormal σ=0,25",1041.0,340,15,False,0,0,44,19
-TABOU seul,5,lits 24 (−6),1.5,0,0,False,3,0,1,
-TABOU seul,5,places 15 (−5),1.5,0,0,False,0,0,1,
 AGS seul,4,"durées ×0,9",0,0,0,True,0,0,0,
 AGS seul,4,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
 AGS seul,4,"durées ×1,1",1261.5,0,0,False,0,0,79,
@@ -883,32 +805,6 @@ TABOU seul,8,"bruit lognormal σ=0,25",1069.0,392,15,False,0,0,43,18
 TABOU seul,8,"bruit lognormal σ=0,25",1113.5,364,14,False,0,0,46,19
 TABOU seul,8,lits 24 (−6),0,0,0,False,8,0,0,
 TABOU seul,8,places 15 (−5),0,0,0,True,0,0,0,
-RS>AGS>TABOU,1,"durées ×0,9",0,0,0,True,0,0,0,
-RS>AGS>TABOU,1,"durées ×1,0 (nominal)",1.5,0,0,False,0,0,1,
-RS>AGS>TABOU,1,"durées ×1,1",1368.5,0,0,False,0,0,83,
-RS>AGS>TABOU,1,"durées ×1,2",3753.0,1077,81,False,0,0,112,
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1383.5,523,23,False,0,0,49,0
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",949.0,411,14,False,0,0,37,1
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1248.0,552,17,False,0,0,39,2
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1148.0,335,18,False,0,0,44,3
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",905.5,409,13,False,0,0,30,4
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",896.0,274,16,False,0,0,37,5
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",943.0,407,13,False,0,0,32,6
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1360.0,455,20,False,0,0,48,7
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1128.0,377,16,False,0,0,43,8
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",785.0,293,13,False,0,0,32,9
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1304.0,387,22,False,0,0,52,10
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1234.0,493,21,False,0,0,44,11
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1189.0,476,19,False,0,0,35,12
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1075.0,455,17,False,0,0,35,13
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1584.0,715,21,False,0,0,46,14
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1228.5,466,17,False,0,0,39,15
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",874.5,290,12,False,0,0,36,16
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1707.5,827,25,False,0,0,49,17
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1133.0,435,14,False,0,0,41,18
-RS>AGS>TABOU,1,"bruit lognormal σ=0,25",1216.0,478,19,False,0,0,45,19
-RS>AGS>TABOU,1,lits 24 (−6),1.5,0,0,False,4,0,1,
-RS>AGS>TABOU,1,places 15 (−5),1.5,0,0,False,0,0,1,
 RS>AGS>TABOU,2,"durées ×0,9",0,0,0,True,0,0,0,
 RS>AGS>TABOU,2,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
 RS>AGS>TABOU,2,"durées ×1,1",1320.5,0,0,False,0,0,80,
@@ -1195,32 +1091,6 @@ RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1189.0,474,16,False,0,0,40,18
 RS>AGS>TABOU,9,"bruit lognormal σ=0,25",1136.5,377,16,False,0,0,46,19
 RS>AGS>TABOU,9,lits 24 (−6),0,0,0,False,4,0,0,
 RS>AGS>TABOU,9,places 15 (−5),0,0,0,True,0,0,0,
-AGS seul,2,"durées ×0,9",0,0,0,True,0,0,0,
-AGS seul,2,"durées ×1,0 (nominal)",1.5,0,0,False,0,0,1,
-AGS seul,2,"durées ×1,1",1351.0,0,0,False,0,0,83,
-AGS seul,2,"durées ×1,2",3546.0,1080,81,False,0,0,106,
-AGS seul,2,"bruit lognormal σ=0,25",1424.0,660,23,False,0,0,46,0
-AGS seul,2,"bruit lognormal σ=0,25",833.0,250,16,False,0,0,34,1
-AGS seul,2,"bruit lognormal σ=0,25",1087.5,472,17,False,0,0,38,2
-AGS seul,2,"bruit lognormal σ=0,25",1151.5,388,19,False,0,0,45,3
-AGS seul,2,"bruit lognormal σ=0,25",908.0,388,14,False,0,0,32,4
-AGS seul,2,"bruit lognormal σ=0,25",992.0,320,16,False,0,0,42,5
-AGS seul,2,"bruit lognormal σ=0,25",865.0,314,13,False,0,0,34,6
-AGS seul,2,"bruit lognormal σ=0,25",1291.5,444,23,False,0,0,49,7
-AGS seul,2,"bruit lognormal σ=0,25",1304.5,450,25,False,0,0,47,8
-AGS seul,2,"bruit lognormal σ=0,25",906.5,351,17,False,0,0,37,9
-AGS seul,2,"bruit lognormal σ=0,25",1346.5,591,22,False,0,0,47,10
-AGS seul,2,"bruit lognormal σ=0,25",1154.5,492,19,False,0,0,39,11
-AGS seul,2,"bruit lognormal σ=0,25",981.0,439,15,False,0,0,29,12
-AGS seul,2,"bruit lognormal σ=0,25",1061.0,404,19,False,0,0,37,13
-AGS seul,2,"bruit lognormal σ=0,25",1640.5,787,24,False,0,0,48,14
-AGS seul,2,"bruit lognormal σ=0,25",1500.0,610,24,False,0,0,42,15
-AGS seul,2,"bruit lognormal σ=0,25",1180.0,413,21,False,0,0,42,16
-AGS seul,2,"bruit lognormal σ=0,25",1498.0,708,25,False,0,0,45,17
-AGS seul,2,"bruit lognormal σ=0,25",1208.5,457,20,False,0,0,43,18
-AGS seul,2,"bruit lognormal σ=0,25",1171.5,527,20,False,0,0,40,19
-AGS seul,2,lits 24 (−6),1.5,0,0,False,1,0,1,
-AGS seul,2,places 15 (−5),1.5,0,0,False,0,0,1,
 TABOU seul,2,"durées ×0,9",0,0,0,True,0,0,0,
 TABOU seul,2,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
 TABOU seul,2,"durées ×1,1",1380.5,0,0,False,0,0,88,
@@ -1299,32 +1169,6 @@ RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1210.0,429,15,False,0,0,44,18
 RS>AGS>TABOU,5,"bruit lognormal σ=0,25",1120.5,412,17,False,0,0,46,19
 RS>AGS>TABOU,5,lits 24 (−6),0,0,0,False,4,0,0,
 RS>AGS>TABOU,5,places 15 (−5),0,0,0,True,0,0,0,
-AGS seul,1,"durées ×0,9",0,0,0,True,0,0,0,
-AGS seul,1,"durées ×1,0 (nominal)",1.5,0,0,False,0,0,1,
-AGS seul,1,"durées ×1,1",1193.5,0,0,False,0,0,76,
-AGS seul,1,"durées ×1,2",3370.5,945,74,False,0,0,105,
-AGS seul,1,"bruit lognormal σ=0,25",1126.0,494,19,False,0,0,40,0
-AGS seul,1,"bruit lognormal σ=0,25",762.5,202,12,False,0,0,34,1
-AGS seul,1,"bruit lognormal σ=0,25",1116.0,557,15,False,0,0,33,2
-AGS seul,1,"bruit lognormal σ=0,25",1427.5,569,24,False,0,0,46,3
-AGS seul,1,"bruit lognormal σ=0,25",715.5,245,14,False,0,0,30,4
-AGS seul,1,"bruit lognormal σ=0,25",1017.5,338,16,False,0,0,38,5
-AGS seul,1,"bruit lognormal σ=0,25",730.5,242,11,False,0,0,30,6
-AGS seul,1,"bruit lognormal σ=0,25",1116.5,387,16,False,0,0,41,7
-AGS seul,1,"bruit lognormal σ=0,25",928.5,380,16,False,0,0,37,8
-AGS seul,1,"bruit lognormal σ=0,25",770.0,271,14,False,0,0,31,9
-AGS seul,1,"bruit lognormal σ=0,25",1254.0,521,20,False,0,0,44,10
-AGS seul,1,"bruit lognormal σ=0,25",995.5,436,14,False,0,0,33,11
-AGS seul,1,"bruit lognormal σ=0,25",855.5,305,15,False,0,0,32,12
-AGS seul,1,"bruit lognormal σ=0,25",896.5,382,16,False,0,0,31,13
-AGS seul,1,"bruit lognormal σ=0,25",1477.5,681,22,False,0,0,44,14
-AGS seul,1,"bruit lognormal σ=0,25",1188.0,437,18,False,0,0,40,15
-AGS seul,1,"bruit lognormal σ=0,25",794.0,221,14,False,0,0,32,16
-AGS seul,1,"bruit lognormal σ=0,25",1089.5,385,18,False,0,0,47,17
-AGS seul,1,"bruit lognormal σ=0,25",1114.5,496,19,False,0,0,39,18
-AGS seul,1,"bruit lognormal σ=0,25",1378.5,593,26,False,0,0,49,19
-AGS seul,1,lits 24 (−6),1.5,0,0,False,1,0,1,
-AGS seul,1,places 15 (−5),1.5,0,0,False,0,0,1,
 memetique,5,"durées ×0,9",0,0,0,True,0,0,0,
 memetique,5,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
 memetique,5,"durées ×1,1",1350.5,0,0,False,0,0,82,
@@ -1507,32 +1351,6 @@ RS seul,1,"bruit lognormal σ=0,25",1478.5,679,26,False,0,0,44,18
 RS seul,1,"bruit lognormal σ=0,25",1244.0,353,18,False,0,0,56,19
 RS seul,1,lits 24 (−6),0,0,0,False,7,0,0,
 RS seul,1,places 15 (−5),0,0,0,True,0,0,0,
-AGS seul,10,"durées ×0,9",0,0,0,True,0,0,0,
-AGS seul,10,"durées ×1,0 (nominal)",1.5,0,0,False,0,0,1,
-AGS seul,10,"durées ×1,1",1254.0,0,0,False,0,0,80,
-AGS seul,10,"durées ×1,2",3424.5,996,78,False,0,0,106,
-AGS seul,10,"bruit lognormal σ=0,25",1514.5,700,23,False,0,0,52,0
-AGS seul,10,"bruit lognormal σ=0,25",776.5,230,14,False,0,0,37,1
-AGS seul,10,"bruit lognormal σ=0,25",1353.0,702,20,False,0,0,36,2
-AGS seul,10,"bruit lognormal σ=0,25",1333.5,552,21,False,0,0,44,3
-AGS seul,10,"bruit lognormal σ=0,25",806.0,284,12,False,0,0,35,4
-AGS seul,10,"bruit lognormal σ=0,25",1046.0,348,19,False,0,0,39,5
-AGS seul,10,"bruit lognormal σ=0,25",827.0,308,13,False,0,0,33,6
-AGS seul,10,"bruit lognormal σ=0,25",1252.5,448,22,False,0,0,45,7
-AGS seul,10,"bruit lognormal σ=0,25",1061.0,469,17,False,0,0,38,8
-AGS seul,10,"bruit lognormal σ=0,25",741.0,251,14,False,0,0,33,9
-AGS seul,10,"bruit lognormal σ=0,25",1242.5,558,21,False,0,0,41,10
-AGS seul,10,"bruit lognormal σ=0,25",988.0,463,17,False,0,0,35,11
-AGS seul,10,"bruit lognormal σ=0,25",1064.5,358,18,False,0,0,41,12
-AGS seul,10,"bruit lognormal σ=0,25",1149.5,490,21,False,0,0,39,13
-AGS seul,10,"bruit lognormal σ=0,25",1570.5,773,23,False,0,0,43,14
-AGS seul,10,"bruit lognormal σ=0,25",1364.5,633,18,False,0,0,37,15
-AGS seul,10,"bruit lognormal σ=0,25",865.0,313,13,False,0,0,38,16
-AGS seul,10,"bruit lognormal σ=0,25",1239.0,473,20,False,0,0,49,17
-AGS seul,10,"bruit lognormal σ=0,25",1185.0,494,19,False,0,0,41,18
-AGS seul,10,"bruit lognormal σ=0,25",1307.0,612,23,False,0,0,45,19
-AGS seul,10,lits 24 (−6),1.5,0,0,False,3,0,1,
-AGS seul,10,places 15 (−5),1.5,0,0,False,0,0,1,
 RS>AGS>TABOU,6,"durées ×0,9",0,0,0,True,0,0,0,
 RS>AGS>TABOU,6,"durées ×1,0 (nominal)",0,0,0,True,0,0,0,
 RS>AGS>TABOU,6,"durées ×1,1",1411.5,0,0,False,0,0,84,

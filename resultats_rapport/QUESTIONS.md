@@ -3,24 +3,25 @@
 Aucun défaut n'a été corrigé pendant les campagnes (le code est figé au commit `d8fbf35`). Chaque point indique les
 expériences touchées.
 
-## Défauts ou particularités qui touchent l'interprétation
+## Décisions de l'équipe (réponses du 20/10/2026), appliquées aux résultats
 
-1. **Départ N2 non faisable.** Le glouton commun suivi de `placer_restants` (`hybridation.py`) place chaque patient
-   restant dans la vacation qui dégrade le moins le score, même au-delà de la capacité utile. F2 compte ce
-   dépassement comme une pénalité (100 par minute) alors que le validateur le déclare violation. Une méthode qui
-   part de cette solution peut donc rendre un très bon score sans être faisable. *Touché* : E, F, G (les écarts
-   sont calculés par rapport aux solutions faisables ; la faisabilité est publiée à part). *À trancher* : faire du
-   dépassement de vacation une contrainte dure dans la recherche, ou un poids bien plus élevé.
-2. **Budget dépassé par RS>AGS>TABOU.** Les 4 recherches locales de départ ne s'interrompent pas exactement au
-   budget (2,9 s pour 2 s dans le pilote). Le temps réel de chaque exécution est publié ; la comparaison « à budget
-   égal » est donc approximative pour ce mode. *Touché* : E, I.
-3. **Séparation ML par séjour.** 35,5 % des séjours du test ont un patient vu à l'entraînement : risque de fuite,
-   métriques possiblement optimistes. *À faire* : réévaluer avec une séparation par patient (`GroupShuffleSplit`)
-   dans une copie isolée. *Touché* : C.
-4. **Convergence N2 sur le score de recherche.** L'historique enregistré par le projet est celui du score optimisé
-   (F2 + pénalité de report), pas F2 commun : la figure de convergence N2 utilise donc le score de recherche.
-5. **Exécutions parallèles.** 4 processus sur un M2 (4 cœurs performance + 4 efficacité) : une exécution peut avoir
-   tourné sur un cœur plus lent. L'ordre des tâches a été mélangé et le nombre d'évaluations est publié.
+| Point | Décision | Conséquence dans ce dossier |
+|---|---|---|
+| 1. Départ N2 non faisable : dépassement de vacation pénalisé dans F2 mais refusé par le validateur | Pendant la recherche, les dépassements sont autorisés avec un poids élevé ; **à la fin, seules les solutions faisables sont proposées** (contrainte dure) | Une exécution dont la solution finale n'est pas faisable compte comme « aucune solution proposée » ; scores, IC, tests, profils de ressources et robustesse portent sur les solutions proposées ; le glouton est le départ (référence, non proposé) |
+| 2. Budget légèrement dépassé par les modes à population | Ne pas en tenir compte | Temps réels toujours publiés, sans réserve dans les comparaisons |
+| 3. Séparation ML par séjour (35,5 % de recouvrement de patients) | L'équipe va revoir le ML | Résultats ML marqués provisoires |
+| 4. Convergence N2 sur le score de recherche | L'équipe refait le score | Résultats N2 marqués provisoires |
+| 5. Exécutions parallèles sur cœurs hétérogènes | Accepté | Aucun changement |
+| Publication des solutions N2 non faisables | Ignorer | Question retirée (elles restent dans les CSV bruts, colonne `faisable`) |
+| Droits de diffusion des données hospitalières | Données anonymisées : pas de problème selon l'équipe | Question retirée ; seuls des agrégats sont produits ici |
+
+À noter pour le point 1 : le code actuel ne garantit pas encore cette règle pour chaque méthode (une recherche peut
+se terminer sur une solution non faisable sans garder la meilleure solution faisable rencontrée) ; seule la
+sélection finale entre modes d'hybridation (`_meilleur_hybride`) préfère une solution faisable. La règle est donc
+appliquée ici à l'analyse ; elle reste à implémenter dans les métaheuristiques avec la refonte du score.
+
+## Point encore ouvert
+
 6. **Plantage du SMA (KeyError `chir_7`).** Dans un scénario aléatoire de surcharge, la régulation interroge
    l'agent d'un chirurgien du service qui n'a aucune vacation sur l'horizon de 2 semaines (n° 7, DS) : aucun agent
    n'est créé pour lui, mais il figure parmi les chirurgiens compétents. Le site (52 semaines connues) est moins
@@ -36,14 +37,8 @@ expériences touchées.
 | Rotation intra-journalière des places | PARTIEL | mesurée par demi-journée (matin / après-midi), pas à l'heure |
 | Gap d'optimalité | NON DISPONIBLE | aucune solution optimale ni borne valide ; on publie « gain vs départ » et « écart à la meilleure solution faisable observée » |
 | Chaînage N1 → N2 sur v28 | NON DISPONIBLE | le N1 ne travaille que sur l'instance d'étude fictive (D6) |
-| Séparation ML par patient | NON EXÉCUTÉ | hors protocole du projet ; recouvrement mesuré |
+| Séparation ML par patient | NON EXÉCUTÉ | à faire par l'équipe (revue du ML) ; recouvrement mesuré |
 | Temps d'entraînement des modèles déployés | NON EXÉCUTÉ | seul l'entraînement des 4 copies d'évaluation (80 %) est mesuré |
 | Front non dominé, sensibilité aux poids, ablations, référence exacte (P2) | NON EXÉCUTÉ | hors P0 / P1 |
 | Marges opératoires 0 / 5 / 15 / 20 % | NON EXÉCUTÉ | la marge (`TAUX_MARGE_VACATION`) est une constante du projet ; la robustesse à la marge est approchée par la perturbation des durées (×1,1 = consommation de la marge) |
 | Nuits / week-end / garde dans les scénarios | PARTIEL | seuls les scénarios du moteur et les combinaisons de `h_sma.py` ; la garde intervient dans les scénarios chargés |
-
-## Points à valider par l'équipe
-
-- Publier ou non les résultats N2 « non faisables » dans le rapport (ils sont dans les CSV, signalés).
-- Les données hospitalières sont dans un dépôt public (voir `interface/CHOIX.md` § 10) : seuls des agrégats sont
-  produits ici, mais la question des droits de diffusion reste ouverte.

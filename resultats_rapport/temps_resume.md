@@ -15,8 +15,8 @@ calcul.
 | N2 | RS>AGS>TABOU | 10,42 s | 10,49 s | 4,9 % |
 | N2 | glouton (départ) / premier créneau | 0,45 s | — | sans budget |
 
-Les modes à population dépassent légèrement le budget (dernière génération ou recherche locale terminée après
-l'échéance) : la comparaison « à budget égal » est donc approximative, d'au plus 5 %.
+Les temps réels sont publiés tels que mesurés ; à la demande de l'équipe, le léger dépassement du budget par les
+modes à population n'est pas pris en compte dans les comparaisons.
 
 **Nombre d'évaluations** : publié dans `n1_resultats.csv` / `n2_resultats.csv`, mais **non comparable entre
 méthodes** : les évaluations servies par le cache de `ProblemeHybrideN2.cout` et les évaluations incrémentales des

@@ -61,3 +61,12 @@ d'évaluations est publié.
 - Gain par rapport au départ : `100 × (départ − final) / départ` ; écart à la meilleure solution observée : par
   rapport à la meilleure solution **faisable** de la même instance. Aucun gap d'optimalité (aucune borne valide).
 - Une différence non significative n'est pas interprétée comme une équivalence.
+
+## Amendement après les résultats (décision de l'équipe, 20/10/2026)
+
+L'équipe a précisé que seules les solutions faisables sont proposées à la fin d'une recherche (contrainte dure),
+les dépassements n'étant tolérés que pendant la recherche. L'analyse a donc été modifiée **après** l'obtention des
+résultats : une exécution sans solution finale faisable compte comme « aucune solution proposée », et le test
+confirmatoire porte sur les graines où les deux méthodes comparées proposent une solution (10, 9 et 7 paires au lieu
+de 10). Les conclusions du test sont inchangées (memetique moins bon que RS seul, meilleur qu'AGS seul, non
+distinguable de TABOU seul). Les données brutes (`n2_resultats.csv`) contiennent toutes les exécutions.
