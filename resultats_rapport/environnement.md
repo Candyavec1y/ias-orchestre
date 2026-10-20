@@ -1,8 +1,8 @@
 # Environnement d'exécution
 
-- Commit : `d8fbf35abd6e8db531420b6bcaf9b3704957e95a` (branche `nettoyage`)
+- Commit : `eba3d313742f7e471418be067359eb0e32805363` (branche `v3`)
 - État git au lancement : propre (hors resultats_rapport/)
-- Python : 3.13.9 (/Users/candymollier/Documents/PROJETS_CODE/ias-orchestre/resultats_rapport/scripts/../../.venv/bin/python)
+- Python : 3.13.9 (/opt/anaconda3/bin/python)
 - OS : macOS-27.0.1-arm64-arm-64bit-Mach-O
 - CPU : Apple M2, 8 cœurs logiques (4 performance + 4 efficacité)
 - RAM : 8 Gio
@@ -12,28 +12,28 @@
 
 | Paquet | Version |
 |---|---|
-| numpy | 2.5.3 |
-| pandas | 3.0.5 |
-| scikit-learn | 1.9.1 |
-| scipy | 1.18.1 |
+| numpy | 2.3.5 |
+| pandas | 2.3.3 |
+| scikit-learn | 1.7.2 |
+| scipy | 1.16.3 |
 | mesa | 3.5.1 |
-| matplotlib | 3.11.1 |
-| streamlit | 1.65.0 |
-| joblib | 1.6.0 |
+| matplotlib | 3.10.6 |
+| streamlit | 1.51.0 |
+| joblib | 1.5.2 |
 
 ## Empreintes SHA-256 des fichiers utilisés
 
 | Fichier | SHA-256 |
 |---|---|
-| `commun/parametres.py` | `4d1620fea60de10ed9b0e2db4878263793ce1c6fa8331f9b373e019e25ce95c2` |
-| `commun/structures_communes.py` | `58e74aec8fea4bac50d1c6fbc9d1e4a0697fec21087e449f160782e412c381ba` |
-| `commun/validation.py` | `0d634cd1b0d52c3736f1cca5ce4ed83f7de7251920632b9bb2560548333fe495` |
-| `metaheuristiques/hybridation.py` | `6bd6a042069fa7e758acb4bad613042843915c6b8f7eba740160887dd9118538` |
+| `commun/parametres.py` | `3cef2162c7bf4fc149a70ae948763042699a5162e147981594447295b72600f6` |
+| `commun/structures_communes.py` | `109bff5c663b42ae86dc74a814b20522ec09bb557f1ffa0640415aee7f34bc80` |
+| `commun/validation.py` | `c7bb59f4ed7f9175130ae6cc16d88d8421aa2d7b5fd6644c76d0a3b4acc6edd5` |
+| `metaheuristiques/hybridation.py` | `fe91b700ca1825e7aea7451f55ee10215c58173b9da0c1e7e4b4835396c792b4` |
 | `metaheuristiques/sorties.py` | `151b71e2d78d8f2a695752e4037eab85756baa529139c64bbfe3ced3beaac2e5` |
 | `planning_vacations/planning_vacations_v28.py` | `bf42de34012968bc485731d132474a3582cb88bd57cd37aab4b6091c2a19a797` |
 | `sma/sma_urgences.py` | `f1915a23f8ab176d01d3f82894578ffe416abcc0bc94ea9d32327bfe18fec05c` |
-| `sma/optimisation_sma.py` | `1a48d0877bd007728460980bf1b2746d659d8a176620c227cacd731d2da93172` |
-| `sma/metaheuristiques_sma.py` | `22456a3403a76619707b7e04deead744d994e428613e5fc00585f9508d7a7e86` |
+| `sma/optimisation_sma.py` | `ab567f3d478b725f55d66040a431cdab2f43c52262d115e10f12c09a5a6002ce` |
+| `sma/metaheuristiques_sma.py` | `c475a565db1aa986407476a98621d85449315856d034d525fd9ca0bfdc59bd73` |
 | `sma/scenarios_sma.py` | `77ae568d9a12e8784a3913c6412fbe6de04aabb576fd3a59523da749e4f14822` |
 | `machine_learning/preparation.py` | `434cec7d1df2bf570c108ba0ddf52a9ab56627bd9d05a7b7f43607d8889c71da` |
 | `machine_learning/modele_prediction_rapide.py` | `ebdd6b67e3b8e6a1f5160d8559778fe0d88ea7034e8fe38fb8b4cd9d15a5dfbd` |
