@@ -83,8 +83,8 @@ il contrôle au niveau 1 l'affectation, les plages, les salles autorisées, les 
 et de chirurgien, et au niveau 2 l'affectation, la vacation, le chirurgien, la date au plus tôt, la capacité utile
 des vacations, les lits et les places. Chaque résultat de métaheuristique et le programme de l'interface portent
 leur validation ; la meilleure solution retenue est une solution faisable, et une solution non faisable est
-signalée « NON VALIDE ». Dans l'onglet Planning, la régulation et l'administrateur voient un bandeau rouge et la
-liste des contraintes violées.
+signalée « NON VALIDE » dans les sorties de l'hybridation. Le résultat de validation est enregistré avec le
+programme du site, mais n'est plus affiché dans l'onglet Planning (choix de l'équipe).
 
 **Occupation des lits et des places (Q13).** Une seule fonction de décompte (`periodes_occupation`) sert au niveau 2,
 au SMA, aux indicateurs, à l'étude de saturation et au validateur :

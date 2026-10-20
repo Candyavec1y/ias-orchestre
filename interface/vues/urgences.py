@@ -27,22 +27,26 @@ def afficher() -> None:
         st.error("Aucun programme opératoire disponible.")
         return
     noms = C.noms_patients(sim)
-    _bandeau(sim, noms)
+    _bandeau(sim)
+    alertes = _alertes_du_jour(sim)
+    onglet_alertes = f"Alertes ({len(alertes)})" if alertes else "Alertes"
     t_abs = None
     if C.est("admin"):                  # traces internes du système multi-agent : administrateur uniquement
-        t1, t_suivi, t2, t_abs, t3, t4 = st.tabs(["Déclarer une urgence", "Suivi des urgences", "Incident logistique",
-                                                  "Absence d'un chirurgien", "Fil des décisions",
-                                                  "Messages entre agents"])
+        t1, t_suivi, t2, t_abs, t_al, t3, t4 = st.tabs(["Déclarer une urgence", "Suivi des urgences",
+                                                        "Incident logistique", "Absence d'un chirurgien",
+                                                        onglet_alertes, "Fil des décisions", "Messages entre agents"])
         with t3:
             _fil(sim, noms)
         with t4:
             _messages(sim, noms)
     elif C.est("regulation"):
-        t1, t_suivi, t2, t_abs = st.tabs(["Déclarer une urgence", "Suivi des urgences", "Incident logistique",
-                                          "Absence d'un chirurgien"])
+        t1, t_suivi, t2, t_abs, t_al = st.tabs(["Déclarer une urgence", "Suivi des urgences", "Incident logistique",
+                                                "Absence d'un chirurgien", onglet_alertes])
     else:
-        t1, t2, t_abs = st.tabs(["Déclarer une urgence", "Incident logistique", "Mes absences"])
+        t1, t2, t_abs, t_al = st.tabs(["Déclarer une urgence", "Incident logistique", "Mes absences", onglet_alertes])
         t_suivi = None
+    with t_al:
+        _alertes(alertes, noms)
     if t_abs is not None:
         with t_abs:
             u = C.utilisateur()
@@ -59,25 +63,35 @@ def afficher() -> None:
         _logistique(sim)
 
 
-DUREE_ALERTE_MIN = 10           # une alerte reste encadrée en rouge 10 minutes, puis passe dans « Alertes du jour »
+DUREE_ALERTE_MIN = 10           # une alerte de moins de 10 minutes est signalée « nouvelle » dans l'onglet Alertes
 
 
-def _bandeau(sim: S.Simulation, noms) -> None:
+def _bandeau(sim: S.Simulation) -> None:
+    """Haut de page : confirmation de la dernière action et panne du monte-lit en cours (les alertes du SMA sont
+    dans l'onglet Alertes)."""
     if msg := st.session_state.pop("flash_urgence", None):
         {"ok": st.success, "attention": st.warning}.get(msg[0], st.error)(msg[1])
-    now = C.maintenant()
-    alertes = [(h, a) for h, a in sim.alertes_horodatees() if "transfert vers un autre établissement" not in a]
-    recentes = [(h, a) for h, a in alertes if now - timedelta(minutes=DUREE_ALERTE_MIN) <= h <= now]
-    for h, a in recentes[-5:]:
-        st.error(f"{h:%H:%M} — {C.lisible(a, noms)}")
-    du_jour = [(h, a) for h, a in alertes if h.date() == now.date() and (h, a) not in recentes]
-    if du_jour:
-        with st.expander(f"Alertes du jour ({len(du_jour)})"):
-            for h, a in reversed(du_jour):
-                st.markdown(f"<div class='petit'><b>{h:%H:%M}</b> — {C.lisible(a, noms)}</div>", unsafe_allow_html=True)
     for asc, (deb, fin) in sim.pannes().items():
         st.warning(f"{S.ASCENSEURS.get(asc, asc)} en panne depuis {deb:%H:%M}, retour estimé {fin:%H:%M} : "
                    "les patients hospitalisés ne peuvent pas monter au bloc ni en redescendre.")
+
+
+def _alertes_du_jour(sim: S.Simulation) -> list[tuple[datetime, str]]:
+    now = C.maintenant()
+    return [(h, a) for h, a in sim.alertes_horodatees()
+            if "transfert vers un autre établissement" not in a and h.date() == now.date() and h <= now]
+
+
+def _alertes(alertes: list[tuple[datetime, str]], noms) -> None:
+    """Alertes du SMA de la journée, les plus récentes en premier."""
+    if not alertes:
+        st.caption("Aucune alerte aujourd'hui.")
+        return
+    now = C.maintenant()
+    for h, a in reversed(alertes):
+        nouvelle = now - h <= timedelta(minutes=DUREE_ALERTE_MIN)
+        st.markdown(f"<div class='petit'><b>{h:%H:%M}</b> — {C.lisible(a, noms)}"
+                    + (" " + C.badge("nouvelle", "rouge") if nouvelle else "") + "</div>", unsafe_allow_html=True)
 
 
 # =============================================================================
@@ -496,7 +510,7 @@ def _enregistrer_absence(modification, action: str, prat: str, du, au, motif: st
     alertes = [a for a in (sim2.alertes() if sim2 else []) if f"Absence du Dr {prat}" in a]
     st.session_state["flash_absence"] = (f"{action} : Dr {prat} du {du:%d/%m} au {au:%d/%m}"
                                          + (f" — {d['patients_touches']} patient(s) replacé(s)" if d and action.startswith("Déclaration") else "")
-                                         + (f", {len(alertes)} alerte(s) à traiter (bandeau en haut de page)" if alertes else "") + ".")
+                                         + (f", {len(alertes)} alerte(s) à traiter (onglet Alertes)" if alertes else "") + ".")
     st.rerun()
 
 

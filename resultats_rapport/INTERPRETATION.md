@@ -5,6 +5,8 @@ faisabilité, ses limites, puis une conclusion prudente. Les chiffres viennent d
 
 ## 1. Machine learning
 
+*Résultats provisoires : l'équipe va revoir le ML (notamment la séparation par patient).*
+
 1. *Protocole* : 4 modèles HistGradientBoosting réentraînés en mémoire sur 80 % des 14 477 séjours ; test sur 2 896
    séjours (1 304 hospitalisés pour les nuits).
 2. *Mesure* : durée au bloc R² 0,670 / MAE 14,8 min ; mode de prise en charge accuracy 0,925 ; nuits après MAE 0,54.
@@ -35,24 +37,29 @@ faisabilité, ses limites, puis une conclusion prudente. Les chiffres viennent d
 
 ## 3. Niveau 2 et coordination des ressources
 
+*Résultats provisoires : l'équipe refait la fonction de score.*
+
 1. *Protocole* : planning v28, 4 semaines + 3 semaines de report, cohorte synthétique de référence de 421 patients
    (99 % de la capacité utile), 10 graines appariées, 10 s ; analyses de charge (70 à 115 %) et de budget (2 à 20 s).
-2. *Mesure* : RS seul F2 = 3 344 [IC 95 % : 3 220 ; 3 467], 10 / 10 faisables ; memetique 3 823, 10 / 10 ;
-   AGS>RS>TABOU 3 593, 8 / 10 ; AGS seul 5 708, 7 / 10.
-3. *Référence* : départ commun (8 265, non faisable) et premier créneau compatible (5 484, faisable).
+   Règle de l'équipe : les dépassements sont pénalisés pendant la recherche, mais **seules les solutions faisables
+   sont proposées** à la fin ; une exécution sans solution faisable ne propose rien.
+2. *Mesure* : RS seul F2 = 3 344 [IC 95 % : 3 220 ; 3 467], 10 solutions proposées sur 10 ; memetique 3 823, 10 / 10 ;
+   AGS>RS>TABOU 3 555, 8 / 10 ; TABOU seul 3 923, 9 / 10 ; AGS seul 5 643, 7 / 10.
+3. *Référence* : départ commun (8 265, non faisable, donc non proposé) et premier créneau compatible (5 484).
 4. *Gain / contrepartie* : jusqu'à 59,5 % de gain sur F2 ; les meilleures solutions remplissent davantage le bloc
-   (92,9 % contre 85,2 % pour AGS seul) et reportent moins de patients (23 contre 65), **en échange** d'un pic de lits
-   plus haut (25 contre 23) et d'une plus forte exposition aux allongements de durée (jusqu'à 1 232 minutes
+   (92,9 % contre 85,1 % pour AGS seul) et reportent moins de patients (23 contre 65), **en échange** d'un pic de lits
+   plus haut (25,2 contre 22,7) et d'une plus forte exposition aux allongements de durée (jusqu'à 1 232 minutes
    d'heures supplémentaires si les durées augmentent de 20 %).
-5. *Faisabilité* : elle chute avec la charge (aucune solution faisable à 115 %). Toutes les violations sont des
-   dépassements de capacité utile qui coûtent moins cher dans F2 qu'un patient non placé : **le score peut
-   préférer une solution non faisable** (`QUESTIONS.md`, point 1).
-6. *Limites* : cohortes synthétiques (pas de patients réels), un seul planning, budget dépassé de 5 % au plus par les
-   modes à population, nombre d'évaluations non comparable entre méthodes.
+5. *Faisabilité* : la part d'exécutions qui proposent une solution chute avec la charge (100 % à 70 % de charge,
+   aucune à 115 %). Toutes les violations sont des dépassements de capacité utile, que la recherche tolère et que
+   la règle finale écarte.
+6. *Limites* : cohortes synthétiques (pas de patients réels), un seul planning, nombre d'évaluations non comparable
+   entre méthodes, score en cours de refonte.
 7. *Conclusion* : **les hybridations ne sont pas préférables aux méthodes seules sur cette instance et à ce
-   budget** : le mode par défaut (memetique) est significativement moins bon que RS seul (test fixé a priori,
-   p = 0,006), meilleur qu'AGS seul, et non distinguable de TABOU seul. AGS>RS>TABOU s'approche de RS seul mais
-   produit davantage de solutions non faisables.
+   budget** : le mode par défaut (memetique) est significativement moins bon que RS seul (p corrigé = 0,006),
+   meilleur qu'AGS seul (p corrigé = 0,031), et non distinguable de TABOU seul. AGS>RS>TABOU s'approche de RS seul
+   mais propose moins souvent une solution (8 exécutions sur 10). RS seul est la seule méthode qui propose une
+   solution à chaque exécution et à chaque budget.
 
 ## 4. Système multi-agent
 
@@ -73,9 +80,9 @@ faisabilité, ses limites, puis une conclusion prudente. Les chiffres viennent d
 
 ## 5. Robustesse
 
-- *Algorithmique* (graines) : écarts-types de 104 à 186 sur F2 (2,7 à 5,2 % de la moyenne) ; RS seul et RS>AGS>TABOU
+- *Algorithmique* (graines) : écarts-types de 108 à 178 sur F2 des solutions proposées (2,8 à 5,2 % de la moyenne) ; RS seul et RS>AGS>TABOU
   atteignent la même valeur N1 à chaque graine.
-- *Opérationnelle* (perturbations, sans réoptimisation) : la marge de 10 % absorbe un allongement de 10 % sans heure
+- *Opérationnelle* (perturbations des solutions proposées, sans réoptimisation) : la marge de 10 % absorbe un allongement de 10 % sans heure
   supplémentaire ; au-delà (+20 % ou bruit réaliste), tous les programmes génèrent des heures supplémentaires, et
   d'autant plus qu'ils remplissent le bloc. Une réduction de 6 lits rend tous les programmes non faisables ; les
   places ambulatoires ne sont pas limitantes.

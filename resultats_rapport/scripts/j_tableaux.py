@@ -118,15 +118,16 @@ def tableaux():
     r2 = [l_ for l_ in lire_csv(SORTIE / "n2_resume.csv") if l_["groupe"] == "reference"]
     l4 = []
     for l_ in sorted(r2, key=lambda x: ORDRE.index(x["methode"])):
-        l4.append([l_["methode"], l_["executions"], fr(_f(l_, "taux_faisable_pct"), 0),
+        l4.append([l_["methode"] + (" (départ)" if l_["methode"] == "glouton" else ""),
+                   "—" if l_["methode"] == "glouton" else f"{l_['solutions_proposees']} / {l_['executions']}",
                    f"{fr(_f(l_, 'score_commun_moyenne'), 0)} $\\pm$ {fr(_f(l_, 'score_commun_ecart_type'), 0)}",
                    fr(_f(l_, "score_commun_mediane"), 0), fr(_f(l_, "gain_vs_depart_pct_moyenne")),
                    fr(_f(l_, "ecart_meilleur_faisable_pct_moyenne")), fr(_f(l_, "patients_reportes_moyenne")),
                    fr(_f(l_, "temps_reel_s_moyenne"), 1)])
-    tex.append(_tab(["Méthode", "n", "Faisable (\\%)", "F2 moy. $\\pm$ é.-t.", "F2 méd.", "Gain vs départ (\\%)",
+    tex.append(_tab(["Méthode", "Proposées", "F2 moy. $\\pm$ é.-t.", "F2 méd.", "Gain vs départ (\\%)",
                      "Écart meill. faisable (\\%)", "Reportés", "Temps (s)"], l4,
-                    "N2 sur v28, cohorte de référence (charge 100~\\% de la capacité utile), budget 10~s ; F2 commun (sans pénalité de report). Écart à la meilleure solution faisable observée, pas un gap d'optimalité.",
-                    "tab:n2", "lrrrrrrrr"))
+                    "N2 sur v28, cohorte de référence (charge 100~\\% de la capacité utile), budget 10~s. Seules les solutions faisables sont proposées (règle de l'équipe) : statistiques calculées sur les solutions proposées ; F2 commun sans pénalité de report. Le glouton est le départ commun (non faisable). Écart à la meilleure solution faisable observée, pas un gap d'optimalité.",
+                    "tab:n2", "lrrrrrrr"))
     # T5 gains / contreparties
     gc = lire_csv(SORTIE / "gains_contreparties.csv")
     l5 = [[g["methode"], fr(_f(g, "score_bloc"), 0), fr(_f(g, "score_lits"), 0), fr(_f(g, "score_places"), 0),
@@ -135,7 +136,7 @@ def tableaux():
           for g in sorted(gc, key=lambda x: ORDRE.index(x["methode"]))]
     tex.append(_tab(["Méthode", "Bloc", "Lits", "Places", "Occ. bloc (\\%)", "Pic lits", "Pic places", "Reportés",
                      "Délai (j)", "Délai prio. 4 (j)"], l5,
-                    "Gains et contreparties (moyennes sur 10 graines, cohorte de référence) : composantes pondérées de F2 et indicateurs opérationnels",
+                    "Gains et contreparties (moyennes sur les solutions proposées, cohorte de référence ; glouton = départ) : composantes pondérées de F2 et indicateurs opérationnels",
                     "tab:compromis", "lrrrrrrrrr"))
     # T6 SMA stratégies (moyennes sur tous les scénarios déterministes)
     sma = lire_csv(SORTIE / "sma_scenarios.csv")

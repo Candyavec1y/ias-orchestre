@@ -31,7 +31,7 @@ temporaire (fixture `base_isolee`). Les scénarios du système multi-agent parte
 | `test_occupation.py` | convention d'occupation : lit libéré à midi et réutilisable le jour même, jamais deux patients dans un lit ; place ambulatoire par demi-journée, réutilisable l'après-midi après remise en état, deux patients la même demi-journée refusés ; même décompte au niveau 2, dans le SMA, les indicateurs et le validateur |
 | `test_ml.py` | préparation commune (sans durée de bloc nulle), règle d'urgence unique, découpage unique 80/20, colonnes des modèles, prédictions cohérentes, codes hors vocabulaire, métriques sur le jeu de test |
 | `test_socle.py` | une seule copie des structures communes, chiffrement de la référence dossier, mots de passe, historique scellé, événements |
-| `test_interface.py` | connexion, chaque page pour chaque rôle, onglets selon le rôle, déclaration d'une urgence (rien n'est placé avant « Valider le placement », annulation possible), d'une absence, d'une prolongation d'intervention et de lits indisponibles, alerte qui disparaît du bandeau après 10 minutes |
+| `test_interface.py` | connexion, chaque page pour chaque rôle, onglets selon le rôle, déclaration d'une urgence (rien n'est placé avant « Valider le placement », annulation possible), d'une absence, d'une prolongation d'intervention et de lits indisponibles, alertes du SMA dans l'onglet « Alertes » (plus de bandeau rouge), marquées « nouvelle » pendant 10 minutes |
 | `test_saturation.py` | sanité de l'étude de saturation sur une semaine (l'étude sur 4 semaines est marquée `lent`) |
 
 ## Étude de saturation (`saturation.py`)

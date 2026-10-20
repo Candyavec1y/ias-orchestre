@@ -17,7 +17,6 @@ from orchestre import sma_service as S
 from orchestre import stockage as DB
 
 import structures_communes as SC
-from validation import valider_niveau2
 
 FUSEAU = ZoneInfo("Europe/Paris")
 INACTIVITE_MAX = timedelta(minutes=15)          # déconnexion automatique (poste partagé au bloc)
@@ -296,21 +295,6 @@ def enregistrer_programme(prog: P.Programme, auteur: str) -> None:
         "score_initial": r.score_initial if r else prog.score_glouton,
         "historique": [[p.temps_s, p.meilleur_score] for p in (r.historique if r else [])],
         "calcule_le": prog.calcule_le, "auteur": auteur, "validation": prog.validation})
-
-
-def avertir_si_programme_non_valide() -> None:
-    """D9 : un programme non faisable n'est jamais présenté comme valide (contraintes violées affichées)."""
-    cfg = config_programme() or {}
-    v = cfg.get("validation")
-    if v is None and cfg:                    # programme enregistré avant le validateur : vérifié à la volée
-        prog = programme()
-        v = valider_niveau2(prog.instance2, prog.solution).to_dict()
-    if v and not v.get("faisable"):
-        st.error("Programme opératoire initial NON VALIDE : "
-                 + ", ".join(f"{n} {t}" for t, n in sorted(v.get("par_type", {}).items()))
-                 + ". Recalculez-le (Administration) ou corrigez les capacités.")
-        with st.expander(f"Contraintes violées ({len(v.get('violations', []))})"):
-            st.dataframe(v.get("violations", []), hide_index=True, width="stretch")
 
 
 @st.cache_resource(max_entries=4, show_spinner=False)
